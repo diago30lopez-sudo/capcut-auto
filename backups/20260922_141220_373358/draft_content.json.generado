@@ -1,0 +1,115 @@
+{
+  "platform": 1,
+  "materials": {
+    "videos": [
+      {
+        "type": "photo",
+        "id": "29F2BAA4D5074155A8E079F956A06E14",
+        "path": "img/0000.jpg",
+        "width": 800,
+        "height": 600,
+        "duration": 950000,
+        "material_name": "escena01",
+        "extra_info": {}
+      },
+      {
+        "type": "photo",
+        "id": "36AF70B12EFA46FB92F66BDF385F2842",
+        "path": "img/0001.jpg",
+        "width": 800,
+        "height": 600,
+        "duration": 950000,
+        "material_name": "escena02",
+        "extra_info": {}
+      }
+    ],
+    "audios": [
+      {
+        "type": "audio",
+        "id": "333A8523C80149F2A632E74530A5A5C2",
+        "path": "audio/voz.wav",
+        "duration": 2050000,
+        "material_name": "voz"
+      }
+    ],
+    "texts": [],
+    "stickers": [],
+    "effects": [],
+    "transitions": []
+  },
+  "tracks": [
+    {
+      "flag": 0,
+      "id": "52A3AC674E1E45899719284C39A33925",
+      "type": "video",
+      "segment": {
+        "speed": 1,
+        "visible": true,
+        "audio_fade": {
+          "type": "none",
+          "duration": 0
+        },
+        "id": "0071C927B6ED42ACABB86666A56E9D50",
+        "material_id": "29F2BAA4D5074155A8E079F956A06E14",
+        "target_timerange": {
+          "start": 50000,
+          "duration": 950000
+        },
+        "source_timerange": {
+          "start": 0,
+          "duration": 950000
+        },
+        "type": "photo"
+      }
+    },
+    {
+      "flag": 0,
+      "id": "9135986994C54A6B99C0C5EE1B3DA02C",
+      "type": "video",
+      "segment": {
+        "speed": 1,
+        "visible": true,
+        "audio_fade": {
+          "type": "none",
+          "duration": 0
+        },
+        "id": "7A12FD12204D462299AFEC0BBA6731ED",
+        "material_id": "36AF70B12EFA46FB92F66BDF385F2842",
+        "target_timerange": {
+          "start": 1100000,
+          "duration": 950000
+        },
+        "source_timerange": {
+          "start": 0,
+          "duration": 950000
+        },
+        "type": "photo"
+      }
+    },
+    {
+      "flag": 0,
+      "id": "18DD23F2B4FF4C06B3E0F62E7A48D0F0",
+      "type": "audio",
+      "segment": {
+        "speed": 1,
+        "visible": true,
+        "audio_fade": {
+          "type": "none",
+          "duration": 0
+        },
+        "id": "70D235ACA71D4C3BAA78A364890CC859",
+        "material_id": "333A8523C80149F2A632E74530A5A5C2",
+        "target_timerange": {
+          "start": 0,
+          "duration": 2050000
+        },
+        "source_timerange": {
+          "start": 0,
+          "duration": 2050000
+        },
+        "type": "audio"
+      }
+    }
+  ],
+  "ai_used_extract_image": "test"
+}

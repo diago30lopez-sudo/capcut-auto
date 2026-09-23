@@ -1,0 +1,1055 @@
+2026-09-22 14:27:11 | WARNING  | ⚠ Aviso: hay 139 imágenes pero 144 escenas. Se usan las 139 primeras.
+2026-09-22 14:27:11 | INFO     | == CapCut Auto — inicio de generación ==
+2026-09-22 14:27:11 | INFO     | Plantilla: D:\YOUTUBE AUTOMATIZADO\CaptCut\CapCut Drafts\1.PLANTILLA
+2026-09-22 14:27:11 | INFO     | Imágenes : D:\YOUTUBE AUTOMATIZADO\1.historias hipoteticas\VIDEO\VIDEO_1\escenas 2
+2026-09-22 14:27:11 | INFO     | Audio    : D:\YOUTUBE AUTOMATIZADO\1.historias hipoteticas\VIDEO\VIDEO_1\guion.wav
+2026-09-22 14:27:11 | INFO     | Escenas  : D:\YOUTUBE AUTOMATIZADO\1.historias hipoteticas\VIDEO\VIDEO_1\escenas.txt
+2026-09-22 14:27:11 | INFO     | Nombre   : NEXUS PARADOJA VIDEO 1
+2026-09-22 14:27:11 | INFO     | 139 imágenes → 144 escenas
+2026-09-22 14:27:11 | INFO     | Paso 1/5 — Transcribiendo audio con faster-whisper...
+2026-09-22 14:27:11 | INFO     | Cargando modelo faster-whisper 'small' (en CPU). La primera vez puede tardar en descargar...
+2026-09-22 16:02:01 | INFO     | Plantillas detectadas en drafts: 1.PLANTILLA, 0921, VIDEO 1 #1, VIDEO 2 #2, VIDEO 3 #16
+2026-09-22 16:02:01 | INFO     | Detección · Audio elegido: guion.wav (score 13) — descartados: — — excluidos por nombre: —
+2026-09-22 16:02:01 | INFO     | Detección · Archivo de escenas elegido: escenas.txt (144 escenas, score 19).
+2026-09-22 16:02:01 | INFO     | Detección · Carpeta de imágenes: escenas 2 (144 archivos).
+2026-09-22 16:03:43 | INFO     | Plantillas detectadas en drafts: 1.PLANTILLA, 0921, VIDEO 1 #1, VIDEO 2 #2, VIDEO 3 #16
+2026-09-22 16:03:43 | INFO     | Detección · Audio elegido: guion.wav (score 13) — descartados: — — excluidos por nombre: —
+2026-09-22 16:03:43 | INFO     | Detección · Archivo de escenas elegido: escenas.txt (144 escenas, score 19).
+2026-09-22 16:03:43 | INFO     | Detección · Carpeta de imágenes: escenas 2 (144 archivos).
+2026-09-22 16:13:58 | INFO     | Detección · Audio elegido: guion.wav (score 13) — descartados: — — excluidos por nombre: —
+2026-09-22 16:13:58 | INFO     | Detección · Archivo de escenas elegido: escenas.txt (144 escenas, score 19).
+2026-09-22 16:13:58 | INFO     | Detección · Carpeta de imágenes: escenas 2 (144 archivos).
+2026-09-22 16:14:27 | WARNING  | La carpeta elegida no tiene plantillas válidas: D:\YOUTUBE AUTOMATIZADO\CaptCut\CapCut Drafts\1.PLANTILLA
+2026-09-22 16:14:40 | WARNING  | La carpeta elegida no tiene plantillas válidas: D:\YOUTUBE AUTOMATIZADO\CaptCut
+2026-09-22 16:14:48 | INFO     | Plantillas detectadas en drafts: 1.PLANTILLA, 0921, VIDEO 1 #1, VIDEO 2 #2, VIDEO 3 #16
+2026-09-22 16:15:02 | INFO     | == CapCut Auto — inicio de generación ==
+2026-09-22 16:15:02 | INFO     | Plantilla : D:\YOUTUBE AUTOMATIZADO\CaptCut\CapCut Drafts\1.PLANTILLA
+2026-09-22 16:15:02 | INFO     | Audio     : D:\YOUTUBE AUTOMATIZADO\1.historias hipoteticas\VIDEO\VIDEO_1\guion.wav
+2026-09-22 16:15:02 | INFO     | Escenas   : D:\YOUTUBE AUTOMATIZADO\1.historias hipoteticas\VIDEO\VIDEO_1\escenas.txt
+2026-09-22 16:15:02 | INFO     | Imágenes  : 144 archivos
+2026-09-22 16:15:02 | INFO     | Nombre    : nexus paradoja
+2026-09-22 16:15:02 | INFO     | Paso 1/5 — Transcribiendo audio con faster-whisper...
+2026-09-22 16:15:02 | INFO     | Cargando modelo faster-whisper 'small' (en CPU). La primera vez puede tardar en descargar...
+2026-09-22 16:49:42 | ERROR    | FALLO durante la generación:
+2026-09-22 16:49:42 | ERROR    | Traceback (most recent call last):
+  File "D:\capcut-auto\src\ui\main_window.py", line 558, in _run_job
+    segments = transcribe(data["audio"])
+  File "D:\capcut-auto\src\core\transcriber.py", line 91, in transcribe
+    model = WhisperModel(config.WHISPER_MODEL, device="cpu", compute_type="int8")
+  File "D:\capcut-auto\.venv\Lib\site-packages\faster_whisper\transcribe.py", line 681, in __init__
+    model_path = download_model(
+        model_size_or_path,
+    ...<3 lines>...
+        use_auth_token=use_auth_token,
+    )
+  File "D:\capcut-auto\.venv\Lib\site-packages\faster_whisper\utils.py", line 116, in download_model
+    return huggingface_hub.snapshot_download(repo_id, **kwargs)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
+  File "D:\capcut-auto\.venv\Lib\site-packages\huggingface_hub\utils\_validators.py", line 91, in _inner_fn
+    return fn(*args, **kwargs)
+  File "D:\capcut-auto\.venv\Lib\site-packages\huggingface_hub\utils\_http.py", line 266, in _inner
+    return fn(*args, **kwargs)
+  File "D:\capcut-auto\.venv\Lib\site-packages\huggingface_hub\_snapshot_download.py", line 532, in snapshot_download
+    hf_thread_map(
+    ~~~~~~~~~~~~~^
+        _inner_hf_hub_download,
+        ^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+        tqdm_class=tqdm_class,
+        ^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "D:\capcut-auto\.venv\Lib\site-packages\huggingface_hub\utils\tqdm.py", line 441, in hf_thread_map
+    results[future_to_index[future]] = future.result()
+                                       ~~~~~~~~~~~~~^^
+  File "C:\Users\diago_dev\AppData\Local\Programs\Python\Python314\Lib\concurrent\futures\_base.py", line 447, in result
+    return self.__get_result()
+           ~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\diago_dev\AppData\Local\Programs\Python\Python314\Lib\concurrent\futures\_base.py", line 396, in __get_result
+    raise self._exception
+  File "C:\Users\diago_dev\AppData\Local\Programs\Python\Python314\Lib\concurrent\futures\thread.py", line 86, in run
+    result = ctx.run(self.task)
+  File "C:\Users\diago_dev\AppData\Local\Programs\Python\Python314\Lib\concurrent\futures\thread.py", line 73, in run
+    return fn(*args, **kwargs)
+  File "D:\capcut-auto\.venv\Lib\site-packages\huggingface_hub\_snapshot_download.py", line 512, in _inner_hf_hub_download
+    hf_hub_download(  # type: ignore
+    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+        repo_id,
+        ^^^^^^^^
+    ...<14 lines>...
+        dry_run=dry_run,
+        ^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "D:\capcut-auto\.venv\Lib\site-packages\huggingface_hub\utils\_validators.py", line 91, in _inner_fn
+    return fn(*args, **kwargs)
+  File "D:\capcut-auto\.venv\Lib\site-packages\huggingface_hub\utils\_http.py", line 266, in _inner
+    return fn(*args, **kwargs)
+  File "D:\capcut-auto\.venv\Lib\site-packages\huggingface_hub\file_download.py", line 1043, in hf_hub_download
+    return _hf_hub_download_to_cache_dir(
+        # Destination
+    ...<15 lines>...
+        dry_run=dry_run,
+    )
+  File "D:\capcut-auto\.venv\Lib\site-packages\huggingface_hub\file_download.py", line 1281, in _hf_hub_download_to_cache_dir
+    _download_to_tmp_and_move(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^
+        incomplete_path=Path(blob_path + ".incomplete"),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<8 lines>...
+        tqdm_class=tqdm_class,
+        ^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "D:\capcut-auto\.venv\Lib\site-packages\huggingface_hub\file_download.py", line 2010, in _download_to_tmp_and_move
+    xet_get(
+    ~~~~~~~^
+        incomplete_path=tmp_path,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<4 lines>...
+        tqdm_class=tqdm_class,
+        ^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "D:\capcut-auto\.venv\Lib\site-packages\huggingface_hub\file_download.py", line 585, in xet_get
+    with session.new_file_download_group(
+         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        endpoint=connection_info.endpoint,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+        progress_callback=progress.update_progress,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ) as group:
+    ^
+RuntimeError: Task error: File reconstruction error: CAS Client Error: Format error: I/O error: error decoding response body
+
+2026-09-22 22:04:08 | INFO     | Plantillas detectadas en drafts: 1.PLANTILLA, 0921, VIDEO 1 #1, VIDEO 2 #2, VIDEO 3 #16
+2026-09-22 22:04:08 | INFO     | Detección · Audio elegido: guion.wav (score 13) — descartados: — — excluidos por nombre: —
+2026-09-22 22:04:08 | INFO     | Detección · Archivo de escenas elegido: escenas.txt (144 escenas, score 19).
+2026-09-22 22:04:08 | INFO     | Detección · Carpeta de imágenes: escenas 2 (144 archivos).
+2026-09-22 22:23:05 | INFO     | Plantillas detectadas en drafts: 1.PLANTILLA, 0921, VIDEO 1 #1, VIDEO 2 #2, VIDEO 3 #16
+2026-09-22 22:23:05 | INFO     | Detección · Audio elegido: guion.wav (score 13) — descartados: — — excluidos por nombre: —
+2026-09-22 22:23:05 | INFO     | Detección · Archivo de escenas elegido: escenas.txt (144 escenas, score 19).
+2026-09-22 22:23:05 | INFO     | Detección · Carpeta de imágenes: escenas 2 (144 archivos).
+2026-09-22 22:23:22 | INFO     | == CapCut Auto — inicio de generación ==
+2026-09-22 22:23:22 | INFO     | Plantilla : D:\YOUTUBE AUTOMATIZADO\CaptCut\CapCut Drafts\1.PLANTILLA
+2026-09-22 22:23:22 | INFO     | Audio     : D:\YOUTUBE AUTOMATIZADO\1.historias hipoteticas\VIDEO\VIDEO_1\guion.wav
+2026-09-22 22:23:22 | INFO     | Escenas   : D:\YOUTUBE AUTOMATIZADO\1.historias hipoteticas\VIDEO\VIDEO_1\escenas.txt
+2026-09-22 22:23:22 | INFO     | Imágenes  : 144 archivos
+2026-09-22 22:23:22 | INFO     | Nombre    : hola hola
+2026-09-22 22:23:22 | INFO     | Paso 1/5 — Preparando alineación (CrispASR + modelo español)...
+2026-09-22 22:23:22 | ERROR    | FALLO durante la generación:
+2026-09-22 22:23:22 | ERROR    | Traceback (most recent call last):
+  File "D:\capcut-auto\src\ui\main_window.py", line 560, in _run_job
+    aligned = align_audio_to_text(
+        data["audio"], align_lines, srt_path, cancel_event=self.cancel_event)
+  File "D:\capcut-auto\src\core\transcriber.py", line 91, in align_audio_to_text
+    _ensure_crispasr_exe(cancel_event)
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "D:\capcut-auto\src\core\transcriber.py", line 49, in _ensure_crispasr_exe
+    if config.CRISPASTR_EXE.is_file():
+       ^^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'src.core.config' has no attribute 'CRISPASTR_EXE'. Did you mean: 'CRISPASR_EXE'?
+
+2026-09-22 22:31:54 | INFO     | Plantillas detectadas en drafts: 1.PLANTILLA, 0921, VIDEO 1 #1, VIDEO 2 #2, VIDEO 3 #16
+2026-09-22 22:31:55 | INFO     | Detección · Audio elegido: guion.wav (score 13) — descartados: — — excluidos por nombre: —
+2026-09-22 22:31:55 | INFO     | Detección · Archivo de escenas elegido: escenas.txt (144 escenas, score 19).
+2026-09-22 22:31:55 | INFO     | Detección · Carpeta de imágenes: escenas 2 (144 archivos).
+2026-09-22 23:02:05 | INFO     | Plantillas detectadas en drafts: 1.PLANTILLA, 0921, VIDEO 1 #1, VIDEO 2 #2, VIDEO 3 #16
+2026-09-22 23:02:05 | INFO     | Detección · Audio elegido: guion.wav (score 13) — descartados: — — excluidos por nombre: —
+2026-09-22 23:02:05 | INFO     | Detección · Archivo de escenas elegido: escenas.txt (144 escenas, score 19).
+2026-09-22 23:02:05 | INFO     | Detección · Carpeta de imágenes: escenas 2 (144 archivos).
+2026-09-22 23:12:51 | INFO     | Plantillas detectadas en drafts: 1.PLANTILLA, 0921, VIDEO 1 #1, VIDEO 2 #2, VIDEO 3 #16
+2026-09-22 23:12:51 | INFO     | Detección · Audio elegido: guion.wav (score 13) — descartados: — — excluidos por nombre: —
+2026-09-22 23:12:51 | INFO     | Detección · Archivo de escenas elegido: escenas.txt (144 escenas, score 19).
+2026-09-22 23:12:51 | INFO     | Detección · Carpeta de imágenes: escenas 2 (144 archivos).
+2026-09-22 23:13:06 | INFO     | == CapCut Auto — inicio de generación ==
+2026-09-22 23:13:06 | INFO     | Plantilla : D:\YOUTUBE AUTOMATIZADO\CaptCut\CapCut Drafts\1.PLANTILLA
+2026-09-22 23:13:06 | INFO     | Audio     : D:\YOUTUBE AUTOMATIZADO\1.historias hipoteticas\VIDEO\VIDEO_1\guion.wav
+2026-09-22 23:13:06 | INFO     | Escenas   : D:\YOUTUBE AUTOMATIZADO\1.historias hipoteticas\VIDEO\VIDEO_1\escenas.txt
+2026-09-22 23:13:06 | INFO     | Imágenes  : 144 archivos
+2026-09-22 23:13:06 | INFO     | Nombre    : hola hola
+2026-09-22 23:13:06 | INFO     | Paso 1/5 — Preparando alineación (CrispASR + modelo español)...
+2026-09-22 23:13:06 | INFO     | Alineando audio con el guion (144 lineas)...
+2026-09-22 23:18:21 | INFO     | Alineacion completada -> D:\capcut-auto\cache\alineacion_guion.srt (144 cues).
+2026-09-22 23:18:21 | INFO     | Alineación completada: 144 cues (144 líneas).
+2026-09-22 23:18:21 | INFO     | Duración total del audio: 625520000 us (625.52 s).
+2026-09-22 23:18:21 | INFO     | Paso 2/5 — Sincronizando escenas con el SRT alineado...
+2026-09-22 23:18:21 | INFO     | Escena #1 OK — [0.00s .. 4.00s] (4000000 us) — ¿Qué pasaría si Spider-Man renaciera con todas sus memorias? Imagina esto.
+2026-09-22 23:18:21 | INFO     | Escena #2 OK — [4.40s .. 8.72s] (4320000 us) — Peter Parker muere solo tras salvar Nueva York, y despierta quince años otra vez.
+2026-09-22 23:18:21 | INFO     | Escena #3 OK — [9.20s .. 13.04s] (3840000 us) — El Punto de Divergencia no es la araña, sino el recuerdo completo de su muerte.
+2026-09-22 23:18:21 | INFO     | Escena #4 OK — [13.36s .. 17.36s] (4000000 us) — Peter sabe lo que viene, y esa certeza rompe el destino antes de que ocurra.
+2026-09-22 23:18:21 | INFO     | Escena #5 OK — [17.92s .. 21.28s] (3360000 us) — Pero salvar a todos podría costarle algo que ni siquiera puede imaginar.
+2026-09-22 23:18:21 | INFO     | Escena #6 OK — [21.76s .. 24.48s] (2720000 us) — Esta es la historia de un héroe que renace sabiendo demasiado.
+2026-09-22 23:18:21 | INFO     | Escena #7 OK — [24.64s .. 28.48s] (3840000 us) — Peter despierta con el corazón acelerado y reconoce cada grieta del techo.
+2026-09-22 23:18:21 | INFO     | Escena #8 OK — [29.04s .. 32.48s] (3440000 us) — Sabe que la araña lo morderá en unas horas, así que decide adelantarse.
+2026-09-22 23:18:21 | INFO     | Escena #9 OK — [32.96s .. 36.00s] (3040000 us) — Corre por los pasillos de Midtown y llega al laboratorio antes que nadie.
+2026-09-22 23:18:21 | INFO     | Escena #10 OK — [36.48s .. 41.12s] (4640000 us) — Cuando la araña desciende, Peter no huye: extiende la mano y deja que lo muerda.
+2026-09-22 23:18:21 | INFO     | Escena #11 OK — [41.60s .. 44.88s] (3280000 us) — El veneno quema sus venas, pero su mente ya conoce el dolor.
+2026-09-22 23:18:21 | INFO     | Escena #12 OK — [45.44s .. 49.68s] (4240000 us) — Al despertar, sus sentidos explotan y el mundo se vuelve demasiado ruidoso.
+2026-09-22 23:18:21 | INFO     | Escena #13 OK — [49.84s .. 53.20s] (3360000 us) — Trepa paredes con una seguridad que antes le habría tomado meses dominar.
+2026-09-22 23:18:21 | INFO     | Escena #14 OK — [54.08s .. 57.52s] (3440000 us) — Lanza una telaraña y se balancea entre edificios sin dudar ni un segundo.
+2026-09-22 23:18:21 | INFO     | Escena #15 OK — [58.48s .. 62.32s] (3840000 us) — Pero hay algo extraño: recuerda peleas que todavía no han ocurrido.
+2026-09-22 23:18:21 | INFO     | Escena #16 OK — [62.48s .. 66.88s] (4400000 us) — Recuerda a MJ, a May, a Tony, y también recuerda cómo todos terminan.
+2026-09-22 23:18:21 | INFO     | Escena #17 OK — [67.36s .. 70.96s] (3600000 us) — Esa noche, en lugar de perseguir al ladrón, va directo al callejón.
+2026-09-22 23:18:21 | INFO     | Escena #18 OK — [71.28s .. 74.48s] (3200000 us) — Ben está a punto de recibir un disparo cuando Peter detiene la bala.
+2026-09-22 23:18:21 | INFO     | Escena #19 OK — [74.80s .. 78.72s] (3920000 us) — El ladrón cae, y Ben mira a su sobrino con ojos de asombro y miedo.
+2026-09-22 23:18:21 | INFO     | Escena #20 OK — [78.72s .. 82.56s] (3840000 us) — ¿Quién eres? pregunta Ben, mientras Peter esconde la mano temblorosa.
+2026-09-22 23:18:21 | INFO     | Escena #21 OK — [83.04s .. 86.88s] (3840000 us) — No soy quien crees, responde Peter, pero ya no voy a dejar que mueras.
+2026-09-22 23:18:21 | INFO     | Escena #22 OK — [87.28s .. 91.28s] (4000000 us) — La primera consecuencia llega rápido: sin la muerte de Ben, Peter no duda.
+2026-09-22 23:18:21 | INFO     | Escena #23 OK — [91.52s .. 95.52s] (4000000 us) — La segunda llega más rápido: su cuerpo recuerda heridas que aún no existen.
+2026-09-22 23:18:21 | INFO     | Escena #24 OK — [96.00s .. 100.16s] (4160000 us) — La tercera es la peor: el universo nota que alguien está reescribiendo su guion.
+2026-09-22 23:18:21 | INFO     | Escena #25 OK — [100.56s .. 108.40s] (7840000 us) — Peter sonríe, pero en las sombras algo antiguo abre los ojos, porque un Spider-Man que renace con memorias no es un héroe, es una anomalía.
+2026-09-22 23:18:21 | INFO     | Escena #26 OK — [108.72s .. 110.40s] (1680000 us) — Y las anomalías atraen cazadores.
+2026-09-22 23:18:21 | INFO     | Escena #27 OK — [110.96s .. 114.16s] (3200000 us) — Peter también recuerda el sabor metálico de la derrota en la azotea.
+2026-09-22 23:18:21 | INFO     | Escena #28 OK — [114.64s .. 117.60s] (2960000 us) — Recuerda cómo el Duende lanza una bomba que nunca deja de arder.
+2026-09-22 23:18:21 | INFO     | Escena #29 OK — [117.84s .. 120.64s] (2800000 us) — Recuerda la sangre de Gwen en sus manos y el silencio después.
+2026-09-22 23:18:21 | INFO     | Escena #30 OK — [121.20s .. 125.20s] (4000000 us) — Por eso, cuando ve a Flash Thompson burlarse, no reacciona con rabia.
+2026-09-22 23:18:21 | INFO     | Escena #31 OK — [125.60s .. 128.96s] (3360000 us) — En su lugar, lo mira con una tristeza que Flash no comprende.
+2026-09-22 23:18:21 | INFO     | Escena #32 OK — [129.28s .. 132.16s] (2880000 us) — Porque Peter sabe que Flash también morirá si él no cambia el guion.
+2026-09-22 23:18:21 | INFO     | Escena #33 OK — [132.40s .. 136.24s] (3840000 us) — Esa noche, antes de dormir, escribe una lista de nombres que debe salvar.
+2026-09-22 23:18:21 | INFO     | Escena #34 OK — [136.72s .. 141.76s] (5040000 us) — La lista incluye a Ben, a May, a MJ, a Gwen, a Harry y a Tony Stark.
+2026-09-22 23:18:21 | INFO     | Escena #35 OK — [142.32s .. 146.00s] (3680000 us) — Peter usa sus recuerdos para desmantelar el imperio de Kingpin en una sola noche.
+2026-09-22 23:18:21 | INFO     | Escena #36 OK — [146.40s .. 150.96s] (4560000 us) — Conoce cada escondite, cada soborno, cada ruta de dinero antes de que existan.
+2026-09-22 23:18:21 | INFO     | Escena #37 OK — [151.20s .. 156.16s] (4960000 us) — Fisk cae, pero el poder vacío atrae a Silvio Manfredi, también conocido como Silvermane.
+2026-09-22 23:18:21 | INFO     | Escena #38 OK — [156.32s .. 160.24s] (3920000 us) — Silvermane intenta tomar el control, y Peter lo enfrenta en una azotea lluviosa.
+2026-09-22 23:18:21 | INFO     | Escena #39 OK — [160.56s .. 165.04s] (4480000 us) — Muévete, viejo, dice Peter, mientras esquiva balas con una calma imposible.
+2026-09-22 23:18:21 | INFO     | Escena #40 OK — [165.68s .. 168.88s] (3200000 us) — El villano dispara, pero Peter ya sabe dónde estará cada bala.
+2026-09-22 23:18:21 | INFO     | Escena #41 OK — [169.44s .. 173.60s] (4160000 us) — Lo derriba con un puñetazo, y el impacto agrieta el concreto bajo sus pies.
+2026-09-22 23:18:21 | INFO     | Escena #42 OK — [173.76s .. 178.48s] (4720000 us) — Sin embargo, esa victoria tiene un precio: Norman Osborn observa desde las sombras.
+2026-09-22 23:18:21 | INFO     | Escena #43 OK — [178.88s .. 182.80s] (3920000 us) — Norman no es aún el Duende Verde, pero reconoce un patrón en los ataques.
+2026-09-22 23:18:21 | INFO     | Escena #44 OK — [183.12s .. 186.64s] (3520000 us) — Fast forward to the night when Peter evita el robo que crea al Duende.
+2026-09-22 23:18:21 | INFO     | Escena #45 OK — [187.04s .. 190.64s] (3600000 us) — Norman nunca cae en la fórmula, así que el Duende Verde jamás nace.
+2026-09-22 23:18:21 | INFO     | Escena #46 OK — [191.20s .. 195.12s] (3920000 us) — Pero el odio de Norman busca otro camino, y encuentra a un simbionte caído.
+2026-09-22 23:18:21 | INFO     | Escena #47 OK — [195.52s .. 199.20s] (3680000 us) — Peter siente un escalofrío cuando el cielo sobre Nueva York se vuelve negro.
+2026-09-22 23:18:21 | INFO     | Escena #48 OK — [199.44s .. 203.68s] (4240000 us) — Un meteorito atraviesa la atmósfera y cae en el puerto, brillando con vida.
+2026-09-22 23:18:21 | INFO     | Escena #49 OK — [204.48s .. 207.84s] (3360000 us) — De él emerge Venom, pero no el Venom que Peter recuerda.
+2026-09-22 23:18:21 | INFO     | Escena #50 OK — [208.32s .. 212.48s] (4160000 us) — Este simbionte es más antiguo, y ha sentido el sabor de una memoria multiversal.
+2026-09-22 23:18:21 | INFO     | Escena #51 OK — [213.04s .. 216.64s] (3600000 us) — Te conozco, susurra la criatura, has vivido esto muchas veces.
+2026-09-22 23:18:21 | INFO     | Escena #52 OK — [216.96s .. 220.56s] (3600000 us) — Peter retrocede, porque por primera vez no sabe qué va a pasar.
+2026-09-22 23:18:21 | INFO     | Escena #53 OK — [221.04s .. 226.00s] (4960000 us) — Mientras tanto, en otra dimensión, un cazador llamado Morlun huele la anomalía.
+2026-09-22 23:18:21 | INFO     | Escena #54 OK — [226.64s .. 230.56s] (3920000 us) — Morlun se alimenta de tótems araña, y este Peter brilla como un faro.
+2026-09-22 23:18:21 | INFO     | Escena #55 OK — [230.72s .. 234.72s] (4000000 us) — El cazador cruza el multiverso, pisando realidades como si fueran cristales.
+2026-09-22 23:18:21 | INFO     | Escena #56 OK — [235.44s .. 238.80s] (3360000 us) — Peter intenta prepararse, pero sus recuerdos no contienen a Morlun.
+2026-09-22 23:18:21 | INFO     | Escena #57 OK — [239.28s .. 244.56s] (5280000 us) — Porque en su vida original, Morlun nunca llegó a Nueva York, ahora sí, y la ciudad no está lista.
+2026-09-22 23:18:21 | INFO     | Escena #58 OK — [244.88s .. 249.36s] (4480000 us) — Peter intenta comunicarse con el simbionte, pero la criatura solo responde con hambre.
+2026-09-22 23:18:21 | INFO     | Escena #59 OK — [249.92s .. 254.40s] (4480000 us) — Venom ataca Times Square, y Peter lo enfrenta mientras las pantallas explotan.
+2026-09-22 23:18:21 | INFO     | Escena #60 OK — [254.80s .. 258.56s] (3760000 us) — El simbionte esquiva sus telarañas y le susurra los nombres de sus seres queridos.
+2026-09-22 23:18:21 | INFO     | Escena #61 OK — [258.88s .. 264.96s] (6080000 us) — Ben, dice Venom, May, dice, MJ, dice, y Peter siente un escalofrío.
+2026-09-22 23:18:21 | INFO     | Escena #62 OK — [265.28s .. 270.16s] (4880000 us) — Peter usa un generador eléctrico para separarlos, pero Venom escapa hacia las alcantarillas.
+2026-09-22 23:18:21 | INFO     | Escena #63 OK — [270.64s .. 274.16s] (3520000 us) — Mientras tanto, Silvermane contrata a un mercenario llamado Taskmaster.
+2026-09-22 23:18:21 | INFO     | Escena #64 OK — [274.24s .. 278.32s] (4080000 us) — Taskmaster copia los movimientos de Peter, pero no puede copiar sus recuerdos.
+2026-09-22 23:18:21 | INFO     | Escena #65 OK — [279.04s .. 283.12s] (4080000 us) — Peter lo derrota en un almacén, rompiendo su espada con las manos desnudas.
+2026-09-22 23:18:21 | INFO     | Escena #66 OK — [283.60s .. 288.16s] (4560000 us) — Sin embargo, cada victoria hace que la anomalía brille más fuerte en el multiverso.
+2026-09-22 23:18:21 | INFO     | Escena #67 OK — [288.48s .. 292.56s] (4080000 us) — Morlun ya no está lejos: ha devorado tres realidades y viene por la cuarta.
+2026-09-22 23:18:21 | INFO     | Escena #68 OK — [292.96s .. 297.44s] (4480000 us) — Peter corre hacia el puerto, pero Morlun ya está allí, inmóvil y sonriente.
+2026-09-22 23:18:21 | INFO     | Escena #69 OK — [298.40s .. 302.64s] (4240000 us) — Eres una nota discordante, dice Morlun, y las notas discordantes se borran.
+2026-09-22 23:18:21 | INFO     | Escena #70 OK — [302.72s .. 306.24s] (3520000 us) — Peter lanza una telaraña, pero Morlun la rompe con un solo dedo.
+2026-09-22 23:18:21 | INFO     | Escena #71 OK — [306.72s .. 310.88s] (4160000 us) — El cazador golpea, y Peter cruza tres contenedores antes de detenerse.
+2026-09-22 23:18:21 | INFO     | Escena #72 OK — [311.44s .. 315.04s] (3600000 us) — Sangre en la boca, piernas temblorosas, pero se levanta otra vez.
+2026-09-22 23:18:21 | INFO     | Escena #73 OK — [315.60s .. 318.16s] (2560000 us) — Morlun lo agarra del cuello y comienza a drenar su vida.
+2026-09-22 23:18:21 | INFO     | Escena #74 OK — [318.40s .. 321.68s] (3280000 us) — Peter siente cómo sus recuerdos se deshilachan como cintas viejas.
+2026-09-22 23:18:21 | INFO     | Escena #75 OK — [322.56s .. 327.84s] (5280000 us) — Ve a Ben vivo, ve a May sonriendo, ve a MJ alejándose para siempre.
+2026-09-22 23:18:21 | INFO     | Escena #76 OK — [328.72s .. 332.32s] (3600000 us) — Entonces comprende la verdad: su renacimiento no fue un regalo.
+2026-09-22 23:18:21 | INFO     | Escena #77 OK — [332.80s .. 336.16s] (3360000 us) — Cada vez que cambia el pasado, el multiverso exige una corrección.
+2026-09-22 23:18:21 | INFO     | Escena #78 OK — [336.48s .. 339.84s] (3360000 us) — Morlun no es el villano; es el anticuerpo de una realidad herida.
+2026-09-22 23:18:21 | INFO     | Escena #79 OK — [340.32s .. 343.52s] (3200000 us) — Peter puede salvarlos a todos, pero solo si deja de ser quien es.
+2026-09-22 23:18:21 | INFO     | Escena #80 OK — [344.32s .. 347.84s] (3520000 us) — Si conserva sus memorias, Morlun seguirá cazándolo por toda la eternidad.
+2026-09-22 23:18:21 | INFO     | Escena #81 OK — [348.40s .. 351.04s] (2640000 us) — Si las pierde, volverá a ser el chico que aprende a golpes.
+2026-09-22 23:18:21 | INFO     | Escena #82 OK — [351.12s .. 354.72s] (3600000 us) — La contradicción lo parte en dos: ¿es el héroe o el error?
+2026-09-22 23:18:21 | INFO     | Escena #83 OK — [355.28s .. 359.28s] (4000000 us) — Ben vive gracias a él, pero cada latido de Ben es una deuda cósmica.
+2026-09-22 23:18:21 | INFO     | Escena #84 OK — [359.68s .. 363.12s] (3440000 us) — Peter mira a Morlun y entiende que la victoria tendrá sabor a olvido.
+2026-09-22 23:18:21 | INFO     | Escena #85 OK — [363.36s .. 367.20s] (3840000 us) — Peter intenta encontrar otra salida, pero cada opción termina con alguien muerto.
+2026-09-22 23:18:21 | INFO     | Escena #86 OK — [367.60s .. 371.44s] (3840000 us) — Si deja que Ben muera, el universo se cura, pero su alma se rompe.
+2026-09-22 23:18:21 | INFO     | Escena #87 OK — [371.92s .. 377.12s] (5200000 us) — Si salva a Ben, Morlun devorará a May, a MJ y a miles de inocentes.
+2026-09-22 23:18:21 | INFO     | Escena #88 OK — [377.20s .. 380.48s] (3280000 us) — La balanza no tiene un lado limpio, solo un sacrificio distinto.
+2026-09-22 23:18:21 | INFO     | Escena #89 OK — [380.96s .. 384.40s] (3440000 us) — Peter llora bajo la lluvia, y por primera vez odia tener memoria.
+2026-09-22 23:18:21 | INFO     | Escena #90 OK — [384.56s .. 388.56s] (4000000 us) — La batalla final ocurre sobre el puente Queensboro, bajo una lluvia eléctrica.
+2026-09-22 23:18:21 | INFO     | Escena #91 OK — [389.20s .. 392.64s] (3440000 us) — Morlun corre hacia Peter, y cada paso rompe el asfalto como papel.
+2026-09-22 23:18:21 | INFO     | Escena #92 OK — [393.28s .. 397.36s] (4080000 us) — Peter salta, dispara telarañas y usa los autos como escudos improvisados.
+2026-09-22 23:18:21 | INFO     | Escena #93 OK — [398.00s .. 401.12s] (3120000 us) — Ya viviste esto, grita Morlun, pero nunca contra mí.
+2026-09-22 23:18:21 | INFO     | Escena #94 OK — [401.28s .. 404.32s] (3040000 us) — Peter responde con un puñetazo que brilla con fuerza de tótem.
+2026-09-22 23:18:21 | INFO     | Escena #95 OK — [404.80s .. 408.40s] (3600000 us) — El impacto lanza a Morlun contra una torre, pero el cazador se ríe.
+2026-09-22 23:18:21 | INFO     | Escena #96 OK — [408.80s .. 412.32s] (3520000 us) — Morlun se levanta, y su piel absorbe la electricidad de la tormenta.
+2026-09-22 23:18:21 | INFO     | Escena #97 OK — [412.72s .. 415.36s] (2640000 us) — Peter recuerda a todos los Spider-Man que fueron antes que él.
+2026-09-22 23:18:21 | INFO     | Escena #98 OK — [415.52s .. 420.08s] (4560000 us) — Recuerda a Gwen, a Miles, a Miguel, a Peni, a Noir, a Ham.
+2026-09-22 23:18:21 | INFO     | Escena #99 OK — [420.48s .. 424.16s] (3680000 us) — Sus memorias se convierten en fuerza, y su cuerpo brilla con luz dorada.
+2026-09-22 23:18:21 | INFO     | Escena #100 OK — [424.48s .. 428.16s] (3680000 us) — Con gran poder, susurra Peter, también viene un gran precio.
+2026-09-22 23:18:21 | INFO     | Escena #101 OK — [428.72s .. 432.24s] (3520000 us) — Lanza un último ataque, un choque de voluntades que parte el cielo.
+2026-09-22 23:18:21 | INFO     | Escena #102 OK — [432.88s .. 436.96s] (4080000 us) — Morlun grita, pero no cae: se aferra a la memoria de Peter.
+2026-09-22 23:18:21 | INFO     | Escena #103 OK — [437.60s .. 441.20s] (3600000 us) — Peter lo sostiene, sintiendo cómo sus recuerdos se queman uno por uno.
+2026-09-22 23:18:21 | INFO     | Escena #104 OK — [441.68s .. 443.60s] (1920000 us) — Ve la cara de Ben, y la deja ir.
+2026-09-22 23:18:21 | INFO     | Escena #105 OK — [444.32s .. 446.32s] (2000000 us) — Ve la cara de May, y la deja ir.
+2026-09-22 23:18:21 | INFO     | Escena #106 OK — [446.88s .. 449.44s] (2560000 us) — Ve la cara de MJ, y por un segundo se niega.
+2026-09-22 23:18:21 | INFO     | Escena #107 OK — [449.76s .. 454.00s] (4240000 us) — Pero entonces mira a la ciudad, y sabe que Nueva York necesita a Spider-Man.
+2026-09-22 23:18:21 | INFO     | Escena #108 OK — [454.24s .. 457.20s] (2960000 us) — No al hombre que recuerda, sino al héroe que elige.
+2026-09-22 23:18:21 | INFO     | Escena #109 OK — [457.84s .. 461.76s] (3920000 us) — Peter suelta todo, y una onda de luz borra a Morlun del puente.
+2026-09-22 23:18:21 | INFO     | Escena #110 OK — [462.16s .. 466.32s] (4160000 us) — La tormenta se detiene, y Peter cae de rodillas sobre el asfalto mojado.
+2026-09-22 23:18:21 | INFO     | Escena #111 OK — [467.04s .. 469.52s] (2480000 us) — No recuerda por qué está allí, ni por qué llora.
+2026-09-22 23:18:21 | INFO     | Escena #112 OK — [470.08s .. 474.64s] (4560000 us) — Solo sabe que alguien importante acaba de salvarlo, y que debe seguir adelante.
+2026-09-22 23:18:21 | INFO     | Escena #113 OK — [475.20s .. 478.56s] (3360000 us) — Pero antes de perder el último recuerdo, Peter ve una imagen clara.
+2026-09-22 23:18:21 | INFO     | Escena #114 OK — [479.28s .. 483.60s] (4320000 us) — Ve a Ben sonriendo en una cocina, vivo, real, orgulloso de él.
+2026-09-22 23:18:21 | INFO     | Escena #115 OK — [484.00s .. 486.72s] (2720000 us) — Esa imagen le da la fuerza para soltar todo sin gritar.
+2026-09-22 23:18:21 | INFO     | Escena #116 OK — [487.28s .. 491.04s] (3760000 us) — Morlun se desintegra en cenizas azules, y el puente queda en silencio.
+2026-09-22 23:18:21 | INFO     | Escena #117 OK — [491.44s .. 494.96s] (3520000 us) — Peter cae, y su máscara se llena de lluvia y lágrimas invisibles.
+2026-09-22 23:18:21 | INFO     | Escena #118 OK — [495.36s .. 498.88s] (3520000 us) — El universo se estabiliza, pero la línea temporal ya no es la misma.
+2026-09-22 23:18:21 | INFO     | Escena #119 OK — [499.12s .. 502.96s] (3840000 us) — Ben Parker está vivo, y enseña en una escuela para chicos problemáticos.
+2026-09-22 23:18:21 | INFO     | Escena #120 OK — [503.60s .. 506.32s] (2720000 us) — May vive con él, y a veces siente que olvidó algo importante.
+2026-09-22 23:18:21 | INFO     | Escena #121 OK — [507.28s .. 511.36s] (4080000 us) — Peter Parker asiste a Midtown, saca buenas notas y sonríe sin saber por qué.
+2026-09-22 23:18:21 | INFO     | Escena #122 OK — [511.60s .. 515.44s] (3840000 us) — Cada noche sueña con una chica de pelo rojo y una azotea bajo la lluvia.
+2026-09-22 23:18:21 | INFO     | Escena #123 OK — [516.00s .. 519.92s] (3920000 us) — No sabe su nombre, pero despierta con el pecho apretado y los ojos húmedos.
+2026-09-22 23:18:21 | INFO     | Escena #124 OK — [520.32s .. 523.76s] (3440000 us) — En su mochila guarda un traje rojo y azul que no recuerda haber cosido.
+2026-09-22 23:18:21 | INFO     | Escena #125 OK — [524.00s .. 527.12s] (3120000 us) — Cuando escucha sirenas, su cuerpo se mueve antes que su mente.
+2026-09-22 23:18:21 | INFO     | Escena #126 OK — [527.76s .. 530.96s] (3200000 us) — Salva a un niño de un auto en llamas y desaparece entre las sombras.
+2026-09-22 23:18:21 | INFO     | Escena #127 OK — [531.36s .. 535.36s] (4000000 us) — La gente lo llama Spider-Man, y él acepta el nombre como un instinto.
+2026-09-22 23:18:21 | INFO     | Escena #128 OK — [535.84s .. 540.24s] (4400000 us) — Norman Osborn nunca se convirtió en el Duende Verde, pero vigila desde lejos.
+2026-09-22 23:18:21 | INFO     | Escena #129 OK — [540.32s .. 544.08s] (3760000 us) — Venom sigue en las alcantarillas, esperando el momento correcto para atacar.
+2026-09-22 23:18:21 | INFO     | Escena #130 OK — [544.56s .. 548.72s] (4160000 us) — Morlun ha sido borrado, pero otros cazadores han sentido el eco de su caída.
+2026-09-22 23:18:21 | INFO     | Escena #131 OK — [549.12s .. 552.56s] (3440000 us) — Peter perdió sus memorias, y con ellas perdió la certeza de lo que viene.
+2026-09-22 23:18:21 | INFO     | Escena #132 OK — [553.04s .. 556.56s] (3520000 us) — Ganó una segunda oportunidad para Ben, para May, para la ciudad.
+2026-09-22 23:18:21 | INFO     | Escena #133 OK — [557.28s .. 561.68s] (4400000 us) — Pero pagó con la única cosa que lo hacía diferente: saber cuánto podía perder.
+2026-09-22 23:18:21 | INFO     | Escena #134 OK — [562.08s .. 565.60s] (3520000 us) — Ahora es más rápido, más fuerte, pero también más humano que nunca.
+2026-09-22 23:18:21 | INFO     | Escena #135 OK — [566.16s .. 569.20s] (3040000 us) — Porque el héroe no es el que recuerda, sino el que elige levantarse.
+2026-09-22 23:18:21 | INFO     | Escena #136 OK — [569.84s .. 573.60s] (3760000 us) — Y en algún lugar del multiverso, otra línea temporal acaba de nacer.
+2026-09-22 23:18:21 | INFO     | Escena #137 OK — [574.08s .. 577.76s] (3680000 us) — En esa otra línea, Peter Parker nunca muere, y nunca renace.
+2026-09-22 23:18:21 | INFO     | Escena #138 OK — [578.08s .. 581.04s] (2960000 us) — En esa otra línea, Ben Parker muere, y Peter aprende la lección.
+2026-09-22 23:18:21 | INFO     | Escena #139 OK — [581.44s .. 584.72s] (3280000 us) — Pero en esta línea, Peter olvidó la lección y conserva el instinto.
+2026-09-22 23:18:21 | INFO     | Escena #140 OK — [584.96s .. 588.96s] (4000000 us) — Cada noche, cuando salta entre edificios, siente un eco de algo perdido.
+2026-09-22 23:18:21 | INFO     | Escena #141 OK — [589.68s .. 593.68s] (4000000 us) — A veces, al ver a MJ, su corazón se acelera sin explicación.
+2026-09-22 23:18:21 | INFO     | Escena #142 OK — [594.16s .. 597.52s] (3360000 us) — Ella lo mira, sonríe, y por un segundo él cree recordar.
+2026-09-22 23:18:21 | INFO     | Escena #143 OK — [597.92s .. 604.72s] (6800000 us) — Luego el momento pasa, y Spider-Man sigue balanceándose hacia el peligro, porque algunas historias están destinadas a repetirse en silencio.
+2026-09-22 23:18:21 | INFO     | Escena #144 OK — [605.36s .. 625.52s] (20160000 us) — Si esta historia te atrapó, suscríbete y cuéntame qué habrías hecho tú. ¿Habrías sacrificado tus recuerdos para salvar a la gente que amas? ¿O habrías conservado tu poder y dejado que el universo pagara el precio? La próxima línea temporal hará que esta parezca un simple ensayo. Esta línea temporal ha sido archivada. Soy Alex, y esto fue Nexus Paradoja.
+2026-09-22 23:18:21 | INFO     | Escenas sincronizadas: 144/144.
+2026-09-22 23:18:21 | INFO     | Paso 3/5 — Preparando proyecto CapCut (clone + edit)...
+2026-09-22 23:18:21 | INFO     | Backup de la plantilla guardado en D:\capcut-auto\backups\20260922_231821_476614
+2026-09-22 23:18:21 | INFO     | Esquema de la plantilla volcado a D:\capcut-auto\logs\schema_plantilla.json
+2026-09-22 23:18:21 | INFO     | Paso 4/5 — Generando proyecto...
+2026-09-22 23:18:21 | INFO     | Clonando plantilla -> C:\Users\diago_dev\AppData\Local\CapCut\User Data\Projects\com.lveditor.draft\hola hola
+2026-09-22 23:18:22 | INFO     | draft_content.json generado con 144 pistas de foto + 1 de audio.
+2026-09-22 23:18:22 | INFO     | Backup de la plantilla guardado en D:\capcut-auto\backups\20260922_231822_561941
+2026-09-22 23:18:22 | INFO     | PROYECTO GENERADO: C:\Users\diago_dev\AppData\Local\CapCut\User Data\Projects\com.lveditor.draft\hola hola
+2026-09-22 23:18:22 | INFO     | Paso 5/5 — ✔ Proyecto creado en: C:\Users\diago_dev\AppData\Local\CapCut\User Data\Projects\com.lveditor.draft\hola hola
+2026-09-22 23:18:22 | INFO     | IMPORTANTE: cierra la app antes de abrir CapCut.
+2026-09-23 00:01:29 | INFO     | Plantillas detectadas en drafts: 1.PLANTILLA, 0921, VIDEO 1 #1, VIDEO 2 #2, VIDEO 3 #16
+2026-09-23 00:01:29 | INFO     | Detección · Audio elegido: guion.wav (score 13) — descartados: — — excluidos por nombre: —
+2026-09-23 00:01:29 | INFO     | Detección · Archivo de escenas elegido: escenas.txt (144 escenas, score 19).
+2026-09-23 00:01:29 | INFO     | Detección · Carpeta de imágenes: escenas 2 (144 archivos).
+2026-09-23 00:35:30 | INFO     | Plantillas detectadas en drafts: 1.PLANTILLA, 0921, AutosyncVisualTest, VIDEO 1 #1, VIDEO 2 #2, VIDEO 3 #16
+2026-09-23 00:35:30 | INFO     | Detección · Audio elegido: guion.wav (score 13) — descartados: — — excluidos por nombre: —
+2026-09-23 00:35:30 | INFO     | Detección · Archivo de escenas elegido: escenas.txt (144 escenas, score 19).
+2026-09-23 00:35:30 | INFO     | Detección · Carpeta de imágenes: escenas 2 (144 archivos).
+2026-09-23 00:35:37 | INFO     | == CapCut Auto — inicio de generación ==
+2026-09-23 00:35:37 | INFO     | Plantilla : D:\YOUTUBE AUTOMATIZADO\CaptCut\CapCut Drafts\1.PLANTILLA
+2026-09-23 00:35:37 | INFO     | Audio     : D:\YOUTUBE AUTOMATIZADO\1.historias hipoteticas\VIDEO\VIDEO_1\guion.wav
+2026-09-23 00:35:37 | INFO     | Escenas   : D:\YOUTUBE AUTOMATIZADO\1.historias hipoteticas\VIDEO\VIDEO_1\escenas.txt
+2026-09-23 00:35:37 | INFO     | Imágenes  : 144 archivos
+2026-09-23 00:35:37 | INFO     | Nombre    : hola
+2026-09-23 00:35:37 | INFO     | Paso 1/5 — Preparando alineación (CrispASR + modelo español)...
+2026-09-23 00:35:37 | INFO     | Alineando audio con el guion (144 lineas)...
+2026-09-23 00:40:54 | INFO     | Alineacion completada -> D:\capcut-auto\cache\alineacion_guion.srt (144 cues).
+2026-09-23 00:40:54 | INFO     | Alineación completada: 144 cues (144 líneas).
+2026-09-23 00:40:54 | INFO     | Duración total del audio: 625520000 us (625.52 s).
+2026-09-23 00:40:54 | INFO     | Paso 2/5 — Sincronizando escenas con el SRT alineado...
+2026-09-23 00:40:54 | INFO     | Escena #1 OK — [0.00s .. 4.00s] (4000000 us) — ¿Qué pasaría si Spider-Man renaciera con todas sus memorias? Imagina esto.
+2026-09-23 00:40:54 | INFO     | Escena #2 OK — [4.40s .. 8.72s] (4320000 us) — Peter Parker muere solo tras salvar Nueva York, y despierta quince años otra vez.
+2026-09-23 00:40:54 | INFO     | Escena #3 OK — [9.20s .. 13.04s] (3840000 us) — El Punto de Divergencia no es la araña, sino el recuerdo completo de su muerte.
+2026-09-23 00:40:54 | INFO     | Escena #4 OK — [13.36s .. 17.36s] (4000000 us) — Peter sabe lo que viene, y esa certeza rompe el destino antes de que ocurra.
+2026-09-23 00:40:54 | INFO     | Escena #5 OK — [17.92s .. 21.28s] (3360000 us) — Pero salvar a todos podría costarle algo que ni siquiera puede imaginar.
+2026-09-23 00:40:54 | INFO     | Escena #6 OK — [21.76s .. 24.48s] (2720000 us) — Esta es la historia de un héroe que renace sabiendo demasiado.
+2026-09-23 00:40:54 | INFO     | Escena #7 OK — [24.64s .. 28.48s] (3840000 us) — Peter despierta con el corazón acelerado y reconoce cada grieta del techo.
+2026-09-23 00:40:54 | INFO     | Escena #8 OK — [29.04s .. 32.48s] (3440000 us) — Sabe que la araña lo morderá en unas horas, así que decide adelantarse.
+2026-09-23 00:40:54 | INFO     | Escena #9 OK — [32.96s .. 36.00s] (3040000 us) — Corre por los pasillos de Midtown y llega al laboratorio antes que nadie.
+2026-09-23 00:40:54 | INFO     | Escena #10 OK — [36.48s .. 41.12s] (4640000 us) — Cuando la araña desciende, Peter no huye: extiende la mano y deja que lo muerda.
+2026-09-23 00:40:54 | INFO     | Escena #11 OK — [41.60s .. 44.88s] (3280000 us) — El veneno quema sus venas, pero su mente ya conoce el dolor.
+2026-09-23 00:40:54 | INFO     | Escena #12 OK — [45.44s .. 49.68s] (4240000 us) — Al despertar, sus sentidos explotan y el mundo se vuelve demasiado ruidoso.
+2026-09-23 00:40:54 | INFO     | Escena #13 OK — [49.84s .. 53.20s] (3360000 us) — Trepa paredes con una seguridad que antes le habría tomado meses dominar.
+2026-09-23 00:40:54 | INFO     | Escena #14 OK — [54.08s .. 57.52s] (3440000 us) — Lanza una telaraña y se balancea entre edificios sin dudar ni un segundo.
+2026-09-23 00:40:54 | INFO     | Escena #15 OK — [58.48s .. 62.32s] (3840000 us) — Pero hay algo extraño: recuerda peleas que todavía no han ocurrido.
+2026-09-23 00:40:54 | INFO     | Escena #16 OK — [62.48s .. 66.88s] (4400000 us) — Recuerda a MJ, a May, a Tony, y también recuerda cómo todos terminan.
+2026-09-23 00:40:54 | INFO     | Escena #17 OK — [67.36s .. 70.96s] (3600000 us) — Esa noche, en lugar de perseguir al ladrón, va directo al callejón.
+2026-09-23 00:40:54 | INFO     | Escena #18 OK — [71.28s .. 74.48s] (3200000 us) — Ben está a punto de recibir un disparo cuando Peter detiene la bala.
+2026-09-23 00:40:54 | INFO     | Escena #19 OK — [74.80s .. 78.72s] (3920000 us) — El ladrón cae, y Ben mira a su sobrino con ojos de asombro y miedo.
+2026-09-23 00:40:54 | INFO     | Escena #20 OK — [78.72s .. 82.56s] (3840000 us) — ¿Quién eres? pregunta Ben, mientras Peter esconde la mano temblorosa.
+2026-09-23 00:40:54 | INFO     | Escena #21 OK — [83.04s .. 86.88s] (3840000 us) — No soy quien crees, responde Peter, pero ya no voy a dejar que mueras.
+2026-09-23 00:40:54 | INFO     | Escena #22 OK — [87.28s .. 91.28s] (4000000 us) — La primera consecuencia llega rápido: sin la muerte de Ben, Peter no duda.
+2026-09-23 00:40:54 | INFO     | Escena #23 OK — [91.52s .. 95.52s] (4000000 us) — La segunda llega más rápido: su cuerpo recuerda heridas que aún no existen.
+2026-09-23 00:40:54 | INFO     | Escena #24 OK — [96.00s .. 100.16s] (4160000 us) — La tercera es la peor: el universo nota que alguien está reescribiendo su guion.
+2026-09-23 00:40:54 | INFO     | Escena #25 OK — [100.56s .. 108.40s] (7840000 us) — Peter sonríe, pero en las sombras algo antiguo abre los ojos, porque un Spider-Man que renace con memorias no es un héroe, es una anomalía.
+2026-09-23 00:40:54 | INFO     | Escena #26 OK — [108.72s .. 110.40s] (1680000 us) — Y las anomalías atraen cazadores.
+2026-09-23 00:40:54 | INFO     | Escena #27 OK — [110.96s .. 114.16s] (3200000 us) — Peter también recuerda el sabor metálico de la derrota en la azotea.
+2026-09-23 00:40:54 | INFO     | Escena #28 OK — [114.64s .. 117.60s] (2960000 us) — Recuerda cómo el Duende lanza una bomba que nunca deja de arder.
+2026-09-23 00:40:54 | INFO     | Escena #29 OK — [117.84s .. 120.64s] (2800000 us) — Recuerda la sangre de Gwen en sus manos y el silencio después.
+2026-09-23 00:40:54 | INFO     | Escena #30 OK — [121.20s .. 125.20s] (4000000 us) — Por eso, cuando ve a Flash Thompson burlarse, no reacciona con rabia.
+2026-09-23 00:40:54 | INFO     | Escena #31 OK — [125.60s .. 128.96s] (3360000 us) — En su lugar, lo mira con una tristeza que Flash no comprende.
+2026-09-23 00:40:54 | INFO     | Escena #32 OK — [129.28s .. 132.16s] (2880000 us) — Porque Peter sabe que Flash también morirá si él no cambia el guion.
+2026-09-23 00:40:54 | INFO     | Escena #33 OK — [132.40s .. 136.24s] (3840000 us) — Esa noche, antes de dormir, escribe una lista de nombres que debe salvar.
+2026-09-23 00:40:54 | INFO     | Escena #34 OK — [136.72s .. 141.76s] (5040000 us) — La lista incluye a Ben, a May, a MJ, a Gwen, a Harry y a Tony Stark.
+2026-09-23 00:40:54 | INFO     | Escena #35 OK — [142.32s .. 146.00s] (3680000 us) — Peter usa sus recuerdos para desmantelar el imperio de Kingpin en una sola noche.
+2026-09-23 00:40:54 | INFO     | Escena #36 OK — [146.40s .. 150.96s] (4560000 us) — Conoce cada escondite, cada soborno, cada ruta de dinero antes de que existan.
+2026-09-23 00:40:54 | INFO     | Escena #37 OK — [151.20s .. 156.16s] (4960000 us) — Fisk cae, pero el poder vacío atrae a Silvio Manfredi, también conocido como Silvermane.
+2026-09-23 00:40:54 | INFO     | Escena #38 OK — [156.32s .. 160.24s] (3920000 us) — Silvermane intenta tomar el control, y Peter lo enfrenta en una azotea lluviosa.
+2026-09-23 00:40:54 | INFO     | Escena #39 OK — [160.56s .. 165.04s] (4480000 us) — Muévete, viejo, dice Peter, mientras esquiva balas con una calma imposible.
+2026-09-23 00:40:54 | INFO     | Escena #40 OK — [165.68s .. 168.88s] (3200000 us) — El villano dispara, pero Peter ya sabe dónde estará cada bala.
+2026-09-23 00:40:54 | INFO     | Escena #41 OK — [169.44s .. 173.60s] (4160000 us) — Lo derriba con un puñetazo, y el impacto agrieta el concreto bajo sus pies.
+2026-09-23 00:40:54 | INFO     | Escena #42 OK — [173.76s .. 178.48s] (4720000 us) — Sin embargo, esa victoria tiene un precio: Norman Osborn observa desde las sombras.
+2026-09-23 00:40:54 | INFO     | Escena #43 OK — [178.88s .. 182.80s] (3920000 us) — Norman no es aún el Duende Verde, pero reconoce un patrón en los ataques.
+2026-09-23 00:40:54 | INFO     | Escena #44 OK — [183.12s .. 186.64s] (3520000 us) — Fast forward to the night when Peter evita el robo que crea al Duende.
+2026-09-23 00:40:54 | INFO     | Escena #45 OK — [187.04s .. 190.64s] (3600000 us) — Norman nunca cae en la fórmula, así que el Duende Verde jamás nace.
+2026-09-23 00:40:54 | INFO     | Escena #46 OK — [191.20s .. 195.12s] (3920000 us) — Pero el odio de Norman busca otro camino, y encuentra a un simbionte caído.
+2026-09-23 00:40:54 | INFO     | Escena #47 OK — [195.52s .. 199.20s] (3680000 us) — Peter siente un escalofrío cuando el cielo sobre Nueva York se vuelve negro.
+2026-09-23 00:40:54 | INFO     | Escena #48 OK — [199.44s .. 203.68s] (4240000 us) — Un meteorito atraviesa la atmósfera y cae en el puerto, brillando con vida.
+2026-09-23 00:40:54 | INFO     | Escena #49 OK — [204.48s .. 207.84s] (3360000 us) — De él emerge Venom, pero no el Venom que Peter recuerda.
+2026-09-23 00:40:54 | INFO     | Escena #50 OK — [208.32s .. 212.48s] (4160000 us) — Este simbionte es más antiguo, y ha sentido el sabor de una memoria multiversal.
+2026-09-23 00:40:54 | INFO     | Escena #51 OK — [213.04s .. 216.64s] (3600000 us) — Te conozco, susurra la criatura, has vivido esto muchas veces.
+2026-09-23 00:40:54 | INFO     | Escena #52 OK — [216.96s .. 220.56s] (3600000 us) — Peter retrocede, porque por primera vez no sabe qué va a pasar.
+2026-09-23 00:40:54 | INFO     | Escena #53 OK — [221.04s .. 226.00s] (4960000 us) — Mientras tanto, en otra dimensión, un cazador llamado Morlun huele la anomalía.
+2026-09-23 00:40:54 | INFO     | Escena #54 OK — [226.64s .. 230.56s] (3920000 us) — Morlun se alimenta de tótems araña, y este Peter brilla como un faro.
+2026-09-23 00:40:54 | INFO     | Escena #55 OK — [230.72s .. 234.72s] (4000000 us) — El cazador cruza el multiverso, pisando realidades como si fueran cristales.
+2026-09-23 00:40:54 | INFO     | Escena #56 OK — [235.44s .. 238.80s] (3360000 us) — Peter intenta prepararse, pero sus recuerdos no contienen a Morlun.
+2026-09-23 00:40:54 | INFO     | Escena #57 OK — [239.28s .. 244.56s] (5280000 us) — Porque en su vida original, Morlun nunca llegó a Nueva York, ahora sí, y la ciudad no está lista.
+2026-09-23 00:40:54 | INFO     | Escena #58 OK — [244.88s .. 249.36s] (4480000 us) — Peter intenta comunicarse con el simbionte, pero la criatura solo responde con hambre.
+2026-09-23 00:40:54 | INFO     | Escena #59 OK — [249.92s .. 254.40s] (4480000 us) — Venom ataca Times Square, y Peter lo enfrenta mientras las pantallas explotan.
+2026-09-23 00:40:54 | INFO     | Escena #60 OK — [254.80s .. 258.56s] (3760000 us) — El simbionte esquiva sus telarañas y le susurra los nombres de sus seres queridos.
+2026-09-23 00:40:54 | INFO     | Escena #61 OK — [258.88s .. 264.96s] (6080000 us) — Ben, dice Venom, May, dice, MJ, dice, y Peter siente un escalofrío.
+2026-09-23 00:40:54 | INFO     | Escena #62 OK — [265.28s .. 270.16s] (4880000 us) — Peter usa un generador eléctrico para separarlos, pero Venom escapa hacia las alcantarillas.
+2026-09-23 00:40:54 | INFO     | Escena #63 OK — [270.64s .. 274.16s] (3520000 us) — Mientras tanto, Silvermane contrata a un mercenario llamado Taskmaster.
+2026-09-23 00:40:54 | INFO     | Escena #64 OK — [274.24s .. 278.32s] (4080000 us) — Taskmaster copia los movimientos de Peter, pero no puede copiar sus recuerdos.
+2026-09-23 00:40:54 | INFO     | Escena #65 OK — [279.04s .. 283.12s] (4080000 us) — Peter lo derrota en un almacén, rompiendo su espada con las manos desnudas.
+2026-09-23 00:40:54 | INFO     | Escena #66 OK — [283.60s .. 288.16s] (4560000 us) — Sin embargo, cada victoria hace que la anomalía brille más fuerte en el multiverso.
+2026-09-23 00:40:54 | INFO     | Escena #67 OK — [288.48s .. 292.56s] (4080000 us) — Morlun ya no está lejos: ha devorado tres realidades y viene por la cuarta.
+2026-09-23 00:40:54 | INFO     | Escena #68 OK — [292.96s .. 297.44s] (4480000 us) — Peter corre hacia el puerto, pero Morlun ya está allí, inmóvil y sonriente.
+2026-09-23 00:40:54 | INFO     | Escena #69 OK — [298.40s .. 302.64s] (4240000 us) — Eres una nota discordante, dice Morlun, y las notas discordantes se borran.
+2026-09-23 00:40:54 | INFO     | Escena #70 OK — [302.72s .. 306.24s] (3520000 us) — Peter lanza una telaraña, pero Morlun la rompe con un solo dedo.
+2026-09-23 00:40:54 | INFO     | Escena #71 OK — [306.72s .. 310.88s] (4160000 us) — El cazador golpea, y Peter cruza tres contenedores antes de detenerse.
+2026-09-23 00:40:54 | INFO     | Escena #72 OK — [311.44s .. 315.04s] (3600000 us) — Sangre en la boca, piernas temblorosas, pero se levanta otra vez.
+2026-09-23 00:40:54 | INFO     | Escena #73 OK — [315.60s .. 318.16s] (2560000 us) — Morlun lo agarra del cuello y comienza a drenar su vida.
+2026-09-23 00:40:54 | INFO     | Escena #74 OK — [318.40s .. 321.68s] (3280000 us) — Peter siente cómo sus recuerdos se deshilachan como cintas viejas.
+2026-09-23 00:40:54 | INFO     | Escena #75 OK — [322.56s .. 327.84s] (5280000 us) — Ve a Ben vivo, ve a May sonriendo, ve a MJ alejándose para siempre.
+2026-09-23 00:40:54 | INFO     | Escena #76 OK — [328.72s .. 332.32s] (3600000 us) — Entonces comprende la verdad: su renacimiento no fue un regalo.
+2026-09-23 00:40:54 | INFO     | Escena #77 OK — [332.80s .. 336.16s] (3360000 us) — Cada vez que cambia el pasado, el multiverso exige una corrección.
+2026-09-23 00:40:54 | INFO     | Escena #78 OK — [336.48s .. 339.84s] (3360000 us) — Morlun no es el villano; es el anticuerpo de una realidad herida.
+2026-09-23 00:40:54 | INFO     | Escena #79 OK — [340.32s .. 343.52s] (3200000 us) — Peter puede salvarlos a todos, pero solo si deja de ser quien es.
+2026-09-23 00:40:54 | INFO     | Escena #80 OK — [344.32s .. 347.84s] (3520000 us) — Si conserva sus memorias, Morlun seguirá cazándolo por toda la eternidad.
+2026-09-23 00:40:54 | INFO     | Escena #81 OK — [348.40s .. 351.04s] (2640000 us) — Si las pierde, volverá a ser el chico que aprende a golpes.
+2026-09-23 00:40:54 | INFO     | Escena #82 OK — [351.12s .. 354.72s] (3600000 us) — La contradicción lo parte en dos: ¿es el héroe o el error?
+2026-09-23 00:40:54 | INFO     | Escena #83 OK — [355.28s .. 359.28s] (4000000 us) — Ben vive gracias a él, pero cada latido de Ben es una deuda cósmica.
+2026-09-23 00:40:54 | INFO     | Escena #84 OK — [359.68s .. 363.12s] (3440000 us) — Peter mira a Morlun y entiende que la victoria tendrá sabor a olvido.
+2026-09-23 00:40:54 | INFO     | Escena #85 OK — [363.36s .. 367.20s] (3840000 us) — Peter intenta encontrar otra salida, pero cada opción termina con alguien muerto.
+2026-09-23 00:40:54 | INFO     | Escena #86 OK — [367.60s .. 371.44s] (3840000 us) — Si deja que Ben muera, el universo se cura, pero su alma se rompe.
+2026-09-23 00:40:54 | INFO     | Escena #87 OK — [371.92s .. 377.12s] (5200000 us) — Si salva a Ben, Morlun devorará a May, a MJ y a miles de inocentes.
+2026-09-23 00:40:54 | INFO     | Escena #88 OK — [377.20s .. 380.48s] (3280000 us) — La balanza no tiene un lado limpio, solo un sacrificio distinto.
+2026-09-23 00:40:54 | INFO     | Escena #89 OK — [380.96s .. 384.40s] (3440000 us) — Peter llora bajo la lluvia, y por primera vez odia tener memoria.
+2026-09-23 00:40:54 | INFO     | Escena #90 OK — [384.56s .. 388.56s] (4000000 us) — La batalla final ocurre sobre el puente Queensboro, bajo una lluvia eléctrica.
+2026-09-23 00:40:54 | INFO     | Escena #91 OK — [389.20s .. 392.64s] (3440000 us) — Morlun corre hacia Peter, y cada paso rompe el asfalto como papel.
+2026-09-23 00:40:54 | INFO     | Escena #92 OK — [393.28s .. 397.36s] (4080000 us) — Peter salta, dispara telarañas y usa los autos como escudos improvisados.
+2026-09-23 00:40:54 | INFO     | Escena #93 OK — [398.00s .. 401.12s] (3120000 us) — Ya viviste esto, grita Morlun, pero nunca contra mí.
+2026-09-23 00:40:54 | INFO     | Escena #94 OK — [401.28s .. 404.32s] (3040000 us) — Peter responde con un puñetazo que brilla con fuerza de tótem.
+2026-09-23 00:40:54 | INFO     | Escena #95 OK — [404.80s .. 408.40s] (3600000 us) — El impacto lanza a Morlun contra una torre, pero el cazador se ríe.
+2026-09-23 00:40:54 | INFO     | Escena #96 OK — [408.80s .. 412.32s] (3520000 us) — Morlun se levanta, y su piel absorbe la electricidad de la tormenta.
+2026-09-23 00:40:54 | INFO     | Escena #97 OK — [412.72s .. 415.36s] (2640000 us) — Peter recuerda a todos los Spider-Man que fueron antes que él.
+2026-09-23 00:40:54 | INFO     | Escena #98 OK — [415.52s .. 420.08s] (4560000 us) — Recuerda a Gwen, a Miles, a Miguel, a Peni, a Noir, a Ham.
+2026-09-23 00:40:54 | INFO     | Escena #99 OK — [420.48s .. 424.16s] (3680000 us) — Sus memorias se convierten en fuerza, y su cuerpo brilla con luz dorada.
+2026-09-23 00:40:54 | INFO     | Escena #100 OK — [424.48s .. 428.16s] (3680000 us) — Con gran poder, susurra Peter, también viene un gran precio.
+2026-09-23 00:40:54 | INFO     | Escena #101 OK — [428.72s .. 432.24s] (3520000 us) — Lanza un último ataque, un choque de voluntades que parte el cielo.
+2026-09-23 00:40:54 | INFO     | Escena #102 OK — [432.88s .. 436.96s] (4080000 us) — Morlun grita, pero no cae: se aferra a la memoria de Peter.
+2026-09-23 00:40:54 | INFO     | Escena #103 OK — [437.60s .. 441.20s] (3600000 us) — Peter lo sostiene, sintiendo cómo sus recuerdos se queman uno por uno.
+2026-09-23 00:40:54 | INFO     | Escena #104 OK — [441.68s .. 443.60s] (1920000 us) — Ve la cara de Ben, y la deja ir.
+2026-09-23 00:40:54 | INFO     | Escena #105 OK — [444.32s .. 446.32s] (2000000 us) — Ve la cara de May, y la deja ir.
+2026-09-23 00:40:54 | INFO     | Escena #106 OK — [446.88s .. 449.44s] (2560000 us) — Ve la cara de MJ, y por un segundo se niega.
+2026-09-23 00:40:54 | INFO     | Escena #107 OK — [449.76s .. 454.00s] (4240000 us) — Pero entonces mira a la ciudad, y sabe que Nueva York necesita a Spider-Man.
+2026-09-23 00:40:54 | INFO     | Escena #108 OK — [454.24s .. 457.20s] (2960000 us) — No al hombre que recuerda, sino al héroe que elige.
+2026-09-23 00:40:54 | INFO     | Escena #109 OK — [457.84s .. 461.76s] (3920000 us) — Peter suelta todo, y una onda de luz borra a Morlun del puente.
+2026-09-23 00:40:54 | INFO     | Escena #110 OK — [462.16s .. 466.32s] (4160000 us) — La tormenta se detiene, y Peter cae de rodillas sobre el asfalto mojado.
+2026-09-23 00:40:54 | INFO     | Escena #111 OK — [467.04s .. 469.52s] (2480000 us) — No recuerda por qué está allí, ni por qué llora.
+2026-09-23 00:40:54 | INFO     | Escena #112 OK — [470.08s .. 474.64s] (4560000 us) — Solo sabe que alguien importante acaba de salvarlo, y que debe seguir adelante.
+2026-09-23 00:40:54 | INFO     | Escena #113 OK — [475.20s .. 478.56s] (3360000 us) — Pero antes de perder el último recuerdo, Peter ve una imagen clara.
+2026-09-23 00:40:54 | INFO     | Escena #114 OK — [479.28s .. 483.60s] (4320000 us) — Ve a Ben sonriendo en una cocina, vivo, real, orgulloso de él.
+2026-09-23 00:40:54 | INFO     | Escena #115 OK — [484.00s .. 486.72s] (2720000 us) — Esa imagen le da la fuerza para soltar todo sin gritar.
+2026-09-23 00:40:54 | INFO     | Escena #116 OK — [487.28s .. 491.04s] (3760000 us) — Morlun se desintegra en cenizas azules, y el puente queda en silencio.
+2026-09-23 00:40:54 | INFO     | Escena #117 OK — [491.44s .. 494.96s] (3520000 us) — Peter cae, y su máscara se llena de lluvia y lágrimas invisibles.
+2026-09-23 00:40:54 | INFO     | Escena #118 OK — [495.36s .. 498.88s] (3520000 us) — El universo se estabiliza, pero la línea temporal ya no es la misma.
+2026-09-23 00:40:54 | INFO     | Escena #119 OK — [499.12s .. 502.96s] (3840000 us) — Ben Parker está vivo, y enseña en una escuela para chicos problemáticos.
+2026-09-23 00:40:54 | INFO     | Escena #120 OK — [503.60s .. 506.32s] (2720000 us) — May vive con él, y a veces siente que olvidó algo importante.
+2026-09-23 00:40:54 | INFO     | Escena #121 OK — [507.28s .. 511.36s] (4080000 us) — Peter Parker asiste a Midtown, saca buenas notas y sonríe sin saber por qué.
+2026-09-23 00:40:54 | INFO     | Escena #122 OK — [511.60s .. 515.44s] (3840000 us) — Cada noche sueña con una chica de pelo rojo y una azotea bajo la lluvia.
+2026-09-23 00:40:54 | INFO     | Escena #123 OK — [516.00s .. 519.92s] (3920000 us) — No sabe su nombre, pero despierta con el pecho apretado y los ojos húmedos.
+2026-09-23 00:40:54 | INFO     | Escena #124 OK — [520.32s .. 523.76s] (3440000 us) — En su mochila guarda un traje rojo y azul que no recuerda haber cosido.
+2026-09-23 00:40:54 | INFO     | Escena #125 OK — [524.00s .. 527.12s] (3120000 us) — Cuando escucha sirenas, su cuerpo se mueve antes que su mente.
+2026-09-23 00:40:54 | INFO     | Escena #126 OK — [527.76s .. 530.96s] (3200000 us) — Salva a un niño de un auto en llamas y desaparece entre las sombras.
+2026-09-23 00:40:54 | INFO     | Escena #127 OK — [531.36s .. 535.36s] (4000000 us) — La gente lo llama Spider-Man, y él acepta el nombre como un instinto.
+2026-09-23 00:40:54 | INFO     | Escena #128 OK — [535.84s .. 540.24s] (4400000 us) — Norman Osborn nunca se convirtió en el Duende Verde, pero vigila desde lejos.
+2026-09-23 00:40:54 | INFO     | Escena #129 OK — [540.32s .. 544.08s] (3760000 us) — Venom sigue en las alcantarillas, esperando el momento correcto para atacar.
+2026-09-23 00:40:54 | INFO     | Escena #130 OK — [544.56s .. 548.72s] (4160000 us) — Morlun ha sido borrado, pero otros cazadores han sentido el eco de su caída.
+2026-09-23 00:40:54 | INFO     | Escena #131 OK — [549.12s .. 552.56s] (3440000 us) — Peter perdió sus memorias, y con ellas perdió la certeza de lo que viene.
+2026-09-23 00:40:54 | INFO     | Escena #132 OK — [553.04s .. 556.56s] (3520000 us) — Ganó una segunda oportunidad para Ben, para May, para la ciudad.
+2026-09-23 00:40:54 | INFO     | Escena #133 OK — [557.28s .. 561.68s] (4400000 us) — Pero pagó con la única cosa que lo hacía diferente: saber cuánto podía perder.
+2026-09-23 00:40:54 | INFO     | Escena #134 OK — [562.08s .. 565.60s] (3520000 us) — Ahora es más rápido, más fuerte, pero también más humano que nunca.
+2026-09-23 00:40:54 | INFO     | Escena #135 OK — [566.16s .. 569.20s] (3040000 us) — Porque el héroe no es el que recuerda, sino el que elige levantarse.
+2026-09-23 00:40:54 | INFO     | Escena #136 OK — [569.84s .. 573.60s] (3760000 us) — Y en algún lugar del multiverso, otra línea temporal acaba de nacer.
+2026-09-23 00:40:54 | INFO     | Escena #137 OK — [574.08s .. 577.76s] (3680000 us) — En esa otra línea, Peter Parker nunca muere, y nunca renace.
+2026-09-23 00:40:54 | INFO     | Escena #138 OK — [578.08s .. 581.04s] (2960000 us) — En esa otra línea, Ben Parker muere, y Peter aprende la lección.
+2026-09-23 00:40:54 | INFO     | Escena #139 OK — [581.44s .. 584.72s] (3280000 us) — Pero en esta línea, Peter olvidó la lección y conserva el instinto.
+2026-09-23 00:40:54 | INFO     | Escena #140 OK — [584.96s .. 588.96s] (4000000 us) — Cada noche, cuando salta entre edificios, siente un eco de algo perdido.
+2026-09-23 00:40:54 | INFO     | Escena #141 OK — [589.68s .. 593.68s] (4000000 us) — A veces, al ver a MJ, su corazón se acelera sin explicación.
+2026-09-23 00:40:54 | INFO     | Escena #142 OK — [594.16s .. 597.52s] (3360000 us) — Ella lo mira, sonríe, y por un segundo él cree recordar.
+2026-09-23 00:40:54 | INFO     | Escena #143 OK — [597.92s .. 604.72s] (6800000 us) — Luego el momento pasa, y Spider-Man sigue balanceándose hacia el peligro, porque algunas historias están destinadas a repetirse en silencio.
+2026-09-23 00:40:54 | INFO     | Escena #144 OK — [605.36s .. 625.52s] (20160000 us) — Si esta historia te atrapó, suscríbete y cuéntame qué habrías hecho tú. ¿Habrías sacrificado tus recuerdos para salvar a la gente que amas? ¿O habrías conservado tu poder y dejado que el universo pagara el precio? La próxima línea temporal hará que esta parezca un simple ensayo. Esta línea temporal ha sido archivada. Soy Alex, y esto fue Nexus Paradoja.
+2026-09-23 00:40:54 | INFO     | Escenas sincronizadas: 144/144.
+2026-09-23 00:40:54 | INFO     | Paso 3/5 — Preparando proyecto CapCut (clone + edit)...
+2026-09-23 00:40:54 | INFO     | Backup de la plantilla guardado en D:\capcut-auto\backups\20260923_004054_242755
+2026-09-23 00:40:54 | INFO     | Esquema de la plantilla volcado a D:\capcut-auto\logs\schema_plantilla.json
+2026-09-23 00:40:54 | INFO     | Paso 4/5 — Generando proyecto...
+2026-09-23 00:40:54 | INFO     | Proyecto se creará en: D:\YOUTUBE AUTOMATIZADO\CaptCut\CapCut Drafts\hola
+2026-09-23 00:40:55 | INFO     | draft_content.json escrito también en D:\YOUTUBE AUTOMATIZADO\CaptCut\CapCut Drafts\hola\Timelines\504B9E4F-3479-463d-9794-8E0E8C434CF1
+2026-09-23 00:40:55 | INFO     | draft_content.json generado con 2 pistas de foto + 1 de audio.
+2026-09-23 00:40:55 | INFO     | Proyecto generado con 2 pistas / 145 segmentos.
+2026-09-23 00:40:55 | INFO     | Esquema de la plantilla volcado a D:\capcut-auto\logs\schema_plantilla_full.json
+2026-09-23 00:40:55 | INFO     | Backup de la plantilla guardado en D:\capcut-auto\backups\20260923_004055_210419
+2026-09-23 00:40:55 | INFO     | PROYECTO GENERADO: D:\YOUTUBE AUTOMATIZADO\CaptCut\CapCut Drafts\hola
+2026-09-23 00:40:55 | INFO     | Paso 5/5 — ✔ Proyecto creado en: D:\YOUTUBE AUTOMATIZADO\CaptCut\CapCut Drafts\hola
+2026-09-23 00:40:55 | INFO     | IMPORTANTE: cierra la app antes de abrir CapCut.
+2026-09-23 00:46:59 | INFO     | Plantillas detectadas en drafts: 1.PLANTILLA, 0921, AutosyncVisualTest, hola, VIDEO 1 #1, VIDEO 2 #2, VIDEO 3 #16
+2026-09-23 00:46:59 | INFO     | Detección · Audio elegido: guion.wav (score 13) — descartados: — — excluidos por nombre: —
+2026-09-23 00:46:59 | INFO     | Detección · Archivo de escenas elegido: escenas.txt (144 escenas, score 19).
+2026-09-23 00:46:59 | INFO     | Detección · Carpeta de imágenes: escenas 2 (144 archivos).
+2026-09-23 00:47:04 | INFO     | Detección · Audio elegido: guion.wav (score 13) — descartados: — — excluidos por nombre: —
+2026-09-23 00:47:04 | INFO     | Detección · Archivo de escenas elegido: escenas.txt (144 escenas, score 19).
+2026-09-23 00:47:04 | INFO     | Detección · Carpeta de imágenes: escenas 2 (144 archivos).
+2026-09-23 00:47:16 | INFO     | == CapCut Auto — inicio de generación ==
+2026-09-23 00:47:16 | INFO     | Plantilla : D:\YOUTUBE AUTOMATIZADO\CaptCut\CapCut Drafts\1.PLANTILLA
+2026-09-23 00:47:16 | INFO     | Audio     : D:\YOUTUBE AUTOMATIZADO\1.historias hipoteticas\VIDEO\VIDEO_1\guion.wav
+2026-09-23 00:47:16 | INFO     | Escenas   : D:\YOUTUBE AUTOMATIZADO\1.historias hipoteticas\VIDEO\VIDEO_1\escenas.txt
+2026-09-23 00:47:16 | INFO     | Imágenes  : 144 archivos
+2026-09-23 00:47:16 | INFO     | Nombre    : nexus
+2026-09-23 00:47:16 | INFO     | Paso 1/5 — Preparando alineación (CrispASR + modelo español)...
+2026-09-23 00:47:16 | INFO     | Alineando audio con el guion (144 lineas)...
+2026-09-23 00:52:22 | INFO     | Alineacion completada -> D:\capcut-auto\cache\alineacion_guion.srt (144 cues).
+2026-09-23 00:52:22 | INFO     | Alineación completada: 144 cues (144 líneas).
+2026-09-23 00:52:22 | INFO     | Duración total del audio: 625520000 us (625.52 s).
+2026-09-23 00:52:22 | INFO     | Paso 2/5 — Sincronizando escenas con el SRT alineado...
+2026-09-23 00:52:22 | INFO     | Escena #1 OK — [0.00s .. 4.00s] (4000000 us) — ¿Qué pasaría si Spider-Man renaciera con todas sus memorias? Imagina esto.
+2026-09-23 00:52:22 | INFO     | Escena #2 OK — [4.40s .. 8.72s] (4320000 us) — Peter Parker muere solo tras salvar Nueva York, y despierta quince años otra vez.
+2026-09-23 00:52:22 | INFO     | Escena #3 OK — [9.20s .. 13.04s] (3840000 us) — El Punto de Divergencia no es la araña, sino el recuerdo completo de su muerte.
+2026-09-23 00:52:22 | INFO     | Escena #4 OK — [13.36s .. 17.36s] (4000000 us) — Peter sabe lo que viene, y esa certeza rompe el destino antes de que ocurra.
+2026-09-23 00:52:22 | INFO     | Escena #5 OK — [17.92s .. 21.28s] (3360000 us) — Pero salvar a todos podría costarle algo que ni siquiera puede imaginar.
+2026-09-23 00:52:22 | INFO     | Escena #6 OK — [21.76s .. 24.48s] (2720000 us) — Esta es la historia de un héroe que renace sabiendo demasiado.
+2026-09-23 00:52:22 | INFO     | Escena #7 OK — [24.64s .. 28.48s] (3840000 us) — Peter despierta con el corazón acelerado y reconoce cada grieta del techo.
+2026-09-23 00:52:22 | INFO     | Escena #8 OK — [29.04s .. 32.48s] (3440000 us) — Sabe que la araña lo morderá en unas horas, así que decide adelantarse.
+2026-09-23 00:52:22 | INFO     | Escena #9 OK — [32.96s .. 36.00s] (3040000 us) — Corre por los pasillos de Midtown y llega al laboratorio antes que nadie.
+2026-09-23 00:52:22 | INFO     | Escena #10 OK — [36.48s .. 41.12s] (4640000 us) — Cuando la araña desciende, Peter no huye: extiende la mano y deja que lo muerda.
+2026-09-23 00:52:22 | INFO     | Escena #11 OK — [41.60s .. 44.88s] (3280000 us) — El veneno quema sus venas, pero su mente ya conoce el dolor.
+2026-09-23 00:52:22 | INFO     | Escena #12 OK — [45.44s .. 49.68s] (4240000 us) — Al despertar, sus sentidos explotan y el mundo se vuelve demasiado ruidoso.
+2026-09-23 00:52:22 | INFO     | Escena #13 OK — [49.84s .. 53.20s] (3360000 us) — Trepa paredes con una seguridad que antes le habría tomado meses dominar.
+2026-09-23 00:52:22 | INFO     | Escena #14 OK — [54.08s .. 57.52s] (3440000 us) — Lanza una telaraña y se balancea entre edificios sin dudar ni un segundo.
+2026-09-23 00:52:22 | INFO     | Escena #15 OK — [58.48s .. 62.32s] (3840000 us) — Pero hay algo extraño: recuerda peleas que todavía no han ocurrido.
+2026-09-23 00:52:22 | INFO     | Escena #16 OK — [62.48s .. 66.88s] (4400000 us) — Recuerda a MJ, a May, a Tony, y también recuerda cómo todos terminan.
+2026-09-23 00:52:22 | INFO     | Escena #17 OK — [67.36s .. 70.96s] (3600000 us) — Esa noche, en lugar de perseguir al ladrón, va directo al callejón.
+2026-09-23 00:52:22 | INFO     | Escena #18 OK — [71.28s .. 74.48s] (3200000 us) — Ben está a punto de recibir un disparo cuando Peter detiene la bala.
+2026-09-23 00:52:22 | INFO     | Escena #19 OK — [74.80s .. 78.72s] (3920000 us) — El ladrón cae, y Ben mira a su sobrino con ojos de asombro y miedo.
+2026-09-23 00:52:22 | INFO     | Escena #20 OK — [78.72s .. 82.56s] (3840000 us) — ¿Quién eres? pregunta Ben, mientras Peter esconde la mano temblorosa.
+2026-09-23 00:52:22 | INFO     | Escena #21 OK — [83.04s .. 86.88s] (3840000 us) — No soy quien crees, responde Peter, pero ya no voy a dejar que mueras.
+2026-09-23 00:52:22 | INFO     | Escena #22 OK — [87.28s .. 91.28s] (4000000 us) — La primera consecuencia llega rápido: sin la muerte de Ben, Peter no duda.
+2026-09-23 00:52:22 | INFO     | Escena #23 OK — [91.52s .. 95.52s] (4000000 us) — La segunda llega más rápido: su cuerpo recuerda heridas que aún no existen.
+2026-09-23 00:52:22 | INFO     | Escena #24 OK — [96.00s .. 100.16s] (4160000 us) — La tercera es la peor: el universo nota que alguien está reescribiendo su guion.
+2026-09-23 00:52:22 | INFO     | Escena #25 OK — [100.56s .. 108.40s] (7840000 us) — Peter sonríe, pero en las sombras algo antiguo abre los ojos, porque un Spider-Man que renace con memorias no es un héroe, es una anomalía.
+2026-09-23 00:52:22 | INFO     | Escena #26 OK — [108.72s .. 110.40s] (1680000 us) — Y las anomalías atraen cazadores.
+2026-09-23 00:52:22 | INFO     | Escena #27 OK — [110.96s .. 114.16s] (3200000 us) — Peter también recuerda el sabor metálico de la derrota en la azotea.
+2026-09-23 00:52:22 | INFO     | Escena #28 OK — [114.64s .. 117.60s] (2960000 us) — Recuerda cómo el Duende lanza una bomba que nunca deja de arder.
+2026-09-23 00:52:22 | INFO     | Escena #29 OK — [117.84s .. 120.64s] (2800000 us) — Recuerda la sangre de Gwen en sus manos y el silencio después.
+2026-09-23 00:52:22 | INFO     | Escena #30 OK — [121.20s .. 125.20s] (4000000 us) — Por eso, cuando ve a Flash Thompson burlarse, no reacciona con rabia.
+2026-09-23 00:52:22 | INFO     | Escena #31 OK — [125.60s .. 128.96s] (3360000 us) — En su lugar, lo mira con una tristeza que Flash no comprende.
+2026-09-23 00:52:22 | INFO     | Escena #32 OK — [129.28s .. 132.16s] (2880000 us) — Porque Peter sabe que Flash también morirá si él no cambia el guion.
+2026-09-23 00:52:22 | INFO     | Escena #33 OK — [132.40s .. 136.24s] (3840000 us) — Esa noche, antes de dormir, escribe una lista de nombres que debe salvar.
+2026-09-23 00:52:22 | INFO     | Escena #34 OK — [136.72s .. 141.76s] (5040000 us) — La lista incluye a Ben, a May, a MJ, a Gwen, a Harry y a Tony Stark.
+2026-09-23 00:52:22 | INFO     | Escena #35 OK — [142.32s .. 146.00s] (3680000 us) — Peter usa sus recuerdos para desmantelar el imperio de Kingpin en una sola noche.
+2026-09-23 00:52:22 | INFO     | Escena #36 OK — [146.40s .. 150.96s] (4560000 us) — Conoce cada escondite, cada soborno, cada ruta de dinero antes de que existan.
+2026-09-23 00:52:22 | INFO     | Escena #37 OK — [151.20s .. 156.16s] (4960000 us) — Fisk cae, pero el poder vacío atrae a Silvio Manfredi, también conocido como Silvermane.
+2026-09-23 00:52:22 | INFO     | Escena #38 OK — [156.32s .. 160.24s] (3920000 us) — Silvermane intenta tomar el control, y Peter lo enfrenta en una azotea lluviosa.
+2026-09-23 00:52:22 | INFO     | Escena #39 OK — [160.56s .. 165.04s] (4480000 us) — Muévete, viejo, dice Peter, mientras esquiva balas con una calma imposible.
+2026-09-23 00:52:22 | INFO     | Escena #40 OK — [165.68s .. 168.88s] (3200000 us) — El villano dispara, pero Peter ya sabe dónde estará cada bala.
+2026-09-23 00:52:22 | INFO     | Escena #41 OK — [169.44s .. 173.60s] (4160000 us) — Lo derriba con un puñetazo, y el impacto agrieta el concreto bajo sus pies.
+2026-09-23 00:52:22 | INFO     | Escena #42 OK — [173.76s .. 178.48s] (4720000 us) — Sin embargo, esa victoria tiene un precio: Norman Osborn observa desde las sombras.
+2026-09-23 00:52:22 | INFO     | Escena #43 OK — [178.88s .. 182.80s] (3920000 us) — Norman no es aún el Duende Verde, pero reconoce un patrón en los ataques.
+2026-09-23 00:52:22 | INFO     | Escena #44 OK — [183.12s .. 186.64s] (3520000 us) — Fast forward to the night when Peter evita el robo que crea al Duende.
+2026-09-23 00:52:22 | INFO     | Escena #45 OK — [187.04s .. 190.64s] (3600000 us) — Norman nunca cae en la fórmula, así que el Duende Verde jamás nace.
+2026-09-23 00:52:22 | INFO     | Escena #46 OK — [191.20s .. 195.12s] (3920000 us) — Pero el odio de Norman busca otro camino, y encuentra a un simbionte caído.
+2026-09-23 00:52:22 | INFO     | Escena #47 OK — [195.52s .. 199.20s] (3680000 us) — Peter siente un escalofrío cuando el cielo sobre Nueva York se vuelve negro.
+2026-09-23 00:52:22 | INFO     | Escena #48 OK — [199.44s .. 203.68s] (4240000 us) — Un meteorito atraviesa la atmósfera y cae en el puerto, brillando con vida.
+2026-09-23 00:52:22 | INFO     | Escena #49 OK — [204.48s .. 207.84s] (3360000 us) — De él emerge Venom, pero no el Venom que Peter recuerda.
+2026-09-23 00:52:22 | INFO     | Escena #50 OK — [208.32s .. 212.48s] (4160000 us) — Este simbionte es más antiguo, y ha sentido el sabor de una memoria multiversal.
+2026-09-23 00:52:22 | INFO     | Escena #51 OK — [213.04s .. 216.64s] (3600000 us) — Te conozco, susurra la criatura, has vivido esto muchas veces.
+2026-09-23 00:52:22 | INFO     | Escena #52 OK — [216.96s .. 220.56s] (3600000 us) — Peter retrocede, porque por primera vez no sabe qué va a pasar.
+2026-09-23 00:52:22 | INFO     | Escena #53 OK — [221.04s .. 226.00s] (4960000 us) — Mientras tanto, en otra dimensión, un cazador llamado Morlun huele la anomalía.
+2026-09-23 00:52:22 | INFO     | Escena #54 OK — [226.64s .. 230.56s] (3920000 us) — Morlun se alimenta de tótems araña, y este Peter brilla como un faro.
+2026-09-23 00:52:22 | INFO     | Escena #55 OK — [230.72s .. 234.72s] (4000000 us) — El cazador cruza el multiverso, pisando realidades como si fueran cristales.
+2026-09-23 00:52:22 | INFO     | Escena #56 OK — [235.44s .. 238.80s] (3360000 us) — Peter intenta prepararse, pero sus recuerdos no contienen a Morlun.
+2026-09-23 00:52:22 | INFO     | Escena #57 OK — [239.28s .. 244.56s] (5280000 us) — Porque en su vida original, Morlun nunca llegó a Nueva York, ahora sí, y la ciudad no está lista.
+2026-09-23 00:52:22 | INFO     | Escena #58 OK — [244.88s .. 249.36s] (4480000 us) — Peter intenta comunicarse con el simbionte, pero la criatura solo responde con hambre.
+2026-09-23 00:52:22 | INFO     | Escena #59 OK — [249.92s .. 254.40s] (4480000 us) — Venom ataca Times Square, y Peter lo enfrenta mientras las pantallas explotan.
+2026-09-23 00:52:22 | INFO     | Escena #60 OK — [254.80s .. 258.56s] (3760000 us) — El simbionte esquiva sus telarañas y le susurra los nombres de sus seres queridos.
+2026-09-23 00:52:22 | INFO     | Escena #61 OK — [258.88s .. 264.96s] (6080000 us) — Ben, dice Venom, May, dice, MJ, dice, y Peter siente un escalofrío.
+2026-09-23 00:52:22 | INFO     | Escena #62 OK — [265.28s .. 270.16s] (4880000 us) — Peter usa un generador eléctrico para separarlos, pero Venom escapa hacia las alcantarillas.
+2026-09-23 00:52:22 | INFO     | Escena #63 OK — [270.64s .. 274.16s] (3520000 us) — Mientras tanto, Silvermane contrata a un mercenario llamado Taskmaster.
+2026-09-23 00:52:22 | INFO     | Escena #64 OK — [274.24s .. 278.32s] (4080000 us) — Taskmaster copia los movimientos de Peter, pero no puede copiar sus recuerdos.
+2026-09-23 00:52:22 | INFO     | Escena #65 OK — [279.04s .. 283.12s] (4080000 us) — Peter lo derrota en un almacén, rompiendo su espada con las manos desnudas.
+2026-09-23 00:52:22 | INFO     | Escena #66 OK — [283.60s .. 288.16s] (4560000 us) — Sin embargo, cada victoria hace que la anomalía brille más fuerte en el multiverso.
+2026-09-23 00:52:22 | INFO     | Escena #67 OK — [288.48s .. 292.56s] (4080000 us) — Morlun ya no está lejos: ha devorado tres realidades y viene por la cuarta.
+2026-09-23 00:52:22 | INFO     | Escena #68 OK — [292.96s .. 297.44s] (4480000 us) — Peter corre hacia el puerto, pero Morlun ya está allí, inmóvil y sonriente.
+2026-09-23 00:52:22 | INFO     | Escena #69 OK — [298.40s .. 302.64s] (4240000 us) — Eres una nota discordante, dice Morlun, y las notas discordantes se borran.
+2026-09-23 00:52:22 | INFO     | Escena #70 OK — [302.72s .. 306.24s] (3520000 us) — Peter lanza una telaraña, pero Morlun la rompe con un solo dedo.
+2026-09-23 00:52:22 | INFO     | Escena #71 OK — [306.72s .. 310.88s] (4160000 us) — El cazador golpea, y Peter cruza tres contenedores antes de detenerse.
+2026-09-23 00:52:22 | INFO     | Escena #72 OK — [311.44s .. 315.04s] (3600000 us) — Sangre en la boca, piernas temblorosas, pero se levanta otra vez.
+2026-09-23 00:52:22 | INFO     | Escena #73 OK — [315.60s .. 318.16s] (2560000 us) — Morlun lo agarra del cuello y comienza a drenar su vida.
+2026-09-23 00:52:22 | INFO     | Escena #74 OK — [318.40s .. 321.68s] (3280000 us) — Peter siente cómo sus recuerdos se deshilachan como cintas viejas.
+2026-09-23 00:52:22 | INFO     | Escena #75 OK — [322.56s .. 327.84s] (5280000 us) — Ve a Ben vivo, ve a May sonriendo, ve a MJ alejándose para siempre.
+2026-09-23 00:52:22 | INFO     | Escena #76 OK — [328.72s .. 332.32s] (3600000 us) — Entonces comprende la verdad: su renacimiento no fue un regalo.
+2026-09-23 00:52:22 | INFO     | Escena #77 OK — [332.80s .. 336.16s] (3360000 us) — Cada vez que cambia el pasado, el multiverso exige una corrección.
+2026-09-23 00:52:22 | INFO     | Escena #78 OK — [336.48s .. 339.84s] (3360000 us) — Morlun no es el villano; es el anticuerpo de una realidad herida.
+2026-09-23 00:52:22 | INFO     | Escena #79 OK — [340.32s .. 343.52s] (3200000 us) — Peter puede salvarlos a todos, pero solo si deja de ser quien es.
+2026-09-23 00:52:22 | INFO     | Escena #80 OK — [344.32s .. 347.84s] (3520000 us) — Si conserva sus memorias, Morlun seguirá cazándolo por toda la eternidad.
+2026-09-23 00:52:22 | INFO     | Escena #81 OK — [348.40s .. 351.04s] (2640000 us) — Si las pierde, volverá a ser el chico que aprende a golpes.
+2026-09-23 00:52:22 | INFO     | Escena #82 OK — [351.12s .. 354.72s] (3600000 us) — La contradicción lo parte en dos: ¿es el héroe o el error?
+2026-09-23 00:52:22 | INFO     | Escena #83 OK — [355.28s .. 359.28s] (4000000 us) — Ben vive gracias a él, pero cada latido de Ben es una deuda cósmica.
+2026-09-23 00:52:22 | INFO     | Escena #84 OK — [359.68s .. 363.12s] (3440000 us) — Peter mira a Morlun y entiende que la victoria tendrá sabor a olvido.
+2026-09-23 00:52:22 | INFO     | Escena #85 OK — [363.36s .. 367.20s] (3840000 us) — Peter intenta encontrar otra salida, pero cada opción termina con alguien muerto.
+2026-09-23 00:52:22 | INFO     | Escena #86 OK — [367.60s .. 371.44s] (3840000 us) — Si deja que Ben muera, el universo se cura, pero su alma se rompe.
+2026-09-23 00:52:22 | INFO     | Escena #87 OK — [371.92s .. 377.12s] (5200000 us) — Si salva a Ben, Morlun devorará a May, a MJ y a miles de inocentes.
+2026-09-23 00:52:22 | INFO     | Escena #88 OK — [377.20s .. 380.48s] (3280000 us) — La balanza no tiene un lado limpio, solo un sacrificio distinto.
+2026-09-23 00:52:22 | INFO     | Escena #89 OK — [380.96s .. 384.40s] (3440000 us) — Peter llora bajo la lluvia, y por primera vez odia tener memoria.
+2026-09-23 00:52:22 | INFO     | Escena #90 OK — [384.56s .. 388.56s] (4000000 us) — La batalla final ocurre sobre el puente Queensboro, bajo una lluvia eléctrica.
+2026-09-23 00:52:22 | INFO     | Escena #91 OK — [389.20s .. 392.64s] (3440000 us) — Morlun corre hacia Peter, y cada paso rompe el asfalto como papel.
+2026-09-23 00:52:22 | INFO     | Escena #92 OK — [393.28s .. 397.36s] (4080000 us) — Peter salta, dispara telarañas y usa los autos como escudos improvisados.
+2026-09-23 00:52:22 | INFO     | Escena #93 OK — [398.00s .. 401.12s] (3120000 us) — Ya viviste esto, grita Morlun, pero nunca contra mí.
+2026-09-23 00:52:22 | INFO     | Escena #94 OK — [401.28s .. 404.32s] (3040000 us) — Peter responde con un puñetazo que brilla con fuerza de tótem.
+2026-09-23 00:52:22 | INFO     | Escena #95 OK — [404.80s .. 408.40s] (3600000 us) — El impacto lanza a Morlun contra una torre, pero el cazador se ríe.
+2026-09-23 00:52:22 | INFO     | Escena #96 OK — [408.80s .. 412.32s] (3520000 us) — Morlun se levanta, y su piel absorbe la electricidad de la tormenta.
+2026-09-23 00:52:22 | INFO     | Escena #97 OK — [412.72s .. 415.36s] (2640000 us) — Peter recuerda a todos los Spider-Man que fueron antes que él.
+2026-09-23 00:52:22 | INFO     | Escena #98 OK — [415.52s .. 420.08s] (4560000 us) — Recuerda a Gwen, a Miles, a Miguel, a Peni, a Noir, a Ham.
+2026-09-23 00:52:22 | INFO     | Escena #99 OK — [420.48s .. 424.16s] (3680000 us) — Sus memorias se convierten en fuerza, y su cuerpo brilla con luz dorada.
+2026-09-23 00:52:22 | INFO     | Escena #100 OK — [424.48s .. 428.16s] (3680000 us) — Con gran poder, susurra Peter, también viene un gran precio.
+2026-09-23 00:52:22 | INFO     | Escena #101 OK — [428.72s .. 432.24s] (3520000 us) — Lanza un último ataque, un choque de voluntades que parte el cielo.
+2026-09-23 00:52:22 | INFO     | Escena #102 OK — [432.88s .. 436.96s] (4080000 us) — Morlun grita, pero no cae: se aferra a la memoria de Peter.
+2026-09-23 00:52:22 | INFO     | Escena #103 OK — [437.60s .. 441.20s] (3600000 us) — Peter lo sostiene, sintiendo cómo sus recuerdos se queman uno por uno.
+2026-09-23 00:52:22 | INFO     | Escena #104 OK — [441.68s .. 443.60s] (1920000 us) — Ve la cara de Ben, y la deja ir.
+2026-09-23 00:52:22 | INFO     | Escena #105 OK — [444.32s .. 446.32s] (2000000 us) — Ve la cara de May, y la deja ir.
+2026-09-23 00:52:22 | INFO     | Escena #106 OK — [446.88s .. 449.44s] (2560000 us) — Ve la cara de MJ, y por un segundo se niega.
+2026-09-23 00:52:22 | INFO     | Escena #107 OK — [449.76s .. 454.00s] (4240000 us) — Pero entonces mira a la ciudad, y sabe que Nueva York necesita a Spider-Man.
+2026-09-23 00:52:22 | INFO     | Escena #108 OK — [454.24s .. 457.20s] (2960000 us) — No al hombre que recuerda, sino al héroe que elige.
+2026-09-23 00:52:22 | INFO     | Escena #109 OK — [457.84s .. 461.76s] (3920000 us) — Peter suelta todo, y una onda de luz borra a Morlun del puente.
+2026-09-23 00:52:22 | INFO     | Escena #110 OK — [462.16s .. 466.32s] (4160000 us) — La tormenta se detiene, y Peter cae de rodillas sobre el asfalto mojado.
+2026-09-23 00:52:22 | INFO     | Escena #111 OK — [467.04s .. 469.52s] (2480000 us) — No recuerda por qué está allí, ni por qué llora.
+2026-09-23 00:52:22 | INFO     | Escena #112 OK — [470.08s .. 474.64s] (4560000 us) — Solo sabe que alguien importante acaba de salvarlo, y que debe seguir adelante.
+2026-09-23 00:52:22 | INFO     | Escena #113 OK — [475.20s .. 478.56s] (3360000 us) — Pero antes de perder el último recuerdo, Peter ve una imagen clara.
+2026-09-23 00:52:22 | INFO     | Escena #114 OK — [479.28s .. 483.60s] (4320000 us) — Ve a Ben sonriendo en una cocina, vivo, real, orgulloso de él.
+2026-09-23 00:52:22 | INFO     | Escena #115 OK — [484.00s .. 486.72s] (2720000 us) — Esa imagen le da la fuerza para soltar todo sin gritar.
+2026-09-23 00:52:22 | INFO     | Escena #116 OK — [487.28s .. 491.04s] (3760000 us) — Morlun se desintegra en cenizas azules, y el puente queda en silencio.
+2026-09-23 00:52:22 | INFO     | Escena #117 OK — [491.44s .. 494.96s] (3520000 us) — Peter cae, y su máscara se llena de lluvia y lágrimas invisibles.
+2026-09-23 00:52:22 | INFO     | Escena #118 OK — [495.36s .. 498.88s] (3520000 us) — El universo se estabiliza, pero la línea temporal ya no es la misma.
+2026-09-23 00:52:22 | INFO     | Escena #119 OK — [499.12s .. 502.96s] (3840000 us) — Ben Parker está vivo, y enseña en una escuela para chicos problemáticos.
+2026-09-23 00:52:22 | INFO     | Escena #120 OK — [503.60s .. 506.32s] (2720000 us) — May vive con él, y a veces siente que olvidó algo importante.
+2026-09-23 00:52:22 | INFO     | Escena #121 OK — [507.28s .. 511.36s] (4080000 us) — Peter Parker asiste a Midtown, saca buenas notas y sonríe sin saber por qué.
+2026-09-23 00:52:22 | INFO     | Escena #122 OK — [511.60s .. 515.44s] (3840000 us) — Cada noche sueña con una chica de pelo rojo y una azotea bajo la lluvia.
+2026-09-23 00:52:22 | INFO     | Escena #123 OK — [516.00s .. 519.92s] (3920000 us) — No sabe su nombre, pero despierta con el pecho apretado y los ojos húmedos.
+2026-09-23 00:52:22 | INFO     | Escena #124 OK — [520.32s .. 523.76s] (3440000 us) — En su mochila guarda un traje rojo y azul que no recuerda haber cosido.
+2026-09-23 00:52:22 | INFO     | Escena #125 OK — [524.00s .. 527.12s] (3120000 us) — Cuando escucha sirenas, su cuerpo se mueve antes que su mente.
+2026-09-23 00:52:22 | INFO     | Escena #126 OK — [527.76s .. 530.96s] (3200000 us) — Salva a un niño de un auto en llamas y desaparece entre las sombras.
+2026-09-23 00:52:22 | INFO     | Escena #127 OK — [531.36s .. 535.36s] (4000000 us) — La gente lo llama Spider-Man, y él acepta el nombre como un instinto.
+2026-09-23 00:52:22 | INFO     | Escena #128 OK — [535.84s .. 540.24s] (4400000 us) — Norman Osborn nunca se convirtió en el Duende Verde, pero vigila desde lejos.
+2026-09-23 00:52:22 | INFO     | Escena #129 OK — [540.32s .. 544.08s] (3760000 us) — Venom sigue en las alcantarillas, esperando el momento correcto para atacar.
+2026-09-23 00:52:22 | INFO     | Escena #130 OK — [544.56s .. 548.72s] (4160000 us) — Morlun ha sido borrado, pero otros cazadores han sentido el eco de su caída.
+2026-09-23 00:52:22 | INFO     | Escena #131 OK — [549.12s .. 552.56s] (3440000 us) — Peter perdió sus memorias, y con ellas perdió la certeza de lo que viene.
+2026-09-23 00:52:22 | INFO     | Escena #132 OK — [553.04s .. 556.56s] (3520000 us) — Ganó una segunda oportunidad para Ben, para May, para la ciudad.
+2026-09-23 00:52:22 | INFO     | Escena #133 OK — [557.28s .. 561.68s] (4400000 us) — Pero pagó con la única cosa que lo hacía diferente: saber cuánto podía perder.
+2026-09-23 00:52:22 | INFO     | Escena #134 OK — [562.08s .. 565.60s] (3520000 us) — Ahora es más rápido, más fuerte, pero también más humano que nunca.
+2026-09-23 00:52:22 | INFO     | Escena #135 OK — [566.16s .. 569.20s] (3040000 us) — Porque el héroe no es el que recuerda, sino el que elige levantarse.
+2026-09-23 00:52:22 | INFO     | Escena #136 OK — [569.84s .. 573.60s] (3760000 us) — Y en algún lugar del multiverso, otra línea temporal acaba de nacer.
+2026-09-23 00:52:22 | INFO     | Escena #137 OK — [574.08s .. 577.76s] (3680000 us) — En esa otra línea, Peter Parker nunca muere, y nunca renace.
+2026-09-23 00:52:22 | INFO     | Escena #138 OK — [578.08s .. 581.04s] (2960000 us) — En esa otra línea, Ben Parker muere, y Peter aprende la lección.
+2026-09-23 00:52:22 | INFO     | Escena #139 OK — [581.44s .. 584.72s] (3280000 us) — Pero en esta línea, Peter olvidó la lección y conserva el instinto.
+2026-09-23 00:52:22 | INFO     | Escena #140 OK — [584.96s .. 588.96s] (4000000 us) — Cada noche, cuando salta entre edificios, siente un eco de algo perdido.
+2026-09-23 00:52:22 | INFO     | Escena #141 OK — [589.68s .. 593.68s] (4000000 us) — A veces, al ver a MJ, su corazón se acelera sin explicación.
+2026-09-23 00:52:22 | INFO     | Escena #142 OK — [594.16s .. 597.52s] (3360000 us) — Ella lo mira, sonríe, y por un segundo él cree recordar.
+2026-09-23 00:52:22 | INFO     | Escena #143 OK — [597.92s .. 604.72s] (6800000 us) — Luego el momento pasa, y Spider-Man sigue balanceándose hacia el peligro, porque algunas historias están destinadas a repetirse en silencio.
+2026-09-23 00:52:22 | INFO     | Escena #144 OK — [605.36s .. 625.52s] (20160000 us) — Si esta historia te atrapó, suscríbete y cuéntame qué habrías hecho tú. ¿Habrías sacrificado tus recuerdos para salvar a la gente que amas? ¿O habrías conservado tu poder y dejado que el universo pagara el precio? La próxima línea temporal hará que esta parezca un simple ensayo. Esta línea temporal ha sido archivada. Soy Alex, y esto fue Nexus Paradoja.
+2026-09-23 00:52:22 | INFO     | Escenas sincronizadas: 144/144.
+2026-09-23 00:52:22 | INFO     | Paso 3/5 — Preparando proyecto CapCut (clone + edit)...
+2026-09-23 00:52:22 | INFO     | Backup de la plantilla guardado en D:\capcut-auto\backups\20260923_005222_144491
+2026-09-23 00:52:22 | INFO     | Esquema de la plantilla volcado a D:\capcut-auto\logs\schema_plantilla.json
+2026-09-23 00:52:22 | INFO     | Paso 4/5 — Generando proyecto...
+2026-09-23 00:52:22 | INFO     | Proyecto se creará en: D:\YOUTUBE AUTOMATIZADO\CaptCut\CapCut Drafts\nexus
+2026-09-23 00:52:23 | INFO     | draft_content.json escrito también en D:\YOUTUBE AUTOMATIZADO\CaptCut\CapCut Drafts\nexus\Timelines\504B9E4F-3479-463d-9794-8E0E8C434CF1
+2026-09-23 00:52:23 | INFO     | draft_content.json generado con 2 pistas de foto + 1 de audio.
+2026-09-23 00:52:23 | INFO     | Proyecto generado con 2 pistas / 145 segmentos.
+2026-09-23 00:52:23 | INFO     | Esquema de la plantilla volcado a D:\capcut-auto\logs\schema_plantilla_full.json
+2026-09-23 00:52:23 | INFO     | Backup de la plantilla guardado en D:\capcut-auto\backups\20260923_005223_052834
+2026-09-23 00:52:23 | INFO     | PROYECTO GENERADO: D:\YOUTUBE AUTOMATIZADO\CaptCut\CapCut Drafts\nexus
+2026-09-23 00:52:23 | INFO     | Paso 5/5 — ✔ Proyecto creado en: D:\YOUTUBE AUTOMATIZADO\CaptCut\CapCut Drafts\nexus
+2026-09-23 00:52:23 | INFO     | IMPORTANTE: cierra la app antes de abrir CapCut.
+2026-09-23 04:53:55 | INFO     | Plantillas detectadas en drafts: 1.PLANTILLA, 0921, VIDEO 1 #1, VIDEO 2 #2, VIDEO 3 #16
+2026-09-23 04:53:55 | INFO     | Detección · Audio elegido: guion.wav (score 13) — descartados: — — excluidos por nombre: —
+2026-09-23 04:53:55 | INFO     | Detección · Archivo de escenas elegido: escenas.txt (144 escenas, score 19).
+2026-09-23 04:53:55 | INFO     | Detección · Carpeta de imágenes: escenas 2 (144 archivos).
+2026-09-23 04:53:59 | INFO     | Detección · Audio elegido: guion.wav (score 13) — descartados: — — excluidos por nombre: —
+2026-09-23 04:53:59 | INFO     | Detección · Archivo de escenas elegido: escenas.txt (144 escenas, score 19).
+2026-09-23 04:53:59 | INFO     | Detección · Carpeta de imágenes: escenas 2 (144 archivos).
+2026-09-23 04:54:14 | INFO     | == CapCut Auto — inicio de generación ==
+2026-09-23 04:54:14 | INFO     | Plantilla : D:\YOUTUBE AUTOMATIZADO\CaptCut\CapCut Drafts\1.PLANTILLA
+2026-09-23 04:54:14 | INFO     | Audio     : D:\YOUTUBE AUTOMATIZADO\1.historias hipoteticas\VIDEO\VIDEO_1\guion.wav
+2026-09-23 04:54:14 | INFO     | Escenas   : D:\YOUTUBE AUTOMATIZADO\1.historias hipoteticas\VIDEO\VIDEO_1\escenas.txt
+2026-09-23 04:54:14 | INFO     | Imágenes  : 144 archivos
+2026-09-23 04:54:14 | INFO     | Nombre    : nexus 1234
+2026-09-23 04:54:14 | INFO     | Paso 1/5 — Preparando alineación (CrispASR + modelo español)...
+2026-09-23 04:54:14 | INFO     | Alineando audio con el guion (144 lineas)...
+2026-09-23 04:58:34 | INFO     | Alineacion completada -> D:\capcut-auto\cache\alineacion_guion.srt (144 cues).
+2026-09-23 04:58:34 | INFO     | Alineación completada: 144 cues (144 líneas).
+2026-09-23 04:58:34 | INFO     | Duración total del audio: 625520000 us (625.52 s).
+2026-09-23 04:58:34 | INFO     | Paso 2/5 — Sincronizando escenas con el SRT alineado...
+2026-09-23 04:58:34 | INFO     | Escena #1 OK — [0.00s .. 4.00s] (4000000 us) — ¿Qué pasaría si Spider-Man renaciera con todas sus memorias? Imagina esto.
+2026-09-23 04:58:34 | INFO     | Escena #2 OK — [4.40s .. 8.72s] (4320000 us) — Peter Parker muere solo tras salvar Nueva York, y despierta quince años otra vez.
+2026-09-23 04:58:34 | INFO     | Escena #3 OK — [9.20s .. 13.04s] (3840000 us) — El Punto de Divergencia no es la araña, sino el recuerdo completo de su muerte.
+2026-09-23 04:58:34 | INFO     | Escena #4 OK — [13.36s .. 17.36s] (4000000 us) — Peter sabe lo que viene, y esa certeza rompe el destino antes de que ocurra.
+2026-09-23 04:58:34 | INFO     | Escena #5 OK — [17.92s .. 21.28s] (3360000 us) — Pero salvar a todos podría costarle algo que ni siquiera puede imaginar.
+2026-09-23 04:58:34 | INFO     | Escena #6 OK — [21.76s .. 24.48s] (2720000 us) — Esta es la historia de un héroe que renace sabiendo demasiado.
+2026-09-23 04:58:34 | INFO     | Escena #7 OK — [24.64s .. 28.48s] (3840000 us) — Peter despierta con el corazón acelerado y reconoce cada grieta del techo.
+2026-09-23 04:58:34 | INFO     | Escena #8 OK — [29.04s .. 32.48s] (3440000 us) — Sabe que la araña lo morderá en unas horas, así que decide adelantarse.
+2026-09-23 04:58:34 | INFO     | Escena #9 OK — [32.96s .. 36.00s] (3040000 us) — Corre por los pasillos de Midtown y llega al laboratorio antes que nadie.
+2026-09-23 04:58:34 | INFO     | Escena #10 OK — [36.48s .. 41.12s] (4640000 us) — Cuando la araña desciende, Peter no huye: extiende la mano y deja que lo muerda.
+2026-09-23 04:58:34 | INFO     | Escena #11 OK — [41.60s .. 44.88s] (3280000 us) — El veneno quema sus venas, pero su mente ya conoce el dolor.
+2026-09-23 04:58:34 | INFO     | Escena #12 OK — [45.44s .. 49.68s] (4240000 us) — Al despertar, sus sentidos explotan y el mundo se vuelve demasiado ruidoso.
+2026-09-23 04:58:34 | INFO     | Escena #13 OK — [49.84s .. 53.20s] (3360000 us) — Trepa paredes con una seguridad que antes le habría tomado meses dominar.
+2026-09-23 04:58:34 | INFO     | Escena #14 OK — [54.08s .. 57.52s] (3440000 us) — Lanza una telaraña y se balancea entre edificios sin dudar ni un segundo.
+2026-09-23 04:58:34 | INFO     | Escena #15 OK — [58.48s .. 62.32s] (3840000 us) — Pero hay algo extraño: recuerda peleas que todavía no han ocurrido.
+2026-09-23 04:58:34 | INFO     | Escena #16 OK — [62.48s .. 66.88s] (4400000 us) — Recuerda a MJ, a May, a Tony, y también recuerda cómo todos terminan.
+2026-09-23 04:58:34 | INFO     | Escena #17 OK — [67.36s .. 70.96s] (3600000 us) — Esa noche, en lugar de perseguir al ladrón, va directo al callejón.
+2026-09-23 04:58:34 | INFO     | Escena #18 OK — [71.28s .. 74.48s] (3200000 us) — Ben está a punto de recibir un disparo cuando Peter detiene la bala.
+2026-09-23 04:58:34 | INFO     | Escena #19 OK — [74.80s .. 78.72s] (3920000 us) — El ladrón cae, y Ben mira a su sobrino con ojos de asombro y miedo.
+2026-09-23 04:58:34 | INFO     | Escena #20 OK — [78.72s .. 82.56s] (3840000 us) — ¿Quién eres? pregunta Ben, mientras Peter esconde la mano temblorosa.
+2026-09-23 04:58:34 | INFO     | Escena #21 OK — [83.04s .. 86.88s] (3840000 us) — No soy quien crees, responde Peter, pero ya no voy a dejar que mueras.
+2026-09-23 04:58:34 | INFO     | Escena #22 OK — [87.28s .. 91.28s] (4000000 us) — La primera consecuencia llega rápido: sin la muerte de Ben, Peter no duda.
+2026-09-23 04:58:34 | INFO     | Escena #23 OK — [91.52s .. 95.52s] (4000000 us) — La segunda llega más rápido: su cuerpo recuerda heridas que aún no existen.
+2026-09-23 04:58:34 | INFO     | Escena #24 OK — [96.00s .. 100.16s] (4160000 us) — La tercera es la peor: el universo nota que alguien está reescribiendo su guion.
+2026-09-23 04:58:34 | INFO     | Escena #25 OK — [100.56s .. 108.40s] (7840000 us) — Peter sonríe, pero en las sombras algo antiguo abre los ojos, porque un Spider-Man que renace con memorias no es un héroe, es una anomalía.
+2026-09-23 04:58:34 | INFO     | Escena #26 OK — [108.72s .. 110.40s] (1680000 us) — Y las anomalías atraen cazadores.
+2026-09-23 04:58:34 | INFO     | Escena #27 OK — [110.96s .. 114.16s] (3200000 us) — Peter también recuerda el sabor metálico de la derrota en la azotea.
+2026-09-23 04:58:34 | INFO     | Escena #28 OK — [114.64s .. 117.60s] (2960000 us) — Recuerda cómo el Duende lanza una bomba que nunca deja de arder.
+2026-09-23 04:58:34 | INFO     | Escena #29 OK — [117.84s .. 120.64s] (2800000 us) — Recuerda la sangre de Gwen en sus manos y el silencio después.
+2026-09-23 04:58:34 | INFO     | Escena #30 OK — [121.20s .. 125.20s] (4000000 us) — Por eso, cuando ve a Flash Thompson burlarse, no reacciona con rabia.
+2026-09-23 04:58:34 | INFO     | Escena #31 OK — [125.60s .. 128.96s] (3360000 us) — En su lugar, lo mira con una tristeza que Flash no comprende.
+2026-09-23 04:58:34 | INFO     | Escena #32 OK — [129.28s .. 132.16s] (2880000 us) — Porque Peter sabe que Flash también morirá si él no cambia el guion.
+2026-09-23 04:58:34 | INFO     | Escena #33 OK — [132.40s .. 136.24s] (3840000 us) — Esa noche, antes de dormir, escribe una lista de nombres que debe salvar.
+2026-09-23 04:58:34 | INFO     | Escena #34 OK — [136.72s .. 141.76s] (5040000 us) — La lista incluye a Ben, a May, a MJ, a Gwen, a Harry y a Tony Stark.
+2026-09-23 04:58:34 | INFO     | Escena #35 OK — [142.32s .. 146.00s] (3680000 us) — Peter usa sus recuerdos para desmantelar el imperio de Kingpin en una sola noche.
+2026-09-23 04:58:34 | INFO     | Escena #36 OK — [146.40s .. 150.96s] (4560000 us) — Conoce cada escondite, cada soborno, cada ruta de dinero antes de que existan.
+2026-09-23 04:58:34 | INFO     | Escena #37 OK — [151.20s .. 156.16s] (4960000 us) — Fisk cae, pero el poder vacío atrae a Silvio Manfredi, también conocido como Silvermane.
+2026-09-23 04:58:34 | INFO     | Escena #38 OK — [156.32s .. 160.24s] (3920000 us) — Silvermane intenta tomar el control, y Peter lo enfrenta en una azotea lluviosa.
+2026-09-23 04:58:34 | INFO     | Escena #39 OK — [160.56s .. 165.04s] (4480000 us) — Muévete, viejo, dice Peter, mientras esquiva balas con una calma imposible.
+2026-09-23 04:58:34 | INFO     | Escena #40 OK — [165.68s .. 168.88s] (3200000 us) — El villano dispara, pero Peter ya sabe dónde estará cada bala.
+2026-09-23 04:58:34 | INFO     | Escena #41 OK — [169.44s .. 173.60s] (4160000 us) — Lo derriba con un puñetazo, y el impacto agrieta el concreto bajo sus pies.
+2026-09-23 04:58:34 | INFO     | Escena #42 OK — [173.76s .. 178.48s] (4720000 us) — Sin embargo, esa victoria tiene un precio: Norman Osborn observa desde las sombras.
+2026-09-23 04:58:34 | INFO     | Escena #43 OK — [178.88s .. 182.80s] (3920000 us) — Norman no es aún el Duende Verde, pero reconoce un patrón en los ataques.
+2026-09-23 04:58:34 | INFO     | Escena #44 OK — [183.12s .. 186.64s] (3520000 us) — Fast forward to the night when Peter evita el robo que crea al Duende.
+2026-09-23 04:58:34 | INFO     | Escena #45 OK — [187.04s .. 190.64s] (3600000 us) — Norman nunca cae en la fórmula, así que el Duende Verde jamás nace.
+2026-09-23 04:58:34 | INFO     | Escena #46 OK — [191.20s .. 195.12s] (3920000 us) — Pero el odio de Norman busca otro camino, y encuentra a un simbionte caído.
+2026-09-23 04:58:34 | INFO     | Escena #47 OK — [195.52s .. 199.20s] (3680000 us) — Peter siente un escalofrío cuando el cielo sobre Nueva York se vuelve negro.
+2026-09-23 04:58:34 | INFO     | Escena #48 OK — [199.44s .. 203.68s] (4240000 us) — Un meteorito atraviesa la atmósfera y cae en el puerto, brillando con vida.
+2026-09-23 04:58:34 | INFO     | Escena #49 OK — [204.48s .. 207.84s] (3360000 us) — De él emerge Venom, pero no el Venom que Peter recuerda.
+2026-09-23 04:58:34 | INFO     | Escena #50 OK — [208.32s .. 212.48s] (4160000 us) — Este simbionte es más antiguo, y ha sentido el sabor de una memoria multiversal.
+2026-09-23 04:58:34 | INFO     | Escena #51 OK — [213.04s .. 216.64s] (3600000 us) — Te conozco, susurra la criatura, has vivido esto muchas veces.
+2026-09-23 04:58:34 | INFO     | Escena #52 OK — [216.96s .. 220.56s] (3600000 us) — Peter retrocede, porque por primera vez no sabe qué va a pasar.
+2026-09-23 04:58:34 | INFO     | Escena #53 OK — [221.04s .. 226.00s] (4960000 us) — Mientras tanto, en otra dimensión, un cazador llamado Morlun huele la anomalía.
+2026-09-23 04:58:34 | INFO     | Escena #54 OK — [226.64s .. 230.56s] (3920000 us) — Morlun se alimenta de tótems araña, y este Peter brilla como un faro.
+2026-09-23 04:58:34 | INFO     | Escena #55 OK — [230.72s .. 234.72s] (4000000 us) — El cazador cruza el multiverso, pisando realidades como si fueran cristales.
+2026-09-23 04:58:34 | INFO     | Escena #56 OK — [235.44s .. 238.80s] (3360000 us) — Peter intenta prepararse, pero sus recuerdos no contienen a Morlun.
+2026-09-23 04:58:34 | INFO     | Escena #57 OK — [239.28s .. 244.56s] (5280000 us) — Porque en su vida original, Morlun nunca llegó a Nueva York, ahora sí, y la ciudad no está lista.
+2026-09-23 04:58:34 | INFO     | Escena #58 OK — [244.88s .. 249.36s] (4480000 us) — Peter intenta comunicarse con el simbionte, pero la criatura solo responde con hambre.
+2026-09-23 04:58:34 | INFO     | Escena #59 OK — [249.92s .. 254.40s] (4480000 us) — Venom ataca Times Square, y Peter lo enfrenta mientras las pantallas explotan.
+2026-09-23 04:58:34 | INFO     | Escena #60 OK — [254.80s .. 258.56s] (3760000 us) — El simbionte esquiva sus telarañas y le susurra los nombres de sus seres queridos.
+2026-09-23 04:58:34 | INFO     | Escena #61 OK — [258.88s .. 264.96s] (6080000 us) — Ben, dice Venom, May, dice, MJ, dice, y Peter siente un escalofrío.
+2026-09-23 04:58:34 | INFO     | Escena #62 OK — [265.28s .. 270.16s] (4880000 us) — Peter usa un generador eléctrico para separarlos, pero Venom escapa hacia las alcantarillas.
+2026-09-23 04:58:34 | INFO     | Escena #63 OK — [270.64s .. 274.16s] (3520000 us) — Mientras tanto, Silvermane contrata a un mercenario llamado Taskmaster.
+2026-09-23 04:58:34 | INFO     | Escena #64 OK — [274.24s .. 278.32s] (4080000 us) — Taskmaster copia los movimientos de Peter, pero no puede copiar sus recuerdos.
+2026-09-23 04:58:34 | INFO     | Escena #65 OK — [279.04s .. 283.12s] (4080000 us) — Peter lo derrota en un almacén, rompiendo su espada con las manos desnudas.
+2026-09-23 04:58:34 | INFO     | Escena #66 OK — [283.60s .. 288.16s] (4560000 us) — Sin embargo, cada victoria hace que la anomalía brille más fuerte en el multiverso.
+2026-09-23 04:58:34 | INFO     | Escena #67 OK — [288.48s .. 292.56s] (4080000 us) — Morlun ya no está lejos: ha devorado tres realidades y viene por la cuarta.
+2026-09-23 04:58:34 | INFO     | Escena #68 OK — [292.96s .. 297.44s] (4480000 us) — Peter corre hacia el puerto, pero Morlun ya está allí, inmóvil y sonriente.
+2026-09-23 04:58:34 | INFO     | Escena #69 OK — [298.40s .. 302.64s] (4240000 us) — Eres una nota discordante, dice Morlun, y las notas discordantes se borran.
+2026-09-23 04:58:34 | INFO     | Escena #70 OK — [302.72s .. 306.24s] (3520000 us) — Peter lanza una telaraña, pero Morlun la rompe con un solo dedo.
+2026-09-23 04:58:34 | INFO     | Escena #71 OK — [306.72s .. 310.88s] (4160000 us) — El cazador golpea, y Peter cruza tres contenedores antes de detenerse.
+2026-09-23 04:58:34 | INFO     | Escena #72 OK — [311.44s .. 315.04s] (3600000 us) — Sangre en la boca, piernas temblorosas, pero se levanta otra vez.
+2026-09-23 04:58:34 | INFO     | Escena #73 OK — [315.60s .. 318.16s] (2560000 us) — Morlun lo agarra del cuello y comienza a drenar su vida.
+2026-09-23 04:58:34 | INFO     | Escena #74 OK — [318.40s .. 321.68s] (3280000 us) — Peter siente cómo sus recuerdos se deshilachan como cintas viejas.
+2026-09-23 04:58:34 | INFO     | Escena #75 OK — [322.56s .. 327.84s] (5280000 us) — Ve a Ben vivo, ve a May sonriendo, ve a MJ alejándose para siempre.
+2026-09-23 04:58:34 | INFO     | Escena #76 OK — [328.72s .. 332.32s] (3600000 us) — Entonces comprende la verdad: su renacimiento no fue un regalo.
+2026-09-23 04:58:34 | INFO     | Escena #77 OK — [332.80s .. 336.16s] (3360000 us) — Cada vez que cambia el pasado, el multiverso exige una corrección.
+2026-09-23 04:58:34 | INFO     | Escena #78 OK — [336.48s .. 339.84s] (3360000 us) — Morlun no es el villano; es el anticuerpo de una realidad herida.
+2026-09-23 04:58:34 | INFO     | Escena #79 OK — [340.32s .. 343.52s] (3200000 us) — Peter puede salvarlos a todos, pero solo si deja de ser quien es.
+2026-09-23 04:58:34 | INFO     | Escena #80 OK — [344.32s .. 347.84s] (3520000 us) — Si conserva sus memorias, Morlun seguirá cazándolo por toda la eternidad.
+2026-09-23 04:58:34 | INFO     | Escena #81 OK — [348.40s .. 351.04s] (2640000 us) — Si las pierde, volverá a ser el chico que aprende a golpes.
+2026-09-23 04:58:34 | INFO     | Escena #82 OK — [351.12s .. 354.72s] (3600000 us) — La contradicción lo parte en dos: ¿es el héroe o el error?
+2026-09-23 04:58:34 | INFO     | Escena #83 OK — [355.28s .. 359.28s] (4000000 us) — Ben vive gracias a él, pero cada latido de Ben es una deuda cósmica.
+2026-09-23 04:58:34 | INFO     | Escena #84 OK — [359.68s .. 363.12s] (3440000 us) — Peter mira a Morlun y entiende que la victoria tendrá sabor a olvido.
+2026-09-23 04:58:34 | INFO     | Escena #85 OK — [363.36s .. 367.20s] (3840000 us) — Peter intenta encontrar otra salida, pero cada opción termina con alguien muerto.
+2026-09-23 04:58:34 | INFO     | Escena #86 OK — [367.60s .. 371.44s] (3840000 us) — Si deja que Ben muera, el universo se cura, pero su alma se rompe.
+2026-09-23 04:58:34 | INFO     | Escena #87 OK — [371.92s .. 377.12s] (5200000 us) — Si salva a Ben, Morlun devorará a May, a MJ y a miles de inocentes.
+2026-09-23 04:58:34 | INFO     | Escena #88 OK — [377.20s .. 380.48s] (3280000 us) — La balanza no tiene un lado limpio, solo un sacrificio distinto.
+2026-09-23 04:58:34 | INFO     | Escena #89 OK — [380.96s .. 384.40s] (3440000 us) — Peter llora bajo la lluvia, y por primera vez odia tener memoria.
+2026-09-23 04:58:34 | INFO     | Escena #90 OK — [384.56s .. 388.56s] (4000000 us) — La batalla final ocurre sobre el puente Queensboro, bajo una lluvia eléctrica.
+2026-09-23 04:58:34 | INFO     | Escena #91 OK — [389.20s .. 392.64s] (3440000 us) — Morlun corre hacia Peter, y cada paso rompe el asfalto como papel.
+2026-09-23 04:58:34 | INFO     | Escena #92 OK — [393.28s .. 397.36s] (4080000 us) — Peter salta, dispara telarañas y usa los autos como escudos improvisados.
+2026-09-23 04:58:34 | INFO     | Escena #93 OK — [398.00s .. 401.12s] (3120000 us) — Ya viviste esto, grita Morlun, pero nunca contra mí.
+2026-09-23 04:58:34 | INFO     | Escena #94 OK — [401.28s .. 404.32s] (3040000 us) — Peter responde con un puñetazo que brilla con fuerza de tótem.
+2026-09-23 04:58:34 | INFO     | Escena #95 OK — [404.80s .. 408.40s] (3600000 us) — El impacto lanza a Morlun contra una torre, pero el cazador se ríe.
+2026-09-23 04:58:34 | INFO     | Escena #96 OK — [408.80s .. 412.32s] (3520000 us) — Morlun se levanta, y su piel absorbe la electricidad de la tormenta.
+2026-09-23 04:58:34 | INFO     | Escena #97 OK — [412.72s .. 415.36s] (2640000 us) — Peter recuerda a todos los Spider-Man que fueron antes que él.
+2026-09-23 04:58:34 | INFO     | Escena #98 OK — [415.52s .. 420.08s] (4560000 us) — Recuerda a Gwen, a Miles, a Miguel, a Peni, a Noir, a Ham.
+2026-09-23 04:58:34 | INFO     | Escena #99 OK — [420.48s .. 424.16s] (3680000 us) — Sus memorias se convierten en fuerza, y su cuerpo brilla con luz dorada.
+2026-09-23 04:58:34 | INFO     | Escena #100 OK — [424.48s .. 428.16s] (3680000 us) — Con gran poder, susurra Peter, también viene un gran precio.
+2026-09-23 04:58:34 | INFO     | Escena #101 OK — [428.72s .. 432.24s] (3520000 us) — Lanza un último ataque, un choque de voluntades que parte el cielo.
+2026-09-23 04:58:34 | INFO     | Escena #102 OK — [432.88s .. 436.96s] (4080000 us) — Morlun grita, pero no cae: se aferra a la memoria de Peter.
+2026-09-23 04:58:34 | INFO     | Escena #103 OK — [437.60s .. 441.20s] (3600000 us) — Peter lo sostiene, sintiendo cómo sus recuerdos se queman uno por uno.
+2026-09-23 04:58:34 | INFO     | Escena #104 OK — [441.68s .. 443.60s] (1920000 us) — Ve la cara de Ben, y la deja ir.
+2026-09-23 04:58:34 | INFO     | Escena #105 OK — [444.32s .. 446.32s] (2000000 us) — Ve la cara de May, y la deja ir.
+2026-09-23 04:58:34 | INFO     | Escena #106 OK — [446.88s .. 449.44s] (2560000 us) — Ve la cara de MJ, y por un segundo se niega.
+2026-09-23 04:58:34 | INFO     | Escena #107 OK — [449.76s .. 454.00s] (4240000 us) — Pero entonces mira a la ciudad, y sabe que Nueva York necesita a Spider-Man.
+2026-09-23 04:58:34 | INFO     | Escena #108 OK — [454.24s .. 457.20s] (2960000 us) — No al hombre que recuerda, sino al héroe que elige.
+2026-09-23 04:58:34 | INFO     | Escena #109 OK — [457.84s .. 461.76s] (3920000 us) — Peter suelta todo, y una onda de luz borra a Morlun del puente.
+2026-09-23 04:58:34 | INFO     | Escena #110 OK — [462.16s .. 466.32s] (4160000 us) — La tormenta se detiene, y Peter cae de rodillas sobre el asfalto mojado.
+2026-09-23 04:58:34 | INFO     | Escena #111 OK — [467.04s .. 469.52s] (2480000 us) — No recuerda por qué está allí, ni por qué llora.
+2026-09-23 04:58:34 | INFO     | Escena #112 OK — [470.08s .. 474.64s] (4560000 us) — Solo sabe que alguien importante acaba de salvarlo, y que debe seguir adelante.
+2026-09-23 04:58:34 | INFO     | Escena #113 OK — [475.20s .. 478.56s] (3360000 us) — Pero antes de perder el último recuerdo, Peter ve una imagen clara.
+2026-09-23 04:58:34 | INFO     | Escena #114 OK — [479.28s .. 483.60s] (4320000 us) — Ve a Ben sonriendo en una cocina, vivo, real, orgulloso de él.
+2026-09-23 04:58:34 | INFO     | Escena #115 OK — [484.00s .. 486.72s] (2720000 us) — Esa imagen le da la fuerza para soltar todo sin gritar.
+2026-09-23 04:58:34 | INFO     | Escena #116 OK — [487.28s .. 491.04s] (3760000 us) — Morlun se desintegra en cenizas azules, y el puente queda en silencio.
+2026-09-23 04:58:34 | INFO     | Escena #117 OK — [491.44s .. 494.96s] (3520000 us) — Peter cae, y su máscara se llena de lluvia y lágrimas invisibles.
+2026-09-23 04:58:34 | INFO     | Escena #118 OK — [495.36s .. 498.88s] (3520000 us) — El universo se estabiliza, pero la línea temporal ya no es la misma.
+2026-09-23 04:58:34 | INFO     | Escena #119 OK — [499.12s .. 502.96s] (3840000 us) — Ben Parker está vivo, y enseña en una escuela para chicos problemáticos.
+2026-09-23 04:58:34 | INFO     | Escena #120 OK — [503.60s .. 506.32s] (2720000 us) — May vive con él, y a veces siente que olvidó algo importante.
+2026-09-23 04:58:34 | INFO     | Escena #121 OK — [507.28s .. 511.36s] (4080000 us) — Peter Parker asiste a Midtown, saca buenas notas y sonríe sin saber por qué.
+2026-09-23 04:58:34 | INFO     | Escena #122 OK — [511.60s .. 515.44s] (3840000 us) — Cada noche sueña con una chica de pelo rojo y una azotea bajo la lluvia.
+2026-09-23 04:58:34 | INFO     | Escena #123 OK — [516.00s .. 519.92s] (3920000 us) — No sabe su nombre, pero despierta con el pecho apretado y los ojos húmedos.
+2026-09-23 04:58:34 | INFO     | Escena #124 OK — [520.32s .. 523.76s] (3440000 us) — En su mochila guarda un traje rojo y azul que no recuerda haber cosido.
+2026-09-23 04:58:34 | INFO     | Escena #125 OK — [524.00s .. 527.12s] (3120000 us) — Cuando escucha sirenas, su cuerpo se mueve antes que su mente.
+2026-09-23 04:58:34 | INFO     | Escena #126 OK — [527.76s .. 530.96s] (3200000 us) — Salva a un niño de un auto en llamas y desaparece entre las sombras.
+2026-09-23 04:58:34 | INFO     | Escena #127 OK — [531.36s .. 535.36s] (4000000 us) — La gente lo llama Spider-Man, y él acepta el nombre como un instinto.
+2026-09-23 04:58:34 | INFO     | Escena #128 OK — [535.84s .. 540.24s] (4400000 us) — Norman Osborn nunca se convirtió en el Duende Verde, pero vigila desde lejos.
+2026-09-23 04:58:34 | INFO     | Escena #129 OK — [540.32s .. 544.08s] (3760000 us) — Venom sigue en las alcantarillas, esperando el momento correcto para atacar.
+2026-09-23 04:58:34 | INFO     | Escena #130 OK — [544.56s .. 548.72s] (4160000 us) — Morlun ha sido borrado, pero otros cazadores han sentido el eco de su caída.
+2026-09-23 04:58:34 | INFO     | Escena #131 OK — [549.12s .. 552.56s] (3440000 us) — Peter perdió sus memorias, y con ellas perdió la certeza de lo que viene.
+2026-09-23 04:58:34 | INFO     | Escena #132 OK — [553.04s .. 556.56s] (3520000 us) — Ganó una segunda oportunidad para Ben, para May, para la ciudad.
+2026-09-23 04:58:34 | INFO     | Escena #133 OK — [557.28s .. 561.68s] (4400000 us) — Pero pagó con la única cosa que lo hacía diferente: saber cuánto podía perder.
+2026-09-23 04:58:34 | INFO     | Escena #134 OK — [562.08s .. 565.60s] (3520000 us) — Ahora es más rápido, más fuerte, pero también más humano que nunca.
+2026-09-23 04:58:34 | INFO     | Escena #135 OK — [566.16s .. 569.20s] (3040000 us) — Porque el héroe no es el que recuerda, sino el que elige levantarse.
+2026-09-23 04:58:34 | INFO     | Escena #136 OK — [569.84s .. 573.60s] (3760000 us) — Y en algún lugar del multiverso, otra línea temporal acaba de nacer.
+2026-09-23 04:58:34 | INFO     | Escena #137 OK — [574.08s .. 577.76s] (3680000 us) — En esa otra línea, Peter Parker nunca muere, y nunca renace.
+2026-09-23 04:58:34 | INFO     | Escena #138 OK — [578.08s .. 581.04s] (2960000 us) — En esa otra línea, Ben Parker muere, y Peter aprende la lección.
+2026-09-23 04:58:34 | INFO     | Escena #139 OK — [581.44s .. 584.72s] (3280000 us) — Pero en esta línea, Peter olvidó la lección y conserva el instinto.
+2026-09-23 04:58:34 | INFO     | Escena #140 OK — [584.96s .. 588.96s] (4000000 us) — Cada noche, cuando salta entre edificios, siente un eco de algo perdido.
+2026-09-23 04:58:34 | INFO     | Escena #141 OK — [589.68s .. 593.68s] (4000000 us) — A veces, al ver a MJ, su corazón se acelera sin explicación.
+2026-09-23 04:58:34 | INFO     | Escena #142 OK — [594.16s .. 597.52s] (3360000 us) — Ella lo mira, sonríe, y por un segundo él cree recordar.
+2026-09-23 04:58:34 | INFO     | Escena #143 OK — [597.92s .. 604.72s] (6800000 us) — Luego el momento pasa, y Spider-Man sigue balanceándose hacia el peligro, porque algunas historias están destinadas a repetirse en silencio.
+2026-09-23 04:58:34 | INFO     | Escena #144 OK — [605.36s .. 625.52s] (20160000 us) — Si esta historia te atrapó, suscríbete y cuéntame qué habrías hecho tú. ¿Habrías sacrificado tus recuerdos para salvar a la gente que amas? ¿O habrías conservado tu poder y dejado que el universo pagara el precio? La próxima línea temporal hará que esta parezca un simple ensayo. Esta línea temporal ha sido archivada. Soy Alex, y esto fue Nexus Paradoja.
+2026-09-23 04:58:34 | INFO     | Escenas sincronizadas: 144/144.
+2026-09-23 04:58:34 | INFO     | Paso 3/5 — Preparando proyecto CapCut (clone + edit)...
+2026-09-23 04:58:34 | INFO     | Backup de la plantilla guardado en D:\capcut-auto\backups\20260923_045834_138593
+2026-09-23 04:58:34 | INFO     | Esquema de la plantilla volcado a D:\capcut-auto\logs\schema_plantilla.json
+2026-09-23 04:58:34 | INFO     | Paso 4/5 — Generando proyecto...
+2026-09-23 04:58:34 | INFO     | Proyecto se creará en: D:\YOUTUBE AUTOMATIZADO\CaptCut\CapCut Drafts\nexus 1234
+2026-09-23 04:58:34 | INFO     | draft_content.json escrito también en D:\YOUTUBE AUTOMATIZADO\CaptCut\CapCut Drafts\nexus 1234\Timelines\504B9E4F-3479-463d-9794-8E0E8C434CF1
+2026-09-23 04:58:34 | INFO     | draft_content.json generado con 2 pistas de foto + 1 de audio.
+2026-09-23 04:58:34 | INFO     | Proyecto generado con 2 pistas / 145 segmentos.
+2026-09-23 04:58:34 | INFO     | Esquema de la plantilla volcado a D:\capcut-auto\logs\schema_plantilla_full.json
+2026-09-23 04:58:34 | INFO     | Backup de la plantilla guardado en D:\capcut-auto\backups\20260923_045834_782749
+2026-09-23 04:58:34 | INFO     | PROYECTO GENERADO: D:\YOUTUBE AUTOMATIZADO\CaptCut\CapCut Drafts\nexus 1234
+2026-09-23 04:58:34 | INFO     | Paso 5/5 — ✔ Proyecto creado en: D:\YOUTUBE AUTOMATIZADO\CaptCut\CapCut Drafts\nexus 1234
+2026-09-23 04:58:34 | INFO     | IMPORTANTE: cierra la app antes de abrir CapCut.
+2026-09-23 05:32:40 | INFO     | Plantillas detectadas en drafts: 1.PLANTILLA, 0921, VIDEO 1 #1, VIDEO 2 #2, VIDEO 3 #16
+2026-09-23 05:32:40 | INFO     | Detección · Audio elegido: guion.wav (score 13) — descartados: — — excluidos por nombre: —
+2026-09-23 05:32:40 | INFO     | Detección · Archivo de escenas elegido: escenas.txt (144 escenas, score 19).
+2026-09-23 05:32:40 | INFO     | Detección · Carpeta de imágenes: escenas 2 (144 archivos).
+2026-09-23 06:08:55 | INFO     | Plantillas detectadas en drafts: 1.PLANTILLA, 0921, VIDEO 1 #1, VIDEO 2 #2, VIDEO 3 #16
+2026-09-23 06:08:55 | INFO     | Detección · Audio elegido: guion.wav (score 13) — descartados: — — excluidos por nombre: —
+2026-09-23 06:08:55 | INFO     | Detección · Archivo de escenas elegido: escenas.txt (144 escenas, score 19).
+2026-09-23 06:08:55 | INFO     | Detección · Carpeta de imágenes: escenas 2 (144 archivos).
+2026-09-23 06:09:01 | INFO     | Detección · Audio elegido: guion.wav (score 13) — descartados: — — excluidos por nombre: —
+2026-09-23 06:09:01 | INFO     | Detección · Archivo de escenas elegido: escenas.txt (144 escenas, score 19).
+2026-09-23 06:09:01 | INFO     | Detección · Carpeta de imágenes: escenas 2 (144 archivos).
+2026-09-23 06:09:08 | INFO     | Tipo de edición seleccionado: Nexus Paradoja
+2026-09-23 06:09:11 | INFO     | == CapCut Auto — inicio de generación ==
+2026-09-23 06:09:11 | INFO     | Plantilla : D:\YOUTUBE AUTOMATIZADO\CaptCut\CapCut Drafts\1.PLANTILLA
+2026-09-23 06:09:11 | INFO     | Audio     : D:\YOUTUBE AUTOMATIZADO\1.historias hipoteticas\VIDEO\VIDEO_1\guion.wav
+2026-09-23 06:09:11 | INFO     | Escenas   : D:\YOUTUBE AUTOMATIZADO\1.historias hipoteticas\VIDEO\VIDEO_1\escenas.txt
+2026-09-23 06:09:11 | INFO     | Imágenes  : 144 archivos
+2026-09-23 06:09:11 | INFO     | Nombre    : Nexus Paradoja video
+2026-09-23 06:09:12 | INFO     | Paso 1/5 — Preparando alineación (CrispASR + modelo español)...
+2026-09-23 06:09:12 | INFO     | Alineando audio con el guion (144 lineas)...
+2026-09-23 06:14:13 | INFO     | Alineacion completada -> D:\capcut-auto\cache\alineacion_guion.srt (144 cues).
+2026-09-23 06:14:13 | INFO     | Alineación completada: 144 cues (144 líneas).
+2026-09-23 06:14:13 | INFO     | Duración total del audio: 625520000 us (625.52 s).
+2026-09-23 06:14:13 | INFO     | Paso 2/5 — Sincronizando escenas con el SRT alineado...
+2026-09-23 06:14:13 | INFO     | Escena #1 OK — [0.00s .. 4.00s] (4000000 us) — ¿Qué pasaría si Spider-Man renaciera con todas sus memorias? Imagina esto.
+2026-09-23 06:14:13 | INFO     | Escena #2 OK — [4.40s .. 8.72s] (4320000 us) — Peter Parker muere solo tras salvar Nueva York, y despierta quince años otra vez.
+2026-09-23 06:14:13 | INFO     | Escena #3 OK — [9.20s .. 13.04s] (3840000 us) — El Punto de Divergencia no es la araña, sino el recuerdo completo de su muerte.
+2026-09-23 06:14:13 | INFO     | Escena #4 OK — [13.36s .. 17.36s] (4000000 us) — Peter sabe lo que viene, y esa certeza rompe el destino antes de que ocurra.
+2026-09-23 06:14:13 | INFO     | Escena #5 OK — [17.92s .. 21.28s] (3360000 us) — Pero salvar a todos podría costarle algo que ni siquiera puede imaginar.
+2026-09-23 06:14:13 | INFO     | Escena #6 OK — [21.76s .. 24.48s] (2720000 us) — Esta es la historia de un héroe que renace sabiendo demasiado.
+2026-09-23 06:14:13 | INFO     | Escena #7 OK — [24.64s .. 28.48s] (3840000 us) — Peter despierta con el corazón acelerado y reconoce cada grieta del techo.
+2026-09-23 06:14:13 | INFO     | Escena #8 OK — [29.04s .. 32.48s] (3440000 us) — Sabe que la araña lo morderá en unas horas, así que decide adelantarse.
+2026-09-23 06:14:13 | INFO     | Escena #9 OK — [32.96s .. 36.00s] (3040000 us) — Corre por los pasillos de Midtown y llega al laboratorio antes que nadie.
+2026-09-23 06:14:13 | INFO     | Escena #10 OK — [36.48s .. 41.12s] (4640000 us) — Cuando la araña desciende, Peter no huye: extiende la mano y deja que lo muerda.
+2026-09-23 06:14:13 | INFO     | Escena #11 OK — [41.60s .. 44.88s] (3280000 us) — El veneno quema sus venas, pero su mente ya conoce el dolor.
+2026-09-23 06:14:13 | INFO     | Escena #12 OK — [45.44s .. 49.68s] (4240000 us) — Al despertar, sus sentidos explotan y el mundo se vuelve demasiado ruidoso.
+2026-09-23 06:14:13 | INFO     | Escena #13 OK — [49.84s .. 53.20s] (3360000 us) — Trepa paredes con una seguridad que antes le habría tomado meses dominar.
+2026-09-23 06:14:13 | INFO     | Escena #14 OK — [54.08s .. 57.52s] (3440000 us) — Lanza una telaraña y se balancea entre edificios sin dudar ni un segundo.
+2026-09-23 06:14:13 | INFO     | Escena #15 OK — [58.48s .. 62.32s] (3840000 us) — Pero hay algo extraño: recuerda peleas que todavía no han ocurrido.
+2026-09-23 06:14:13 | INFO     | Escena #16 OK — [62.48s .. 66.88s] (4400000 us) — Recuerda a MJ, a May, a Tony, y también recuerda cómo todos terminan.
+2026-09-23 06:14:13 | INFO     | Escena #17 OK — [67.36s .. 70.96s] (3600000 us) — Esa noche, en lugar de perseguir al ladrón, va directo al callejón.
+2026-09-23 06:14:13 | INFO     | Escena #18 OK — [71.28s .. 74.48s] (3200000 us) — Ben está a punto de recibir un disparo cuando Peter detiene la bala.
+2026-09-23 06:14:13 | INFO     | Escena #19 OK — [74.80s .. 78.72s] (3920000 us) — El ladrón cae, y Ben mira a su sobrino con ojos de asombro y miedo.
+2026-09-23 06:14:13 | INFO     | Escena #20 OK — [78.72s .. 82.56s] (3840000 us) — ¿Quién eres? pregunta Ben, mientras Peter esconde la mano temblorosa.
+2026-09-23 06:14:13 | INFO     | Escena #21 OK — [83.04s .. 86.88s] (3840000 us) — No soy quien crees, responde Peter, pero ya no voy a dejar que mueras.
+2026-09-23 06:14:13 | INFO     | Escena #22 OK — [87.28s .. 91.28s] (4000000 us) — La primera consecuencia llega rápido: sin la muerte de Ben, Peter no duda.
+2026-09-23 06:14:13 | INFO     | Escena #23 OK — [91.52s .. 95.52s] (4000000 us) — La segunda llega más rápido: su cuerpo recuerda heridas que aún no existen.
+2026-09-23 06:14:13 | INFO     | Escena #24 OK — [96.00s .. 100.16s] (4160000 us) — La tercera es la peor: el universo nota que alguien está reescribiendo su guion.
+2026-09-23 06:14:13 | INFO     | Escena #25 OK — [100.56s .. 108.40s] (7840000 us) — Peter sonríe, pero en las sombras algo antiguo abre los ojos, porque un Spider-Man que renace con memorias no es un héroe, es una anomalía.
+2026-09-23 06:14:13 | INFO     | Escena #26 OK — [108.72s .. 110.40s] (1680000 us) — Y las anomalías atraen cazadores.
+2026-09-23 06:14:13 | INFO     | Escena #27 OK — [110.96s .. 114.16s] (3200000 us) — Peter también recuerda el sabor metálico de la derrota en la azotea.
+2026-09-23 06:14:13 | INFO     | Escena #28 OK — [114.64s .. 117.60s] (2960000 us) — Recuerda cómo el Duende lanza una bomba que nunca deja de arder.
+2026-09-23 06:14:13 | INFO     | Escena #29 OK — [117.84s .. 120.64s] (2800000 us) — Recuerda la sangre de Gwen en sus manos y el silencio después.
+2026-09-23 06:14:13 | INFO     | Escena #30 OK — [121.20s .. 125.20s] (4000000 us) — Por eso, cuando ve a Flash Thompson burlarse, no reacciona con rabia.
+2026-09-23 06:14:13 | INFO     | Escena #31 OK — [125.60s .. 128.96s] (3360000 us) — En su lugar, lo mira con una tristeza que Flash no comprende.
+2026-09-23 06:14:13 | INFO     | Escena #32 OK — [129.28s .. 132.16s] (2880000 us) — Porque Peter sabe que Flash también morirá si él no cambia el guion.
+2026-09-23 06:14:13 | INFO     | Escena #33 OK — [132.40s .. 136.24s] (3840000 us) — Esa noche, antes de dormir, escribe una lista de nombres que debe salvar.
+2026-09-23 06:14:13 | INFO     | Escena #34 OK — [136.72s .. 141.76s] (5040000 us) — La lista incluye a Ben, a May, a MJ, a Gwen, a Harry y a Tony Stark.
+2026-09-23 06:14:13 | INFO     | Escena #35 OK — [142.32s .. 146.00s] (3680000 us) — Peter usa sus recuerdos para desmantelar el imperio de Kingpin en una sola noche.
+2026-09-23 06:14:13 | INFO     | Escena #36 OK — [146.40s .. 150.96s] (4560000 us) — Conoce cada escondite, cada soborno, cada ruta de dinero antes de que existan.
+2026-09-23 06:14:13 | INFO     | Escena #37 OK — [151.20s .. 156.16s] (4960000 us) — Fisk cae, pero el poder vacío atrae a Silvio Manfredi, también conocido como Silvermane.
+2026-09-23 06:14:13 | INFO     | Escena #38 OK — [156.32s .. 160.24s] (3920000 us) — Silvermane intenta tomar el control, y Peter lo enfrenta en una azotea lluviosa.
+2026-09-23 06:14:13 | INFO     | Escena #39 OK — [160.56s .. 165.04s] (4480000 us) — Muévete, viejo, dice Peter, mientras esquiva balas con una calma imposible.
+2026-09-23 06:14:13 | INFO     | Escena #40 OK — [165.68s .. 168.88s] (3200000 us) — El villano dispara, pero Peter ya sabe dónde estará cada bala.
+2026-09-23 06:14:13 | INFO     | Escena #41 OK — [169.44s .. 173.60s] (4160000 us) — Lo derriba con un puñetazo, y el impacto agrieta el concreto bajo sus pies.
+2026-09-23 06:14:13 | INFO     | Escena #42 OK — [173.76s .. 178.48s] (4720000 us) — Sin embargo, esa victoria tiene un precio: Norman Osborn observa desde las sombras.
+2026-09-23 06:14:13 | INFO     | Escena #43 OK — [178.88s .. 182.80s] (3920000 us) — Norman no es aún el Duende Verde, pero reconoce un patrón en los ataques.
+2026-09-23 06:14:13 | INFO     | Escena #44 OK — [183.12s .. 186.64s] (3520000 us) — Fast forward to the night when Peter evita el robo que crea al Duende.
+2026-09-23 06:14:13 | INFO     | Escena #45 OK — [187.04s .. 190.64s] (3600000 us) — Norman nunca cae en la fórmula, así que el Duende Verde jamás nace.
+2026-09-23 06:14:13 | INFO     | Escena #46 OK — [191.20s .. 195.12s] (3920000 us) — Pero el odio de Norman busca otro camino, y encuentra a un simbionte caído.
+2026-09-23 06:14:13 | INFO     | Escena #47 OK — [195.52s .. 199.20s] (3680000 us) — Peter siente un escalofrío cuando el cielo sobre Nueva York se vuelve negro.
+2026-09-23 06:14:13 | INFO     | Escena #48 OK — [199.44s .. 203.68s] (4240000 us) — Un meteorito atraviesa la atmósfera y cae en el puerto, brillando con vida.
+2026-09-23 06:14:13 | INFO     | Escena #49 OK — [204.48s .. 207.84s] (3360000 us) — De él emerge Venom, pero no el Venom que Peter recuerda.
+2026-09-23 06:14:13 | INFO     | Escena #50 OK — [208.32s .. 212.48s] (4160000 us) — Este simbionte es más antiguo, y ha sentido el sabor de una memoria multiversal.
+2026-09-23 06:14:13 | INFO     | Escena #51 OK — [213.04s .. 216.64s] (3600000 us) — Te conozco, susurra la criatura, has vivido esto muchas veces.
+2026-09-23 06:14:13 | INFO     | Escena #52 OK — [216.96s .. 220.56s] (3600000 us) — Peter retrocede, porque por primera vez no sabe qué va a pasar.
+2026-09-23 06:14:13 | INFO     | Escena #53 OK — [221.04s .. 226.00s] (4960000 us) — Mientras tanto, en otra dimensión, un cazador llamado Morlun huele la anomalía.
+2026-09-23 06:14:13 | INFO     | Escena #54 OK — [226.64s .. 230.56s] (3920000 us) — Morlun se alimenta de tótems araña, y este Peter brilla como un faro.
+2026-09-23 06:14:13 | INFO     | Escena #55 OK — [230.72s .. 234.72s] (4000000 us) — El cazador cruza el multiverso, pisando realidades como si fueran cristales.
+2026-09-23 06:14:13 | INFO     | Escena #56 OK — [235.44s .. 238.80s] (3360000 us) — Peter intenta prepararse, pero sus recuerdos no contienen a Morlun.
+2026-09-23 06:14:13 | INFO     | Escena #57 OK — [239.28s .. 244.56s] (5280000 us) — Porque en su vida original, Morlun nunca llegó a Nueva York, ahora sí, y la ciudad no está lista.
+2026-09-23 06:14:13 | INFO     | Escena #58 OK — [244.88s .. 249.36s] (4480000 us) — Peter intenta comunicarse con el simbionte, pero la criatura solo responde con hambre.
+2026-09-23 06:14:13 | INFO     | Escena #59 OK — [249.92s .. 254.40s] (4480000 us) — Venom ataca Times Square, y Peter lo enfrenta mientras las pantallas explotan.
+2026-09-23 06:14:13 | INFO     | Escena #60 OK — [254.80s .. 258.56s] (3760000 us) — El simbionte esquiva sus telarañas y le susurra los nombres de sus seres queridos.
+2026-09-23 06:14:13 | INFO     | Escena #61 OK — [258.88s .. 264.96s] (6080000 us) — Ben, dice Venom, May, dice, MJ, dice, y Peter siente un escalofrío.
+2026-09-23 06:14:13 | INFO     | Escena #62 OK — [265.28s .. 270.16s] (4880000 us) — Peter usa un generador eléctrico para separarlos, pero Venom escapa hacia las alcantarillas.
+2026-09-23 06:14:13 | INFO     | Escena #63 OK — [270.64s .. 274.16s] (3520000 us) — Mientras tanto, Silvermane contrata a un mercenario llamado Taskmaster.
+2026-09-23 06:14:13 | INFO     | Escena #64 OK — [274.24s .. 278.32s] (4080000 us) — Taskmaster copia los movimientos de Peter, pero no puede copiar sus recuerdos.
+2026-09-23 06:14:13 | INFO     | Escena #65 OK — [279.04s .. 283.12s] (4080000 us) — Peter lo derrota en un almacén, rompiendo su espada con las manos desnudas.
+2026-09-23 06:14:13 | INFO     | Escena #66 OK — [283.60s .. 288.16s] (4560000 us) — Sin embargo, cada victoria hace que la anomalía brille más fuerte en el multiverso.
+2026-09-23 06:14:13 | INFO     | Escena #67 OK — [288.48s .. 292.56s] (4080000 us) — Morlun ya no está lejos: ha devorado tres realidades y viene por la cuarta.
+2026-09-23 06:14:13 | INFO     | Escena #68 OK — [292.96s .. 297.44s] (4480000 us) — Peter corre hacia el puerto, pero Morlun ya está allí, inmóvil y sonriente.
+2026-09-23 06:14:13 | INFO     | Escena #69 OK — [298.40s .. 302.64s] (4240000 us) — Eres una nota discordante, dice Morlun, y las notas discordantes se borran.
+2026-09-23 06:14:13 | INFO     | Escena #70 OK — [302.72s .. 306.24s] (3520000 us) — Peter lanza una telaraña, pero Morlun la rompe con un solo dedo.
+2026-09-23 06:14:13 | INFO     | Escena #71 OK — [306.72s .. 310.88s] (4160000 us) — El cazador golpea, y Peter cruza tres contenedores antes de detenerse.
+2026-09-23 06:14:13 | INFO     | Escena #72 OK — [311.44s .. 315.04s] (3600000 us) — Sangre en la boca, piernas temblorosas, pero se levanta otra vez.
+2026-09-23 06:14:13 | INFO     | Escena #73 OK — [315.60s .. 318.16s] (2560000 us) — Morlun lo agarra del cuello y comienza a drenar su vida.
+2026-09-23 06:14:13 | INFO     | Escena #74 OK — [318.40s .. 321.68s] (3280000 us) — Peter siente cómo sus recuerdos se deshilachan como cintas viejas.
+2026-09-23 06:14:13 | INFO     | Escena #75 OK — [322.56s .. 327.84s] (5280000 us) — Ve a Ben vivo, ve a May sonriendo, ve a MJ alejándose para siempre.
+2026-09-23 06:14:13 | INFO     | Escena #76 OK — [328.72s .. 332.32s] (3600000 us) — Entonces comprende la verdad: su renacimiento no fue un regalo.
+2026-09-23 06:14:13 | INFO     | Escena #77 OK — [332.80s .. 336.16s] (3360000 us) — Cada vez que cambia el pasado, el multiverso exige una corrección.
+2026-09-23 06:14:13 | INFO     | Escena #78 OK — [336.48s .. 339.84s] (3360000 us) — Morlun no es el villano; es el anticuerpo de una realidad herida.
+2026-09-23 06:14:13 | INFO     | Escena #79 OK — [340.32s .. 343.52s] (3200000 us) — Peter puede salvarlos a todos, pero solo si deja de ser quien es.
+2026-09-23 06:14:13 | INFO     | Escena #80 OK — [344.32s .. 347.84s] (3520000 us) — Si conserva sus memorias, Morlun seguirá cazándolo por toda la eternidad.
+2026-09-23 06:14:13 | INFO     | Escena #81 OK — [348.40s .. 351.04s] (2640000 us) — Si las pierde, volverá a ser el chico que aprende a golpes.
+2026-09-23 06:14:13 | INFO     | Escena #82 OK — [351.12s .. 354.72s] (3600000 us) — La contradicción lo parte en dos: ¿es el héroe o el error?
+2026-09-23 06:14:13 | INFO     | Escena #83 OK — [355.28s .. 359.28s] (4000000 us) — Ben vive gracias a él, pero cada latido de Ben es una deuda cósmica.
+2026-09-23 06:14:13 | INFO     | Escena #84 OK — [359.68s .. 363.12s] (3440000 us) — Peter mira a Morlun y entiende que la victoria tendrá sabor a olvido.
+2026-09-23 06:14:13 | INFO     | Escena #85 OK — [363.36s .. 367.20s] (3840000 us) — Peter intenta encontrar otra salida, pero cada opción termina con alguien muerto.
+2026-09-23 06:14:13 | INFO     | Escena #86 OK — [367.60s .. 371.44s] (3840000 us) — Si deja que Ben muera, el universo se cura, pero su alma se rompe.
+2026-09-23 06:14:13 | INFO     | Escena #87 OK — [371.92s .. 377.12s] (5200000 us) — Si salva a Ben, Morlun devorará a May, a MJ y a miles de inocentes.
+2026-09-23 06:14:13 | INFO     | Escena #88 OK — [377.20s .. 380.48s] (3280000 us) — La balanza no tiene un lado limpio, solo un sacrificio distinto.
+2026-09-23 06:14:13 | INFO     | Escena #89 OK — [380.96s .. 384.40s] (3440000 us) — Peter llora bajo la lluvia, y por primera vez odia tener memoria.
+2026-09-23 06:14:13 | INFO     | Escena #90 OK — [384.56s .. 388.56s] (4000000 us) — La batalla final ocurre sobre el puente Queensboro, bajo una lluvia eléctrica.
+2026-09-23 06:14:13 | INFO     | Escena #91 OK — [389.20s .. 392.64s] (3440000 us) — Morlun corre hacia Peter, y cada paso rompe el asfalto como papel.
+2026-09-23 06:14:13 | INFO     | Escena #92 OK — [393.28s .. 397.36s] (4080000 us) — Peter salta, dispara telarañas y usa los autos como escudos improvisados.
+2026-09-23 06:14:13 | INFO     | Escena #93 OK — [398.00s .. 401.12s] (3120000 us) — Ya viviste esto, grita Morlun, pero nunca contra mí.
+2026-09-23 06:14:13 | INFO     | Escena #94 OK — [401.28s .. 404.32s] (3040000 us) — Peter responde con un puñetazo que brilla con fuerza de tótem.
+2026-09-23 06:14:13 | INFO     | Escena #95 OK — [404.80s .. 408.40s] (3600000 us) — El impacto lanza a Morlun contra una torre, pero el cazador se ríe.
+2026-09-23 06:14:13 | INFO     | Escena #96 OK — [408.80s .. 412.32s] (3520000 us) — Morlun se levanta, y su piel absorbe la electricidad de la tormenta.
+2026-09-23 06:14:13 | INFO     | Escena #97 OK — [412.72s .. 415.36s] (2640000 us) — Peter recuerda a todos los Spider-Man que fueron antes que él.
+2026-09-23 06:14:13 | INFO     | Escena #98 OK — [415.52s .. 420.08s] (4560000 us) — Recuerda a Gwen, a Miles, a Miguel, a Peni, a Noir, a Ham.
+2026-09-23 06:14:13 | INFO     | Escena #99 OK — [420.48s .. 424.16s] (3680000 us) — Sus memorias se convierten en fuerza, y su cuerpo brilla con luz dorada.
+2026-09-23 06:14:13 | INFO     | Escena #100 OK — [424.48s .. 428.16s] (3680000 us) — Con gran poder, susurra Peter, también viene un gran precio.
+2026-09-23 06:14:13 | INFO     | Escena #101 OK — [428.72s .. 432.24s] (3520000 us) — Lanza un último ataque, un choque de voluntades que parte el cielo.
+2026-09-23 06:14:13 | INFO     | Escena #102 OK — [432.88s .. 436.96s] (4080000 us) — Morlun grita, pero no cae: se aferra a la memoria de Peter.
+2026-09-23 06:14:13 | INFO     | Escena #103 OK — [437.60s .. 441.20s] (3600000 us) — Peter lo sostiene, sintiendo cómo sus recuerdos se queman uno por uno.
+2026-09-23 06:14:13 | INFO     | Escena #104 OK — [441.68s .. 443.60s] (1920000 us) — Ve la cara de Ben, y la deja ir.
+2026-09-23 06:14:13 | INFO     | Escena #105 OK — [444.32s .. 446.32s] (2000000 us) — Ve la cara de May, y la deja ir.
+2026-09-23 06:14:13 | INFO     | Escena #106 OK — [446.88s .. 449.44s] (2560000 us) — Ve la cara de MJ, y por un segundo se niega.
+2026-09-23 06:14:13 | INFO     | Escena #107 OK — [449.76s .. 454.00s] (4240000 us) — Pero entonces mira a la ciudad, y sabe que Nueva York necesita a Spider-Man.
+2026-09-23 06:14:13 | INFO     | Escena #108 OK — [454.24s .. 457.20s] (2960000 us) — No al hombre que recuerda, sino al héroe que elige.
+2026-09-23 06:14:13 | INFO     | Escena #109 OK — [457.84s .. 461.76s] (3920000 us) — Peter suelta todo, y una onda de luz borra a Morlun del puente.
+2026-09-23 06:14:13 | INFO     | Escena #110 OK — [462.16s .. 466.32s] (4160000 us) — La tormenta se detiene, y Peter cae de rodillas sobre el asfalto mojado.
+2026-09-23 06:14:13 | INFO     | Escena #111 OK — [467.04s .. 469.52s] (2480000 us) — No recuerda por qué está allí, ni por qué llora.
+2026-09-23 06:14:13 | INFO     | Escena #112 OK — [470.08s .. 474.64s] (4560000 us) — Solo sabe que alguien importante acaba de salvarlo, y que debe seguir adelante.
+2026-09-23 06:14:13 | INFO     | Escena #113 OK — [475.20s .. 478.56s] (3360000 us) — Pero antes de perder el último recuerdo, Peter ve una imagen clara.
+2026-09-23 06:14:13 | INFO     | Escena #114 OK — [479.28s .. 483.60s] (4320000 us) — Ve a Ben sonriendo en una cocina, vivo, real, orgulloso de él.
+2026-09-23 06:14:13 | INFO     | Escena #115 OK — [484.00s .. 486.72s] (2720000 us) — Esa imagen le da la fuerza para soltar todo sin gritar.
+2026-09-23 06:14:13 | INFO     | Escena #116 OK — [487.28s .. 491.04s] (3760000 us) — Morlun se desintegra en cenizas azules, y el puente queda en silencio.
+2026-09-23 06:14:13 | INFO     | Escena #117 OK — [491.44s .. 494.96s] (3520000 us) — Peter cae, y su máscara se llena de lluvia y lágrimas invisibles.
+2026-09-23 06:14:13 | INFO     | Escena #118 OK — [495.36s .. 498.88s] (3520000 us) — El universo se estabiliza, pero la línea temporal ya no es la misma.
+2026-09-23 06:14:13 | INFO     | Escena #119 OK — [499.12s .. 502.96s] (3840000 us) — Ben Parker está vivo, y enseña en una escuela para chicos problemáticos.
+2026-09-23 06:14:13 | INFO     | Escena #120 OK — [503.60s .. 506.32s] (2720000 us) — May vive con él, y a veces siente que olvidó algo importante.
+2026-09-23 06:14:13 | INFO     | Escena #121 OK — [507.28s .. 511.36s] (4080000 us) — Peter Parker asiste a Midtown, saca buenas notas y sonríe sin saber por qué.
+2026-09-23 06:14:13 | INFO     | Escena #122 OK — [511.60s .. 515.44s] (3840000 us) — Cada noche sueña con una chica de pelo rojo y una azotea bajo la lluvia.
+2026-09-23 06:14:13 | INFO     | Escena #123 OK — [516.00s .. 519.92s] (3920000 us) — No sabe su nombre, pero despierta con el pecho apretado y los ojos húmedos.
+2026-09-23 06:14:13 | INFO     | Escena #124 OK — [520.32s .. 523.76s] (3440000 us) — En su mochila guarda un traje rojo y azul que no recuerda haber cosido.
+2026-09-23 06:14:13 | INFO     | Escena #125 OK — [524.00s .. 527.12s] (3120000 us) — Cuando escucha sirenas, su cuerpo se mueve antes que su mente.
+2026-09-23 06:14:13 | INFO     | Escena #126 OK — [527.76s .. 530.96s] (3200000 us) — Salva a un niño de un auto en llamas y desaparece entre las sombras.
+2026-09-23 06:14:13 | INFO     | Escena #127 OK — [531.36s .. 535.36s] (4000000 us) — La gente lo llama Spider-Man, y él acepta el nombre como un instinto.
+2026-09-23 06:14:13 | INFO     | Escena #128 OK — [535.84s .. 540.24s] (4400000 us) — Norman Osborn nunca se convirtió en el Duende Verde, pero vigila desde lejos.
+2026-09-23 06:14:13 | INFO     | Escena #129 OK — [540.32s .. 544.08s] (3760000 us) — Venom sigue en las alcantarillas, esperando el momento correcto para atacar.
+2026-09-23 06:14:13 | INFO     | Escena #130 OK — [544.56s .. 548.72s] (4160000 us) — Morlun ha sido borrado, pero otros cazadores han sentido el eco de su caída.
+2026-09-23 06:14:13 | INFO     | Escena #131 OK — [549.12s .. 552.56s] (3440000 us) — Peter perdió sus memorias, y con ellas perdió la certeza de lo que viene.
+2026-09-23 06:14:13 | INFO     | Escena #132 OK — [553.04s .. 556.56s] (3520000 us) — Ganó una segunda oportunidad para Ben, para May, para la ciudad.
+2026-09-23 06:14:13 | INFO     | Escena #133 OK — [557.28s .. 561.68s] (4400000 us) — Pero pagó con la única cosa que lo hacía diferente: saber cuánto podía perder.
+2026-09-23 06:14:13 | INFO     | Escena #134 OK — [562.08s .. 565.60s] (3520000 us) — Ahora es más rápido, más fuerte, pero también más humano que nunca.
+2026-09-23 06:14:13 | INFO     | Escena #135 OK — [566.16s .. 569.20s] (3040000 us) — Porque el héroe no es el que recuerda, sino el que elige levantarse.
+2026-09-23 06:14:13 | INFO     | Escena #136 OK — [569.84s .. 573.60s] (3760000 us) — Y en algún lugar del multiverso, otra línea temporal acaba de nacer.
+2026-09-23 06:14:13 | INFO     | Escena #137 OK — [574.08s .. 577.76s] (3680000 us) — En esa otra línea, Peter Parker nunca muere, y nunca renace.
+2026-09-23 06:14:13 | INFO     | Escena #138 OK — [578.08s .. 581.04s] (2960000 us) — En esa otra línea, Ben Parker muere, y Peter aprende la lección.
+2026-09-23 06:14:13 | INFO     | Escena #139 OK — [581.44s .. 584.72s] (3280000 us) — Pero en esta línea, Peter olvidó la lección y conserva el instinto.
+2026-09-23 06:14:13 | INFO     | Escena #140 OK — [584.96s .. 588.96s] (4000000 us) — Cada noche, cuando salta entre edificios, siente un eco de algo perdido.
+2026-09-23 06:14:13 | INFO     | Escena #141 OK — [589.68s .. 593.68s] (4000000 us) — A veces, al ver a MJ, su corazón se acelera sin explicación.
+2026-09-23 06:14:13 | INFO     | Escena #142 OK — [594.16s .. 597.52s] (3360000 us) — Ella lo mira, sonríe, y por un segundo él cree recordar.
+2026-09-23 06:14:13 | INFO     | Escena #143 OK — [597.92s .. 604.72s] (6800000 us) — Luego el momento pasa, y Spider-Man sigue balanceándose hacia el peligro, porque algunas historias están destinadas a repetirse en silencio.
+2026-09-23 06:14:13 | INFO     | Escena #144 OK — [605.36s .. 625.52s] (20160000 us) — Si esta historia te atrapó, suscríbete y cuéntame qué habrías hecho tú. ¿Habrías sacrificado tus recuerdos para salvar a la gente que amas? ¿O habrías conservado tu poder y dejado que el universo pagara el precio? La próxima línea temporal hará que esta parezca un simple ensayo. Esta línea temporal ha sido archivada. Soy Alex, y esto fue Nexus Paradoja.
+2026-09-23 06:14:13 | INFO     | Escenas sincronizadas: 144/144.
+2026-09-23 06:14:13 | INFO     | Paso 3/5 — Preparando proyecto CapCut (clone + edit)...
+2026-09-23 06:14:13 | INFO     | Backup de la plantilla guardado en D:\capcut-auto\backups\20260923_061413_942888
+2026-09-23 06:14:13 | INFO     | Esquema de la plantilla volcado a D:\capcut-auto\logs\schema_plantilla.json
+2026-09-23 06:14:13 | INFO     | Paso 4/5 — Generando proyecto...
+2026-09-23 06:14:13 | INFO     | Proyecto se creará en: D:\YOUTUBE AUTOMATIZADO\CaptCut\CapCut Drafts\Nexus Paradoja video
+2026-09-23 06:14:14 | INFO     | Redistribución proporcional del excedente: 561120000 -> 625600000 µs (factor 1.114913).
+2026-09-23 06:14:14 | INFO     | draft_content.json escrito también en D:\YOUTUBE AUTOMATIZADO\CaptCut\CapCut Drafts\Nexus Paradoja video\Timelines\504B9E4F-3479-463d-9794-8E0E8C434CF1
+2026-09-23 06:14:14 | INFO     | draft_content.json generado con 2 pistas de foto + 1 de audio.
+2026-09-23 06:14:14 | INFO     | Proyecto generado con 2 pistas / 145 segmentos.
+2026-09-23 06:14:14 | INFO     | Esquema de la plantilla volcado a D:\capcut-auto\logs\schema_plantilla_full.json
+2026-09-23 06:14:14 | INFO     | Backup de la plantilla guardado en D:\capcut-auto\backups\20260923_061414_578434
+2026-09-23 06:14:14 | INFO     | PROYECTO GENERADO: D:\YOUTUBE AUTOMATIZADO\CaptCut\CapCut Drafts\Nexus Paradoja video
+2026-09-23 06:14:14 | INFO     | Paso 5/5 — ✔ Proyecto creado en: D:\YOUTUBE AUTOMATIZADO\CaptCut\CapCut Drafts\Nexus Paradoja video
+2026-09-23 06:14:14 | INFO     | IMPORTANTE: cierra la app antes de abrir CapCut.
+2026-09-23 07:29:44 | INFO     | Plantillas detectadas en drafts: 1.PLANTILLA, 0921, Nexus Paradoja video, VIDEO 1 #1, VIDEO 2 #2, VIDEO 3 #16
+2026-09-23 07:29:44 | INFO     | Detección · Audio elegido: guion.wav (score 13) — descartados: — — excluidos por nombre: —
+2026-09-23 07:29:44 | INFO     | Detección · Archivo de escenas elegido: escenas.txt (144 escenas, score 19).
+2026-09-23 07:29:44 | INFO     | Detección · Carpeta de imágenes: escenas 2 (144 archivos).
+2026-09-23 07:39:50 | INFO     | Plantillas detectadas en drafts: 1.PLANTILLA, 0921, Nexus Paradoja video, VIDEO 1 #1, VIDEO 2 #2, VIDEO 3 #16
+2026-09-23 07:39:50 | INFO     | Detección · Audio elegido: guion.wav (score 13) — descartados: — — excluidos por nombre: —
+2026-09-23 07:39:50 | INFO     | Detección · Archivo de escenas elegido: escenas.txt (144 escenas, score 19).
+2026-09-23 07:39:50 | INFO     | Detección · Carpeta de imágenes: escenas 2 (144 archivos).

@@ -1,0 +1,812 @@
+{
+ "generado_el": "2026-09-23T06:14:14",
+ "plantilla": "1.PLANTILLA",
+ "profundidad_maxima": 5,
+ "esquema": {
+  "tipo": "object",
+  "claves": {
+   "id": {
+    "tipo": "str",
+    "longitud": 36,
+    "ejemplo": "504B9E4F-3479-463d-9794-8E0E8C434CF1"
+   },
+   "version": {
+    "tipo": "int",
+    "ejemplo": 360000
+   },
+   "new_version": {
+    "tipo": "str",
+    "longitud": 7,
+    "ejemplo": "185.0.0"
+   },
+   "name": {
+    "tipo": "str",
+    "longitud": 0,
+    "ejemplo": ""
+   },
+   "duration": {
+    "tipo": "int",
+    "ejemplo": 0
+   },
+   "create_time": {
+    "tipo": "int",
+    "ejemplo": 0
+   },
+   "update_time": {
+    "tipo": "int",
+    "ejemplo": 0
+   },
+   "fps": {
+    "tipo": "float",
+    "ejemplo": 30.0
+   },
+   "is_drop_frame_timecode": {
+    "tipo": "bool",
+    "ejemplo": false
+   },
+   "color_space": {
+    "tipo": "int",
+    "ejemplo": -1
+   },
+   "config": {
+    "tipo": "object",
+    "claves": {
+     "video_mute": {
+      "tipo": "bool",
+      "ejemplo": false
+     },
+     "record_audio_last_index": {
+      "tipo": "int",
+      "ejemplo": 1
+     },
+     "extract_audio_last_index": {
+      "tipo": "int",
+      "ejemplo": 1
+     },
+     "original_sound_last_index": {
+      "tipo": "int",
+      "ejemplo": 1
+     },
+     "subtitle_recognition_id": {
+      "tipo": "str",
+      "longitud": 0,
+      "ejemplo": ""
+     },
+     "subtitle_taskinfo": {
+      "tipo": "list",
+      "longitud": 0
+     },
+     "lyrics_recognition_id": {
+      "tipo": "str",
+      "longitud": 0,
+      "ejemplo": ""
+     },
+     "lyrics_taskinfo": {
+      "tipo": "list",
+      "longitud": 0
+     },
+     "subtitle_sync": {
+      "tipo": "bool",
+      "ejemplo": true
+     },
+     "lyrics_sync": {
+      "tipo": "bool",
+      "ejemplo": true
+     },
+     "voice_change_sync": {
+      "tipo": "bool",
+      "ejemplo": false
+     },
+     "sticker_max_index": {
+      "tipo": "int",
+      "ejemplo": 1
+     },
+     "adjust_max_index": {
+      "tipo": "int",
+      "ejemplo": 1
+     },
+     "material_save_mode": {
+      "tipo": "int",
+      "ejemplo": 0
+     },
+     "export_range": {
+      "tipo": "null"
+     },
+     "maintrack_adsorb": {
+      "tipo": "bool",
+      "ejemplo": true
+     },
+     "combination_max_index": {
+      "tipo": "int",
+      "ejemplo": 1
+     },
+     "attachment_info": {
+      "tipo": "list",
+      "longitud": 0
+     },
+     "zoom_info_params": {
+      "tipo": "null"
+     },
+     "system_font_list": {
+      "tipo": "list",
+      "longitud": 0
+     },
+     "multi_language_mode": {
+      "tipo": "str",
+      "longitud": 4,
+      "ejemplo": "none"
+     },
+     "multi_language_main": {
+      "tipo": "str",
+      "longitud": 4,
+      "ejemplo": "none"
+     },
+     "multi_language_current": {
+      "tipo": "str",
+      "longitud": 4,
+      "ejemplo": "none"
+     },
+     "multi_language_list": {
+      "tipo": "list",
+      "longitud": 0
+     },
+     "subtitle_keywords_config": {
+      "tipo": "null"
+     },
+     "use_float_render": {
+      "tipo": "bool",
+      "ejemplo": false
+     },
+     "hdr_vivid": {
+      "tipo": "bool",
+      "ejemplo": false
+     }
+    }
+   },
+   "canvas_config": {
+    "tipo": "object",
+    "claves": {
+     "ratio": {
+      "tipo": "str",
+      "longitud": 8,
+      "ejemplo": "original"
+     },
+     "width": {
+      "tipo": "int",
+      "ejemplo": 1920
+     },
+     "height": {
+      "tipo": "int",
+      "ejemplo": 1080
+     },
+     "background": {
+      "tipo": "null"
+     }
+    }
+   },
+   "tracks": {
+    "tipo": "list",
+    "longitud": 0
+   },
+   "group_container": {
+    "tipo": "null"
+   },
+   "materials": {
+    "tipo": "object",
+    "claves": {
+     "flowers": {
+      "tipo": "list",
+      "longitud": 0
+     },
+     "videos": {
+      "tipo": "list",
+      "longitud": 0
+     },
+     "tail_leaders": {
+      "tipo": "list",
+      "longitud": 0
+     },
+     "audios": {
+      "tipo": "list",
+      "longitud": 0
+     },
+     "images": {
+      "tipo": "list",
+      "longitud": 0
+     },
+     "texts": {
+      "tipo": "list",
+      "longitud": 0
+     },
+     "effects": {
+      "tipo": "list",
+      "longitud": 0
+     },
+     "stickers": {
+      "tipo": "list",
+      "longitud": 0
+     },
+     "canvases": {
+      "tipo": "list",
+      "longitud": 0
+     },
+     "transitions": {
+      "tipo": "list",
+      "longitud": 0
+     },
+     "audio_effects": {
+      "tipo": "list",
+      "longitud": 0
+     },
+     "audio_fades": {
+      "tipo": "list",
+      "longitud": 0
+     },
+     "beats": {
+      "tipo": "list",
+      "longitud": 0
+     },
+     "material_animations": {
+      "tipo": "list",
+      "longitud": 0
+     },
+     "placeholders": {
+      "tipo": "list",
+      "longitud": 0
+     },
+     "placeholder_infos": {
+      "tipo": "list",
+      "longitud": 0
+     },
+     "speeds": {
+      "tipo": "list",
+      "longitud": 0
+     },
+     "common_mask": {
+      "tipo": "list",
+      "longitud": 0
+     },
+     "chromas": {
+      "tipo": "list",
+      "longitud": 0
+     },
+     "text_templates": {
+      "tipo": "list",
+      "longitud": 0
+     },
+     "realtime_denoises": {
+      "tipo": "list",
+      "longitud": 0
+     },
+     "audio_pannings": {
+      "tipo": "list",
+      "longitud": 0
+     },
+     "audio_pitch_shifts": {
+      "tipo": "list",
+      "longitud": 0
+     },
+     "video_trackings": {
+      "tipo": "list",
+      "longitud": 0
+     },
+     "hsl": {
+      "tipo": "list",
+      "longitud": 0
+     },
+     "drafts": {
+      "tipo": "list",
+      "longitud": 0
+     },
+     "color_curves": {
+      "tipo": "list",
+      "longitud": 0
+     },
+     "hsl_curves": {
+      "tipo": "list",
+      "longitud": 0
+     },
+     "primary_color_wheels": {
+      "tipo": "list",
+      "longitud": 0
+     },
+     "log_color_wheels": {
+      "tipo": "list",
+      "longitud": 0
+     },
+     "video_effects": {
+      "tipo": "list",
+      "longitud": 0
+     },
+     "ai_text_effects": {
+      "tipo": "list",
+      "longitud": 0
+     },
+     "audio_balances": {
+      "tipo": "list",
+      "longitud": 0
+     },
+     "handwrites": {
+      "tipo": "list",
+      "longitud": 0
+     },
+     "manual_deformations": {
+      "tipo": "list",
+      "longitud": 0
+     },
+     "manual_beautys": {
+      "tipo": "list",
+      "longitud": 0
+     },
+     "plugin_effects": {
+      "tipo": "list",
+      "longitud": 0
+     },
+     "sound_channel_mappings": {
+      "tipo": "list",
+      "longitud": 0
+     },
+     "green_screens": {
+      "tipo": "list",
+      "longitud": 0
+     },
+     "shapes": {
+      "tipo": "list",
+      "longitud": 0
+     },
+     "material_colors": {
+      "tipo": "list",
+      "longitud": 0
+     },
+     "digital_humans": {
+      "tipo": "list",
+      "longitud": 0
+     },
+     "digital_human_model_dressing": {
+      "tipo": "list",
+      "longitud": 0
+     },
+     "smart_crops": {
+      "tipo": "list",
+      "longitud": 0
+     },
+     "ai_translates": {
+      "tipo": "list",
+      "longitud": 0
+     },
+     "audio_track_indexes": {
+      "tipo": "list",
+      "longitud": 0
+     },
+     "loudnesses": {
+      "tipo": "list",
+      "longitud": 0
+     },
+     "vocal_beautifys": {
+      "tipo": "list",
+      "longitud": 0
+     },
+     "vocal_separations": {
+      "tipo": "list",
+      "longitud": 0
+     },
+     "smart_relights": {
+      "tipo": "list",
+      "longitud": 0
+     },
+     "time_marks": {
+      "tipo": "list",
+      "longitud": 0
+     },
+     "multi_language_refs": {
+      "tipo": "list",
+      "longitud": 0
+     },
+     "video_shadows": {
+      "tipo": "list",
+      "longitud": 0
+     },
+     "video_strokes": {
+      "tipo": "list",
+      "longitud": 0
+     },
+     "video_radius": {
+      "tipo": "list",
+      "longitud": 0
+     }
+    }
+   },
+   "keyframes": {
+    "tipo": "object",
+    "claves": {
+     "videos": {
+      "tipo": "list",
+      "longitud": 0
+     },
+     "audios": {
+      "tipo": "list",
+      "longitud": 0
+     },
+     "texts": {
+      "tipo": "list",
+      "longitud": 0
+     },
+     "stickers": {
+      "tipo": "list",
+      "longitud": 0
+     },
+     "filters": {
+      "tipo": "list",
+      "longitud": 0
+     },
+     "adjusts": {
+      "tipo": "list",
+      "longitud": 0
+     },
+     "handwrites": {
+      "tipo": "list",
+      "longitud": 0
+     },
+     "effects": {
+      "tipo": "list",
+      "longitud": 0
+     }
+    }
+   },
+   "keyframe_graph_list": {
+    "tipo": "list",
+    "longitud": 0
+   },
+   "platform": {
+    "tipo": "object",
+    "claves": {
+     "os": {
+      "tipo": "str",
+      "longitud": 7,
+      "ejemplo": "windows"
+     },
+     "os_version": {
+      "tipo": "str",
+      "longitud": 10,
+      "ejemplo": "10.0.19045"
+     },
+     "app_id": {
+      "tipo": "int",
+      "ejemplo": 359289
+     },
+     "app_version": {
+      "tipo": "str",
+      "longitud": 5,
+      "ejemplo": "9.4.0"
+     },
+     "app_source": {
+      "tipo": "str",
+      "longitud": 2,
+      "ejemplo": "cc"
+     },
+     "device_id": {
+      "tipo": "str",
+      "longitud": 32,
+      "ejemplo": "b300f968f67cce387c40a84b2bfad32d"
+     },
+     "hard_disk_id": {
+      "tipo": "str",
+      "longitud": 32,
+      "ejemplo": "faa6757047735fcc7eb5cec119460bb5"
+     },
+     "mac_address": {
+      "tipo": "str",
+      "longitud": 32,
+      "ejemplo": "083b7da738e0bdb85ec31356ef4e4ab7"
+     }
+    }
+   },
+   "last_modified_platform": {
+    "tipo": "object",
+    "claves": {
+     "os": {
+      "tipo": "str",
+      "longitud": 7,
+      "ejemplo": "windows"
+     },
+     "os_version": {
+      "tipo": "str",
+      "longitud": 10,
+      "ejemplo": "10.0.19045"
+     },
+     "app_id": {
+      "tipo": "int",
+      "ejemplo": 359289
+     },
+     "app_version": {
+      "tipo": "str",
+      "longitud": 5,
+      "ejemplo": "9.4.0"
+     },
+     "app_source": {
+      "tipo": "str",
+      "longitud": 2,
+      "ejemplo": "cc"
+     },
+     "device_id": {
+      "tipo": "str",
+      "longitud": 32,
+      "ejemplo": "b300f968f67cce387c40a84b2bfad32d"
+     },
+     "hard_disk_id": {
+      "tipo": "str",
+      "longitud": 32,
+      "ejemplo": "faa6757047735fcc7eb5cec119460bb5"
+     },
+     "mac_address": {
+      "tipo": "str",
+      "longitud": 32,
+      "ejemplo": "083b7da738e0bdb85ec31356ef4e4ab7"
+     }
+    }
+   },
+   "mutable_config": {
+    "tipo": "null"
+   },
+   "cover": {
+    "tipo": "null"
+   },
+   "retouch_cover": {
+    "tipo": "null"
+   },
+   "extra_info": {
+    "tipo": "null"
+   },
+   "relationships": {
+    "tipo": "list",
+    "longitud": 0
+   },
+   "mixed_track_mode_on": {
+    "tipo": "bool",
+    "ejemplo": false
+   },
+   "render_index_track_mode_on": {
+    "tipo": "bool",
+    "ejemplo": true
+   },
+   "free_render_index_mode_on": {
+    "tipo": "bool",
+    "ejemplo": false
+   },
+   "static_cover_image_path": {
+    "tipo": "str",
+    "longitud": 0,
+    "ejemplo": ""
+   },
+   "source": {
+    "tipo": "str",
+    "longitud": 7,
+    "ejemplo": "default"
+   },
+   "time_marks": {
+    "tipo": "null"
+   },
+   "path": {
+    "tipo": "str",
+    "longitud": 0,
+    "ejemplo": ""
+   },
+   "lyrics_effects": {
+    "tipo": "list",
+    "longitud": 0
+   },
+   "uneven_animation_template_info": {
+    "tipo": "object",
+    "claves": {
+     "composition": {
+      "tipo": "str",
+      "longitud": 0,
+      "ejemplo": ""
+     },
+     "content": {
+      "tipo": "str",
+      "longitud": 0,
+      "ejemplo": ""
+     },
+     "order": {
+      "tipo": "str",
+      "longitud": 0,
+      "ejemplo": ""
+     },
+     "sub_template_info_list": {
+      "tipo": "list",
+      "longitud": 0
+     }
+    }
+   },
+   "draft_type": {
+    "tipo": "str",
+    "longitud": 5,
+    "ejemplo": "video"
+   },
+   "smart_ads_info": {
+    "tipo": "object",
+    "claves": {
+     "page_from": {
+      "tipo": "str",
+      "longitud": 0,
+      "ejemplo": ""
+     },
+     "routine": {
+      "tipo": "str",
+      "longitud": 0,
+      "ejemplo": ""
+     },
+     "draft_url": {
+      "tipo": "str",
+      "longitud": 0,
+      "ejemplo": ""
+     }
+    }
+   },
+   "function_assistant_info": {
+    "tipo": "object",
+    "claves": {
+     "smart_rec_applied": {
+      "tipo": "bool",
+      "ejemplo": false
+     },
+     "fixed_rec_applied": {
+      "tipo": "bool",
+      "ejemplo": false
+     },
+     "auto_adjust": {
+      "tipo": "bool",
+      "ejemplo": false
+     },
+     "auto_adjust_segid_list": {
+      "tipo": "list",
+      "longitud": 0
+     },
+     "color_correction": {
+      "tipo": "bool",
+      "ejemplo": false
+     },
+     "color_correction_segid_list": {
+      "tipo": "list",
+      "longitud": 0
+     },
+     "enhance_quality": {
+      "tipo": "bool",
+      "ejemplo": false
+     },
+     "smooth_slow_motion": {
+      "tipo": "bool",
+      "ejemplo": false
+     },
+     "deflicker_segid_list": {
+      "tipo": "list",
+      "longitud": 0
+     },
+     "video_noise_segid_list": {
+      "tipo": "list",
+      "longitud": 0
+     },
+     "enhance_quality_segid_list": {
+      "tipo": "list",
+      "longitud": 0
+     },
+     "smart_segid_list": {
+      "tipo": "list",
+      "longitud": 0
+     },
+     "retouch": {
+      "tipo": "bool",
+      "ejemplo": false
+     },
+     "retouch_segid_list": {
+      "tipo": "list",
+      "longitud": 0
+     },
+     "enhande_voice": {
+      "tipo": "bool",
+      "ejemplo": false
+     },
+     "enhance_voice_segid_list": {
+      "tipo": "list",
+      "longitud": 0
+     },
+     "audio_noise_segid_list": {
+      "tipo": "list",
+      "longitud": 0
+     },
+     "auto_caption": {
+      "tipo": "bool",
+      "ejemplo": false
+     },
+     "auto_caption_segid_list": {
+      "tipo": "list",
+      "longitud": 0
+     },
+     "auto_caption_template_id": {
+      "tipo": "str",
+      "longitud": 0,
+      "ejemplo": ""
+     },
+     "caption_opt": {
+      "tipo": "bool",
+      "ejemplo": false
+     },
+     "caption_opt_segid_list": {
+      "tipo": "list",
+      "longitud": 0
+     },
+     "eye_correction": {
+      "tipo": "bool",
+      "ejemplo": false
+     },
+     "eye_correction_segid_list": {
+      "tipo": "list",
+      "longitud": 0
+     },
+     "normalize_loudness": {
+      "tipo": "bool",
+      "ejemplo": false
+     },
+     "normalize_loudness_segid_list": {
+      "tipo": "list",
+      "longitud": 0
+     },
+     "normalize_loudness_audio_denoise_segid_list": {
+      "tipo": "list",
+      "longitud": 0
+     },
+     "auto_adjust_fixed": {
+      "tipo": "bool",
+      "ejemplo": false
+     },
+     "auto_adjust_fixed_value": {
+      "tipo": "float",
+      "ejemplo": 50.0
+     },
+     "color_correction_fixed": {
+      "tipo": "bool",
+      "ejemplo": false
+     },
+     "color_correction_fixed_value": {
+      "tipo": "float",
+      "ejemplo": 50.0
+     },
+     "normalize_loudness_fixed": {
+      "tipo": "bool",
+      "ejemplo": false
+     },
+     "enhande_voice_fixed": {
+      "tipo": "bool",
+      "ejemplo": false
+     },
+     "retouch_fixed": {
+      "tipo": "bool",
+      "ejemplo": false
+     },
+     "enhance_quality_fixed": {
+      "tipo": "bool",
+      "ejemplo": false
+     },
+     "smooth_slow_motion_fixed": {
+      "tipo": "bool",
+      "ejemplo": false
+     },
+     "fps": {
+      "tipo": "object",
+      "claves": {
+       "num": {
+        "tipo": "int",
+        "ejemplo": 0
+       },
+       "den": {
+        "tipo": "int",
+        "ejemplo": 1
+       }
+      }
+     }
+    }
+   }
+  }
+ }
+}

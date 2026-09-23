@@ -1,0 +1,9 @@
+ESCENA #1
+VOZ EN OFF: "Prueba uno de verificacion visual"
+DURACIÓN ESTIMADA: 2 segundos
+ESCENA #2
+VOZ EN OFF: "Prueba dos de verificacion visual"
+DURACIÓN ESTIMADA: 2 segundos
+ESCENA #3
+VOZ EN OFF: "Prueba tres de verificacion visual"
+DURACIÓN ESTIMADA: 1 segundo
