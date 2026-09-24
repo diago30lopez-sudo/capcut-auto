@@ -910,8 +910,7 @@ class CapCutProject:
             tracks.append(sfx_track)
         if config.WATERMARK_ENABLED:
             wm_mat, wm_track = build_watermark_material_and_track(
-                config.WATERMARK_TEXT, len(tracks), target_us,
-                canvas_w, canvas_h)
+                config.WATERMARK_TEXT, len(tracks), target_us)
             materials["texts"].append(wm_mat)
             tracks.append(wm_track)
         content["tracks"] = tracks

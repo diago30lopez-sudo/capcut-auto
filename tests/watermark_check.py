@@ -5,14 +5,17 @@ temporal, sin tocar los drafts):
 
 1) Material `text` con el texto exacto, tamano 8, negrita+italica, espaciado de
    caracteres '2' de la UI (= 0.10 en el JSON normalizado de CapCut) y opacidad
-   10% en la MISMA escala float 0-1 de los subtitulos (text_alpha).
+   40% en la MISMA escala float 0-1 de los subtitulos (text_alpha).
 2) Segmento propio que cubre TODO el video: target_timerange [0, audio_dur).
 3) Pista propia SEPARADA de la pista de subtitulos (dos pistas text distintas).
 4) target_timerange del watermark en el mismo eje temporal que el audio.
 5) Toggle config.WATERMARK_ENABLED = False -> no se agrega ni material ni pista.
 
-Se reporta el mapeo de posicion (X=-1045, Y=892 -> normalizado por lienzo) y la
-constatacion de que no solapa los subtitulos (lados opuestos del centro).
+Se reporta el mapeo de posicion (X=-1098, Y=896) -> JSON CONFIRMADO
+   empiricamente x=-0.571875 (-1098/1920), y=0.8296296 (896/1080) en
+   clip.transform, y la constatacion de que el watermark va en el EXTREMO
+   superior-izquierdo, independiente de la fila de los subtitulos
+   (Y=-0.6111111 = UI -660).
 
 Ejecutar desde la raiz:
     & .venv\\Scripts\\python.exe -X utf8 tests\\watermark_check.py
@@ -117,13 +120,15 @@ def main() -> None:
     checks["negrita + italica activas"] = (
         wm_mats and single.get("bold") is config.WATERMARK_BOLD
         and single.get("italic") is config.WATERMARK_ITALIC)
-    # UI '2' de espaciado = 0.05*2 = 0.10 normalizado (igual que subtitulos).
-    expected_spacing = 0.05 * config.WATERMARK_LETTER_SPACING
+    # UI '2' de espaciado = 0.10 JSON (escala confirmada: UI * 0.05).
     checks["espaciado chars '2' = 0.10 JSON"] = (
-        wm_mats and abs(wm["letter_spacing"] - expected_spacing) < 1e-9)
-    # Opacidad 10% en la escala float 0-1 (text_alpha) de los subtitulos.
-    checks["opacidad 10% (text_alpha 0.10)"] = (
-        wm_mats and abs(wm["text_alpha"] - config.WATERMARK_OPACITY) < 1e-9)
+        wm_mats and abs(wm["letter_spacing"] - config.WATERMARK_LETTER_SPACING_JSON) < 1e-9)
+    # Opacidad 40% = text_alpha 0.40 CON fill.alpha 1.0 en el content (sin ese
+    # alpha CapCut aplica ~0.75 y 0.40 se ve como 30%).
+    checks["opacidad 40% (text_alpha 0.40 + fill.alpha 1.0)"] = (
+        wm_mats
+        and abs(wm["text_alpha"] - config.WATERMARK_ALPHA_JSON) < 1e-9
+        and (styles[0].get("fill") or {}).get("alpha") == 1.0)
     # Sin trazo ni sombra: defaults del canonico (desactivados).
     checks["sin trazo ni sombra"] = (
         wm_mats
@@ -148,14 +153,14 @@ def main() -> None:
             for t in data.get("tracks") or [] if t.get("type") == "audio"
             for s in t.get("segments") or []))
 
-    # Posicion normalizada reportada (no es un fail; es el mapeo usado).
+    # Posicion fija reportada (valores JSON CONFIRMADOS escritos directos).
     transform = wm_seg.get("clip", {}).get("transform", {})
-    canvas = data.get("canvas_config") or {}
-    cw, ch = canvas.get("width", 1920), canvas.get("height", 1080)
-    checks["pos X=-1045 -> x=-0.5443 (izquierda)"] = (
-        abs(transform.get("x", 0) - config.WATERMARK_POS_X / cw) < 1e-9)
-    checks["pos Y=892 -> y=~0.8259 (ARRIBA)"] = (
-        abs(transform.get("y", 0) - config.WATERMARK_POS_Y / ch) < 1e-9)
+    checks["pos X=-1098 -> x=-0.571875 (izquierda)"] = (
+        abs(transform.get("x", 0) - config.WATERMARK_POS_X_JSON) < 1e-9
+        and abs(config.WATERMARK_POS_X_JSON - (-1098 / 1920)) < 1e-9)
+    checks["pos Y=896 -> y=0.8296296 (ARRIBA)"] = (
+        abs(transform.get("y", 0) - config.WATERMARK_POS_Y_JSON) < 1e-9
+        and abs(config.WATERMARK_POS_Y_JSON - (896 / 1080)) < 1e-9)
 
     # Toggle OFF: no debe aparecer ni material ni pista extra.
     data_off, _ = _generate(enable_watermark=False)
@@ -170,13 +175,12 @@ def main() -> None:
         ok = ok and v
 
     print()
-    print(f"  posicion normalizada: x = {transform.get('x', 0):.6f} "
-          f"(=-1045/{cw}), y = {transform.get('y', 0):.6f} (=892/{ch})")
-    print(f"  letter_spacing JSON = {wm.get('letter_spacing')} (=2*0.05)")
-    print(f"  text_alpha = {wm.get('text_alpha')} (10%)")
-    print("  subtitulos en y = -795/1080 = -0.7361 (abajo, centro)")
-    print("  -> watermark en la parte SUPERIOR-IZQUIERDA, subtitulos abajo: "
-          "NO hay solape.")
+    print(f"  posicion JSON (directo): x = {transform.get('x', 0)} "
+          f"(=-1098/1920), y = {transform.get('y', 0)} (=896/1080)")
+    print(f"  letter_spacing JSON = {wm.get('letter_spacing')} (UI '2' x0.05)")
+    print(f"  text_alpha = {wm.get('text_alpha')} + fill.alpha 1.0 (40%)")
+    print("  -> watermark Y=896 (ARRIBA), X=-1098 (extremo izquierdo);"
+          " subtitulos centrados en Y=-660 (abajo).")
     if not ok:
         print("WATERMARK_FAIL")
         sys.exit(1)

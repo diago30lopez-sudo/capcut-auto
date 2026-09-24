@@ -1,4 +1,7 @@
-# CapCut Auto
+# CapCut Auto - Nexus Paradoja
+
+**Versión actual:** v1.3.0
+**Última actualización:** 2026-09-24
 
 Genera automáticamente un **proyecto CapCut** (Windows) a partir de:
 
@@ -28,6 +31,40 @@ La app:
 > plantilla y edita los JSON **después**: crea el proyecto nuevo primero y
 > luego edita el JSON de ¡ESE proyecto nuevo! (nunca la plantilla original).
 > El proyecto se crea con **CapCut cerrado**.
+
+---
+
+## Escalas JSON ↔ CapCut UI (oficial)
+
+Mapa de conversión entre el JSON del `draft_content.json` y los valores del
+panel de CapCut (confirmado por investigación; con ejemplos y recálculo en
+[`docs/capcut_json_scales.md`](docs/capcut_json_scales.md)). Aplica
+únicamente a este proyecto **1920×1080** (half width = 960, half height = 540).
+
+| Propiedad CapCut UI      | Campo en `draft_content.json`        | Fórmula (UI → JSON) |
+|--------------------------|--------------------------------------|---------------------|
+| Grosor trazo             | `strokes[0].width` (y `border_width`)| UI / 500            |
+| Opacidad (%)             | `text_alpha` (+ `fill.alpha` 1.0)    | UI / 100            |
+| Letter spacing           | `letter_spacing`                     | UI × 0.05           |
+| Posición X               | `transform.x`                        | UI_X / 1920         |
+| Posición Y               | `transform.y`                        | UI_Y / 1080         |
+
+Valores calculados para este proyecto:
+
+| Propiedad            | UI deseada | Valor JSON                                    |
+|----------------------|------------|-----------------------------------------------|
+| Grosor trazo subtítulos | 30       | `0.06`    (= 30 / 500)                        |
+| Opacidad watermark   | 40%        | `0.40`    (= 40 / 100) + `fill.alpha 1.0`     |
+| Letter spacing watermark | 2       | `0.10`    (= 2 × 0.05)                        |
+| Watermark posición X | -1098      | `-0.571875` (= -1098 / 1920)                  |
+| Watermark posición Y | 896        | `0.8296`    (= 896 / 1080, ≈0.8296)           |
+| Subtítulos posición Y| -660       | `-0.6111111`  (= -660 / 1080)                 |
+
+> ⚠️ **Verificar empíricamente:** abre el proyecto generado en CapCut. Si los
+> valores mostrados NO son exactamente los de la columna "UI deseada", ajusta
+> el JSON proporcionalmente (constantes `*_JSON` en `src/core/config.py`) hasta
+> que coincidan y documenta la corrección aquí y en
+> `docs/capcut_json_scales.md`.
 
 ---
 
@@ -182,6 +219,7 @@ capcut-auto/
 │   │   ├── auto_detect.py          # detección inteligente (nuevo)
 │   │   ├── scene_parser.py         # .txt de escenas
 │   │   ├── transcriber.py          # descarga CrispASR/modelo + align_audio_to_text
+│   │   ├── bootstrap.py            # ensure_dependencies(): descarga bin+modelo (1er uso)
 │   │   ├── timeline_builder.py     # timeline escena <-> cue del SRT + cancel_event
 │   │   └── capcut_project.py       # clonado/edición + cancel_event
 │   └── utils/
@@ -198,8 +236,14 @@ capcut-auto/
 │   ├── auto_detect_check.py     # checks de detección + cancelación (sin UI)
 │   ├── session_restore_check.py # restauración de config al reabrir la UI
 │   ├── transcriber_import_check.py  # anti-typo CRISPASR + imports (sin red)
+│   ├── bootstrap_check.py       # descarga bin/modelo simulada (sin red)
+│   ├── subs_check.py            # subtítulos: fragmentación, estilo, trazo, pop-up
+│   ├── watermark_check.py       # marca de agua "NEXUS PARADOJA" (toggles, UI/JSON)
+│   ├── json_scales_check.py     # valores JSON EXACTOS de las escalas UI (v1.3.0)
 │   ├── fase2_e2e.py             # descarga real + alineación del guion (autorizado)
 │   └── build_helpers.py         # plantilla/audio sintéticos
+├── docs/
+│   └── capcut_json_scales.md    # escalas JSON ↔ CapCut UI (oficial)
 └── README.md
 ```
 
@@ -223,9 +267,94 @@ capcut-auto/
 # 5) Import de transcriber + anti-typo CRISPASR (sin red ni descargas)
 & .venv\Scripts\python.exe -X utf8 tests\transcriber_import_check.py
 
-# 6) E2E real autorizado: descarga bin+modelo y alinea el guion (toca bin/models y CapCut)
+# 6) Subtítulos: fragmentación 2-5 palabras, estilo, espaciado U+0020, trazo UI 30
+& .venv\Scripts\python.exe -X utf8 tests\subs_check.py
+
+# 7) Marca de agua "NEXUS PARADOJA": UI/JSON, toggle ON/OFF (draft temporal)
+& .venv\Scripts\python.exe -X utf8 tests\watermark_check.py
+
+# 8) Valores JSON EXACTOS de las escalas JSON<->CapCut UI (trazo, opacidad,
+#    spacing, posiciones de subtítulos y watermark)
+& .venv\Scripts\python.exe -X utf8 tests\json_scales_check.py
+
+# 9) E2E real autorizado: descarga bin+modelo y alinea el guion (toca bin/models y CapCut)
 & .venv\Scripts\python.exe -X utf8 tests\fase2_e2e.py
 ```
+
+---
+
+## Reglas de desarrollo
+
+Reglas estrictas para tocar este repo (las verifican los tests):
+
+1. **Un solo espacio ASCII entre palabras de subtítulos.** `build_text_content`
+   normaliza el texto con `" ".join(text.split())`: entre palabras hay
+   EXACTAMENTE un U+0020. Prohibido `\u2003`, `\u00A0`, `\t`, `\n` o múltiples
+   espacios (producen huecos enormes en CapCut). Verificado por `subs_check.py`.
+2. **Posición vertical de subtítulos constante.** Todos los subtítulos usan la
+   misma `config.SUBTITLE_POS_Y_JSON = -0.6111111` (= UI "-660", escala
+   UI_Y/1080 = -660/1080), aplicada SIN cálculo dinámico en
+   `subtitles.SUBTITLE_Y`. Nada de Y calculada por contenido.
+3. **Trazo de subtítulos = 30 en la UI.** `config.SUBTITLE_STROKE_WIDTH_JSON =
+   0.06` (JSON) = "30" en CapCut (escala UI/500). Trazo ACTIVADO (en el
+   `content`: `strokes[0].enable = true`, `border_mode 1`), color negro puro.
+   Verificado por `subs_check.py`.
+4. **Marca de agua propia, pista independiente.** "NEXUS PARADOJA",
+   `transform.x = -0.571875` (UI X=-1098), `transform.y = 0.8296` (UI Y=896),
+   `text_alpha = 0.40` + `fill.alpha 1.0` (40%), `letter_spacing = 0.10`
+   (espaciado 2), tamaño 8, negrita+cursiva, misma fuente que subtítulos,
+   cubre todo el video, en su propia pista text. Verificado por
+   `watermark_check.py` y `json_scales_check.py`.
+5. **Nunca tocar código no relacionado.** Un cambio toca solo su bug/feature.
+6. **README siempre al día.** Cada cambio funcional actualiza esta sección.
+
+### Escalas JSON ↔ UI de CapCut (confirmadas; ver docs/capcut_json_scales.md)
+
+Use las constantes de `src/core/config.py` (versionadas como `*_UI` y `*_JSON`):
+
+| Concepto | Escala (UI → JSON) | Ejemplo verificado |
+|---|---|---|
+| `strokes[0].width` / `border_width` (trazo) | UI / 500 | UI 30 → `0.06` |
+| `text_alpha` (opacidad) | UI / 100 (+ `fill.alpha 1.0`) | 40% → `0.40` |
+| `letter_spacing` | UI × 0.05 | UI 2 → `0.10` · UI 1 → `0.05` |
+| `transform.x` | UI_X / 1920 | -1098/1920 → `-0.571875` |
+| `transform.y` | UI_Y / 1080 | 896/1080 → `0.8296` · -660/1080 → `-0.6111111` |
+
+---
+
+## Historial de versiones
+
+### v1.4.0 (2026-09-24)
+
+- Corrected JSON ↔ CapCut UI scales based on empirical testing against the
+  user's real draft (`#1 Nexus Paradoja`) and direct CapCut measurements.
+- Positions: CapCut multiplies `transform.*` by the FULL canvas (1920×1080),
+  not half; watermark X/Y JSON now `-0.571875` / `0.8296` (UI -1098/896),
+  subtitles Y `-0.6111111` (UI -660). v1.3.0 values showed as double.
+- Text stroke: scale is UI/500 (JSON `0.06` = UI 30). v1.3.0 `0.30` showed 150.
+- Watermark opacity: `text_alpha 0.40` + explicit `styles[].fill.alpha = 1.0`
+  (40%); missing fill.alpha made it render 30%.
+- Fix de huecos entre palabras (exactamente 1 espacio ASCII).
+
+### v1.3.0 (2026-09-24)
+
+- Watermark "NEXUS PARADOJA" con opacidad 40%.
+- Fix del contorno de subtítulos (trazo UI 30) y posición vertical constante.
+- Fix de huecos entre palabras (exactamente 1 espacio ASCII).
+- Nuevo `tests/json_scales_check.py` y documentación oficial
+  `docs/capcut_json_scales.md`.
+
+### v1.2.0 (fecha)
+
+- Fase 3: camera shake, HSL, paneos, SFX.
+
+### v1.1.0 (fecha)
+
+- Fase 2: UI 2 paneles, subtítulos, modal verde.
+
+### v1.0.0 (fecha)
+
+- Fase 1: alineación CrispASR + sincronización.
 
 ---
 

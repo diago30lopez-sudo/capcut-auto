@@ -8,9 +8,10 @@ Convierte un archivo .srt en la pista de texto de CapCut:
 2. ESTILO (valores EXACTOS de la captura de CapCut): fuente
    montserrat/bebas/impact si estan en el sistema (si no, SystemFont), tamano
    12, Negrita + Italica activos, espaciado de caracteres 1, texto blanco puro
-   (palabras clave en amarillo #FFD700), trazo negro 42%, sombra negra con
-   desenfoque 20% y distancia 15, posicion Y = -795 (normalizada al alto del
-   canvas 1080: -795/1080).
+(palabras clave en amarillo #FFD700), trazo negro 30 (= JSON 0.06, escala
+    empirica UI = JSON * 500), sombra negra con desenfoque 20% y distancia 15,
+    posicion Y = -660 (JSON -660/1080 = -0.6111111, aplicada a TODOS los
+    subtitulos).
 3. ANIMACION pop-up: los fragmentos entran con escalas 0.8 -> 1.0 en 0.1 s
    mediante keyframes de escala (KFTypeScaleX/KFTypeScaleY) y DESPUES se
    mantienen ESTATICOS en su escala base (1.0) durante toda la duracion del
@@ -54,11 +55,13 @@ SUBTITLE_KEYWORDS = frozenset({
 KEYWORD_COLOR = [1.0, 0.8431373, 0.0]      # #FFD700
 BASE_COLOR = [1.0, 1.0, 1.0]               # blanco puro
 
-# Posicion vertical del centro del texto. En el panel de CapCut la app muestra
-# "Y = -795" (px sobre el centro de un lienzo 1080 de alto); el draft lo guarda
-# NORMALIZADO por la altura del canvas: -795/1080 = -0.7361... (signo NEGATIVO
-# sube el texto, igual que el draft real del usuario: -0.7359683794466405).
-SUBTITLE_Y = -795.0 / 1080.0
+# Posicion vertical del centro del texto = CONSTANTE para TODOS los subtitulos
+# (aplicada sin calculo dinamico en build_text_segment). Escala CONFIRMADA
+# empiricamente (v1.4.0): JSON = UI_Y / CANVAS_HEIGHT = -660/1080 = -0.6111111
+# (signo NEGATIVO baja el texto, mismo convenio que el draft real). El valor
+# viejo -1.2222 (UI/540) mostraba -1320 en CapCut (double). Se escribe directo
+# en clip.transform.y.
+SUBTITLE_Y = float(config.SUBTITLE_POS_Y_JSON)
 
 # Espaciado de caracteres EXACTO = 1 en la UI de CapCut. CapCut guarda el
 # valor NORMALIZADO en el JSON: 1.0 en el JSON se muestra como "20" en el
@@ -70,15 +73,16 @@ LETTER_SPACING = 0.05      # material.letter_spacing (= UI "1")
 STYLE_BOLD = True          # Negrita
 STYLE_ITALIC = True        # Italica
 
-# Trazo (stroke): grosor EXACTO de 40 en la UI de CapCut = border_width 0.4
-# normalizado (nuestros 0.42 previos aparecian como "42" en el panel).
-# Color negro puro, opacidad total. border_mode 1 es el "checkbox" del trazo
-# en CapCut (0 = desactivado); con 1 la casilla "Trazo" queda activada. El
-# color/grosor se reflejan TAMBIEN en cada estilo del content (strokes[]) que
-# es lo que el motor de render consume. Sombra: desenfoque 20% =
-# shadow_smoothing 0.2, distancia 15 = shadow_distance.
+# Trazo (stroke): grosor EXACTO de 30 en la UI = strokes[0].width 0.06 (escala
+# CONFIRMADA empiricamente v1.4.0: UI = JSON * 500; UI 30 -> 0.06). El valor
+# viejo 0.30 (UI * 0.01) se mostraba como 150 en CapCut (0.30 * 500). Color
+# negro puro, opacidad total. border_mode 1 es el "checkbox" del trazo en
+# CapCut (0 = desactivado); con 1 la casilla "Trazo" queda activada. Dentro del
+# content cada estilo lleva strokes[].enable = true (lo que el motor de render
+# consume).
+# Sombra: desenfoque 20% = shadow_smoothing 0.2, distancia 15 = shadow_distance.
 BORDER_ALPHA = 1.0
-BORDER_WIDTH = 0.4         # material.border_width (= UI "40")
+BORDER_WIDTH = float(config.SUBTITLE_STROKE_WIDTH_JSON)  # 0.06 (= UI "30")
 BORDER_COLOR = "#000000"
 BORDER_MODE = 1            # trazo ACTIVADO en la UI de CapCut
 STROKE_MODE = 0            # modo del trazo en el content (solid normal)
@@ -177,7 +181,13 @@ def build_text_content(
     El `range` de cada estilo es [inicio, fin) en offsets UTF-16 dentro de
     `text`. Las palabras reservadas (SUBTITLE_KEYWORDS) van en amarillo #FFD700;
     el resto en blanco puro. Los offsets se calculan con _utf16_len para no
-    desalinear con acentos."""
+    desalinear con acentos.
+
+    REGLA DE ORO (PASO 1): entre palabras hay EXACTAMENTE un espacio ASCII
+    (U+0020). Se normaliza aqui cualquier separador raro (\\u2003, \\u00A0, \\t,
+    \\n o multiples espacios) que provoque huecos enormes en CapCut."""
+    text = " ".join(str(text or "").split())  # un solo espacio ASCII entre palabras
+
     def normalize_word(w: str) -> str:
         return w.lower().strip("¿?¡!,.;:()\"«»")
 
@@ -198,6 +208,7 @@ def build_text_content(
                 "content": {"render_type": "solid", "solid": {"color": [0.0, 0.0, 0.0]}},
                 "width": BORDER_WIDTH,
                 "mode": STROKE_MODE,
+                "enable": True,
             }],
         })
         cursor = end + 1  # el espacio entre palabras
@@ -230,7 +241,7 @@ def build_text_material(text: str) -> dict:
     mat["line_spacing"] = 0.02
     mat["line_max_width"] = 0.82
     mat["check_flag"] = 7
-    # Trazo negro ACTIVADO (casilla "Trazo" en la UI) con grosor 40 = 0.4.
+    # Trazo negro ACTIVADO (casilla "Trazo" en la UI) con grosor 30 = 0.06.
     mat["border_mode"] = BORDER_MODE
     mat["border_alpha"] = BORDER_ALPHA
     mat["border_color"] = BORDER_COLOR
@@ -349,7 +360,7 @@ def _watermark_content(text: str, font_path: str, font_size: float,
     end = _utf16_len(text)
     styles = [{
         "range": [0, end],
-        "fill": {"content": {"solid": {"color": BASE_COLOR}}},
+        "fill": {"content": {"solid": {"color": BASE_COLOR}}, "alpha": 1.0},
         "font": {"id": "", "path": font_path},
         "size": font_size,
         "bold": bold,
@@ -368,15 +379,14 @@ def build_watermark_material_and_track(
     text: str,
     track_render_index: int,
     duration_us: int,
-    canvas_w: int,
-    canvas_h: int,
 ) -> tuple[dict, dict]:
     """Material de texto + pista PROPIA del watermark (marca de agua).
 
     Reutiliza la misma fuente resuelta y la estructura base de los subtitulos,
     pero en su propia pista (independiente y separada) que cubre todo el video:
     target_timerange = [0, duration_us). Sin trazo ni sombra, color blanco al
-    `WATERMARK_OPACITY` y posicion configurable en pixeles sobre el lienzo.
+    `WATERMARK_ALPHA_JSON` y posicion fija `WATERMARK_POS_*_JSON` (valores JSON
+    confirmados, escritos directamente en clip.transform).
 
     Devuelve (material, track) listos para insertar en materials["texts"] y
     content["tracks"]."""
@@ -389,15 +399,17 @@ def build_watermark_material_and_track(
                                         config.WATERMARK_BOLD,
                                         config.WATERMARK_ITALIC)
     mat["text_color"] = "#FFFFFF"
-    # Misma escala 0-1 que los subtitulos (text_alpha 1.0 = 100%).
-    mat["text_alpha"] = config.WATERMARK_OPACITY
+    # Opacidad 40% = text_alpha 0.40 CON fill.alpha 1.0 explicito en el content:
+    # sin ese alpha CapCut aplica ~0.75 y 0.40 se muestra como 30% (v1.3.0).
+    # UI = text_alpha * fill.alpha * 100.
+    mat["text_alpha"] = config.WATERMARK_ALPHA_JSON
     mat["font_path"] = font["path"]
     mat["font_name"] = font["name"]
     mat["font_title"] = font["title"]
     mat["font_size"] = float(config.WATERMARK_FONT_SIZE)
     mat["text_size"] = TEXT_SIZE
-    # UI de CapCut "2" = JSON 0.10, misma escala normalizada (0.05 por unidad).
-    mat["letter_spacing"] = LETTER_SPACING * config.WATERMARK_LETTER_SPACING
+    # UI "2" = JSON 0.10 (escala confirmada: letter_spacing = UI * 0.05).
+    mat["letter_spacing"] = config.WATERMARK_LETTER_SPACING_JSON
     mat["alignment"] = 1
     mat["line_feed"] = 1
     mat["line_spacing"] = 0.02
@@ -414,12 +426,13 @@ def build_watermark_material_and_track(
     # La marca cubre TODO el video, desde el inicio hasta el final del audio.
     seg["target_timerange"] = {"start": 0, "duration": int(duration_us)}
     seg["source_timerange"] = {"start": 0, "duration": int(duration_us)}
-    # Mismo convenio de signo verificado en los subtitulos (negativo = abajo);
-    # aqui el usuario pide X=-1045 px (izquierda) e Y=892 px (arriba) sobre el
-    # lienzo, normalizados por ancho/alto.
+    # Posicion fija del watermark: valores JSON CONFIRMADOS escritos directos
+    # en clip.transform. Escala empirica v1.4.0: UI = JSON * canvas COMPLETO
+    # (1920x1080), no por la mitad. UI X=-1098 -> -1098/1920 = -0.571875;
+    # UI Y=896 -> 896/1080 = 0.8296296 (positivo = ARRIBA, negativo = ABAJO).
     seg["clip"]["transform"] = {
-        "x": config.WATERMARK_POS_X / float(canvas_w),
-        "y": config.WATERMARK_POS_Y / float(canvas_h),
+        "x": config.WATERMARK_POS_X_JSON,
+        "y": config.WATERMARK_POS_Y_JSON,
     }
     seg["clip"]["scale"] = {"x": 1.0, "y": 1.0}
 

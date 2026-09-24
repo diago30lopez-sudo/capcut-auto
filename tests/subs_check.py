@@ -7,6 +7,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from src.core import config
 from src.core.capcut_canonical import TEXT_MATERIAL, TEXT_SEGMENT
 from src.core.subtitles import (
     BORDER_COLOR, BORDER_MODE, BORDER_WIDTH, FONT_SIZE, KEYWORD_COLOR,
@@ -23,6 +24,13 @@ def main() -> None:
 
     # 1) limpieza de tags HTML
     assert clean_srt_text("<i>El héroe es invencible</i>") == "El héroe es invencible"
+
+    # 1b) REGLA DE ORO espaciado: exactamente un espacio ASCII entre palabras
+    #     (prohibidos \u2003, \u00A0, \t, \n o multiples espacios).
+    for raw in ("¿Qué   pasaría\t si", "A\u2003B\u00A0 C", "X\n\nY"):
+        normal = clean_srt_text(raw)
+        assert "  " not in normal and "\t" not in normal and "\n" not in normal, raw
+        assert all(c in " " or ord(c) >= 0x20 for c in normal), raw
 
     # 2) frag2mentos de 2-5 palabras (nunca 1 ni >5)
     for text in ("Un poder mucho más grande de lo que imaginan",
@@ -58,6 +66,9 @@ def main() -> None:
         assert k in mat, f"material.texts pierde campo {k}"
     content = json.loads(mat["content"])
     assert content["text"] == "El héroe es invencible", content["text"]
+    # espaciado: el content usa exactamente un espacio ASCII entre palabras
+    assert "  " not in content["text"]
+    assert content["text"] == " ".join(content["text"].split())
     assert content["styles"], "sin estilos"
     for st in content["styles"]:
         assert st["range"][1] > st["range"][0]
@@ -68,11 +79,14 @@ def main() -> None:
         assert st["italic"] is STYLE_ITALIC, st["italic"] # italica
         # trazo ACTIVADO en cada estilo del content (lo que renderiza CapCut)
         assert st["strokes"] and st["strokes"][0]["width"] == BORDER_WIDTH, st
+        assert abs(st["strokes"][0]["width"] - 0.06) < 1e-6, st              # UI "30" /500
+        assert st["strokes"][0]["enable"] is True, st              # trazo ACTIVADO
         assert st["strokes"][0]["mode"] == STROKE_MODE, st
         assert st["strokes"][0]["content"]["solid"]["color"] == [0.0, 0.0, 0.0], st
     assert mat["font_size"] == FONT_SIZE, mat["font_size"]
     assert mat["letter_spacing"] == LETTER_SPACING, mat["letter_spacing"]
-    assert mat["border_width"] == BORDER_WIDTH
+    assert mat["border_width"] == BORDER_WIDTH, mat["border_width"]  # UI "30"
+    assert abs(mat["border_width"] - 0.06) < 1e-6, mat["border_width"]  # UI "30" /500
     assert mat["border_alpha"] == 1.0
     assert mat["border_color"] == BORDER_COLOR
     assert mat["border_mode"] == BORDER_MODE   # casilla "Trazo" ACTIVADA
@@ -95,12 +109,14 @@ def main() -> None:
         for c in kw_mats for s in c["styles"]
     )
 
-    # 5) segmento de texto: pop-up de entrada + posicion Y exacta -795
-    #    (normalizada al alto del canvas 1080) y ESTATICO tras la entrada
-    #    (escala 1.0 = sin zoom continuo durante toda la duracion del texto).
+    # 5) segmento de texto: pop-up de entrada + posicion Y CONSTANTE -0.6111111
+    #    (escala confirmada empiricamente JSON = UI_Y/1080 = -660/1080) y
+    #    ESTATICO tras la entrada (escala 1.0 = sin zoom continuo durante toda
+    #    la duracion).
     seg = segments[0]
     for k in TEXT_SEGMENT:
         assert k in seg, f"segment.text pierde campo {k}"
+    assert SUBTITLE_Y == config.SUBTITLE_POS_Y_JSON, (SUBTITLE_Y, config.SUBTITLE_POS_Y_JSON)
     assert abs(seg["clip"]["transform"]["y"] - SUBTITLE_Y) < 1e-9, seg["clip"]["transform"]
     assert seg["clip"]["scale"]["x"] == 1.0 and seg["clip"]["scale"]["y"] == 1.0
     kfs = {kf["property_type"]: kf["keyframe_list"] for kf in seg["common_keyframes"]}
