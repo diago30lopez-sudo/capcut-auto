@@ -1,12 +1,19 @@
 """Ventana principal de CapCut Auto con CustomTkinter.
 
-3 secciones + cancelacion + persistencia:
+3 secciones + subtítulos + cancelacion + persistencia:
 
 1. Carpeta CapCut Drafts: se guarda en config_user.json y rellena el combo de
    plantillas detectadas (subcarpetas con draft_content.json + draft_meta_info.json).
 2. Carpeta del video: escaneo inteligente (src.core.auto_detect) y resumen
    con estado ✓/✗ de audio, escenas e imagenes.
-3. Nombre del nuevo proyecto.
+3. Subtítulos (.srt): selector que escanea la carpeta del video en busca de
+   archivos .srt; cada cue se divide en fragmentos de 2-5 palabras con timing
+   proporcional (TAREA 2) durante la generacion.
+4. Nombre del nuevo proyecto.
+
+Al terminar la generacion con exito se muestra un cartel verde modal
+(#28a745) con "COMPLETADO" y boton "✕" para cerrarlo; se abre con after()
+para no bloquear el main thread.
 
 Todo el procesamiento corre en un threading.Thread; los logs llegan por una
 cola (QueueHandler) y la UI los consume con after(). El boton Cancelar setea
@@ -44,8 +51,10 @@ MUTED = "#9ca3af"
 GREEN = "#4ade80"
 RED = "#ff6b6b"
 AMBER = "#ffd54f"
+SUCCESS = "#28a745"  # cartel de completado (TAREA 1)
 
 NO_TEMPLATES = "— sin plantillas —"
+NO_SRT = "— sin subtítulos (.srt) —"
 
 # Punto 1: tipos de edición disponibles; el nombre por defecto cambia según el
 # tipo seleccionado.
@@ -68,12 +77,16 @@ class MainWindow(ctk.CTk):
         self.cancel_event = threading.Event()
         self._thread_done = threading.Event()
         self._running = False
+        self._job_succeeded = False
+        self._success_modal: ctk.CTkToplevel | None = None
 
         self._user_config = load_user_config()
         self._drafts_dir: Path | None = None
         self._template_name: str = ""
         self._video_dir: Path | None = None
         self._detection: DetectionResult | None = None
+        self._srt_dir: Path | None = None  # carpeta donde esta el .srt elegido
+        self._srt_name: str = ""           # nombre del .srt elegido
 
         self.title("CapCut Auto")
         self.configure(fg_color=BG)
@@ -125,12 +138,13 @@ class MainWindow(ctk.CTk):
 
         self._build_section1_drafts(left_outer, row=0)
         self._build_section2_video(left_outer, row=1)
-        self._build_section_edit_type(left_outer, row=2)
-        self._build_section3_name(left_outer, row=3)
+        self._build_section_subtitles(left_outer, row=2)
+        self._build_section_edit_type(left_outer, row=3)
+        self._build_section3_name(left_outer, row=4)
 
         # Botones y barra de progreso en el panel izquierdo al final
         buttons_frame = ctk.CTkFrame(left_outer, fg_color=BG)
-        buttons_frame.grid(row=4, column=0, sticky="ew", padx=0, pady=(10, 4))
+        buttons_frame.grid(row=5, column=0, sticky="ew", padx=0, pady=(10, 4))
         buttons_frame.grid_columnconfigure(0, weight=1)
         buttons_frame.grid_columnconfigure(1, weight=1)
 
@@ -154,7 +168,7 @@ class MainWindow(ctk.CTk):
             left_outer, mode="indeterminate", height=8,
             progress_color=ACCENT, fg_color="#2a2a2a",
         )
-        self.progress.grid(row=5, column=0, sticky="ew", padx=0, pady=(6, 12))
+        self.progress.grid(row=6, column=0, sticky="ew", padx=0, pady=(6, 12))
         self.progress.set(0)
 
         # Panel derecho: única y exclusivamente el área de texto de logs
@@ -245,12 +259,50 @@ class MainWindow(ctk.CTk):
         self._status_footer.grid(
             row=5, column=0, columnspan=2, sticky="ew", padx=12, pady=(0, 10))
 
+    def _build_section_subtitles(self, parent, row: int) -> None:
+        panel = ctk.CTkFrame(parent, fg_color=PANEL, corner_radius=10)
+        panel.grid(row=row, column=0, sticky="ew", padx=0, pady=6)
+        panel.grid_columnconfigure(1, weight=1)
+
+        self._section_title(panel, "3 · Subtítulos (.srt)").grid(
+            row=0, column=0, columnspan=3, sticky="w", padx=12, pady=(8, 4))
+
+        ctk.CTkButton(
+            panel, text="Buscar .srt…", width=150, height=30,
+            corner_radius=8, fg_color=ACCENT, hover_color=ACCENT_HOVER,
+            command=self._browse_srt,
+        ).grid(row=1, column=0, sticky="w", padx=12, pady=(0, 4))
+
+        self._srt_path_label = ctk.CTkLabel(
+            panel, text=NO_SRT, font=ctk.CTkFont(size=12),
+            text_color=MUTED, anchor="w", justify="left",
+        )
+        self._srt_path_label.grid(row=1, column=1, sticky="ew", padx=8, pady=(0, 4))
+        self._srt_path_label.bind("<Button-1>", lambda _e: self._browse_srt())
+
+        self._srt_var = ctk.StringVar(value=NO_SRT)
+        self._srt_menu = ctk.CTkOptionMenu(
+            panel, values=[NO_SRT], variable=self._srt_var,
+            height=30, corner_radius=8, state="disabled",
+            fg_color="#2a2a2a", button_color="#334155",
+            button_hover_color="#475569",
+            command=self._on_srt_changed,
+        )
+        self._srt_menu.grid(row=2, column=0, columnspan=3, sticky="ew", padx=12, pady=(0, 4))
+
+        self._srt_footer = ctk.CTkLabel(
+            panel, text="Los subtítulos se dividen en fragmentos de 2-5 palabras.",
+            font=ctk.CTkFont(size=11), text_color=MUTED,
+            anchor="w", justify="left",
+        )
+        self._srt_footer.grid(row=3, column=0, columnspan=3, sticky="ew", padx=12, pady=(0, 10))
+
     def _build_section_edit_type(self, parent, row: int) -> None:
         panel = ctk.CTkFrame(parent, fg_color=PANEL, corner_radius=10)
         panel.grid(row=row, column=0, sticky="ew", padx=0, pady=6)
         panel.grid_columnconfigure(0, weight=1)
 
-        self._section_title(panel, "3 · Tipo de edición").grid(
+        self._section_title(panel, "4 · Tipo de edición").grid(
             row=0, column=0, sticky="w", padx=12, pady=(8, 4))
 
         self._edit_type_var = ctk.StringVar(value=EDIT_TYPES[0])
@@ -267,7 +319,7 @@ class MainWindow(ctk.CTk):
         panel.grid(row=row, column=0, sticky="ew", padx=0, pady=6)
         panel.grid_columnconfigure(0, weight=1)
 
-        self._section_title(panel, "4 · Nombre del nuevo proyecto").grid(
+        self._section_title(panel, "5 · Nombre del nuevo proyecto").grid(
             row=0, column=0, sticky="w", padx=12, pady=(8, 4))
 
         self.name_entry = ctk.CTkEntry(
@@ -284,7 +336,51 @@ class MainWindow(ctk.CTk):
         self._user_config["capcut_drafts_dir"] = str(self._drafts_dir) if self._drafts_dir else ""
         self._user_config["last_template_name"] = self._template_name or ""
         self._user_config["last_video_dir"] = str(self._video_dir) if self._video_dir else ""
+        self._user_config["last_srt_dir"] = str(self._srt_dir) if self._srt_dir else ""
+        self._user_config["last_srt_name"] = self._srt_name or ""
         save_user_config(self._user_config)
+
+    def _scan_srt_files(self, folder: Path) -> list[Path]:
+        """Busca archivos .srt en la carpeta del video (y un nivel hacia abajo
+        del caché donde la alineación los guarda). Devuelve ordenados."""
+        found: set[Path] = set()
+        if folder is not None and folder.is_dir():
+            found.update(folder.rglob("*.srt"))
+        cache = Path(config.CACHE_DIR)
+        if cache.is_dir():
+            found.update(cache.glob("alineacion_*.srt"))
+        return sorted(found, key=lambda p: p.name.lower())
+
+    def _apply_srt_dir(self, srt: Path | None, persist: bool) -> None:
+        """Guarda la seleccion de .srt elegida por el usuario (o None si elige
+        el placeholder). Actualiza label, combo y estado."""
+        if srt is None:
+            self._srt_dir = None
+            self._srt_name = ""
+            self._srt_var.set(NO_SRT)
+            self._srt_path_label.configure(text=NO_SRT, text_color=MUTED)
+            if persist:
+                self._save_user_config()
+            self._update_ui_state()
+            return
+        self._srt_dir = srt.parent
+        self._srt_name = srt.name
+        self._srt_var.set(str(srt))
+        self._srt_path_label.configure(text=str(srt), text_color=TEXT)
+        if persist:
+            self._save_user_config()
+        log.info("Subtítulos: %s", srt)
+        self._update_ui_state()
+
+    def _browse_srt(self) -> None:
+        start = Path(self._video_dir) if self._video_dir else Path.home()
+        path = filedialog.askopenfilename(
+            initialdir=start, title="Elegir archivo de subtítulos (.srt)",
+            filetypes=[("Subtítulos SRT", "*.srt"), ("Todos los archivos", "*.*")],
+        )
+        if not path:
+            return
+        self._apply_srt_dir(Path(path), persist=True)
 
     def _restore_session(self) -> None:
         drafts = self._user_config.get("capcut_drafts_dir", "")
@@ -293,6 +389,12 @@ class MainWindow(ctk.CTk):
         video = self._user_config.get("last_video_dir", "")
         if video and Path(video).is_dir():
             self._apply_video_dir(Path(video), persist=False)
+        srt_dir = self._user_config.get("last_srt_dir", "")
+        srt_name = self._user_config.get("last_srt_name", "")
+        if srt_dir and srt_name:
+            srt = Path(srt_dir) / srt_name
+            if srt.is_file():
+                self._apply_srt_dir(srt, persist=False)
         self._update_ui_state()
 
     def _update_ui_state(self) -> None:
@@ -377,9 +479,42 @@ class MainWindow(ctk.CTk):
         for warning in self._detection.warnings:
             log.info("Detección · %s", warning)
 
+        self._refresh_srt_menu()
+
         if persist:
             self._save_user_config()
         self._update_ui_state()
+
+    def _refresh_srt_menu(self) -> None:
+        """Rellena el combo de .srt con lo encontrado en la carpeta del video
+        (más los SRT de alineación del caché). Preserva la selección previa si
+        el archivo sigue existiendo."""
+        srt_files = self._scan_srt_files(self._video_dir)
+        values = [NO_SRT] + [str(p) for p in srt_files]
+        self._srt_menu.configure(values=values, state="normal" if values else "disabled")
+
+        current = self._srt_name
+        if current and self._srt_dir is not None:
+            candidate = self._srt_dir / current
+            if candidate.is_file() and str(candidate) in values:
+                self._srt_var.set(str(candidate))
+                self._srt_path_label.configure(text=str(candidate), text_color=TEXT)
+                return
+        self._srt_dir = None
+        self._srt_name = ""
+        self._srt_var.set(NO_SRT)
+        self._srt_path_label.configure(text=NO_SRT, text_color=MUTED)
+
+    def _on_srt_changed(self, value: str) -> None:
+        if value == NO_SRT or not value:
+            self._apply_srt_dir(None, persist=False)
+            return
+        srt = Path(value)
+        if srt.is_file():
+            self._apply_srt_dir(srt, persist=True)
+        else:
+            log.warning("El .srt elegido ya no existe: %s", value)
+            self._refresh_srt_menu()
 
     def _ask_scene_user(self, candidates: list[Path]) -> Path | None:
         dialog = ctk.CTkToplevel(self)
@@ -493,17 +628,72 @@ class MainWindow(ctk.CTk):
 
         if self._running and self._thread_done.is_set():
             was_cancelled = self.cancel_event.is_set()
+            succeeded = self._job_succeeded
             self._running = False
             self.progress.stop()
             self.progress.set(0)
             self.cancel_event.clear()
             if was_cancelled:
                 self._log_widget("⏹ Generación cancelada. Revisa los logs de arriba.", "WARNING")
-            else:
+            elif succeeded:
                 self._log_widget("✔ Proceso terminado. Revisa los logs de arriba.", "OK")
+                # TAREA 1: cartel verde "COMPLETADO" no bloqueante, se abre con
+                # after() para no congelar el main thread (sin grab_set).
+                self.after(150, self._show_success_modal)
+            else:
+                self._log_widget("✘ La generación falló. Revisa los logs de arriba.", "ERROR")
             self._update_ui_state()
 
         self.after(100, self._poll_queue)
+
+    def _show_success_modal(self) -> None:
+        """Cartel verde modal de éxito: #28a745, 'COMPLETADO' grande y botón '✕'
+        arriba a la derecha. Se crea con after() y sin grab_set() para que no
+        bloquee la ventana principal."""
+        if self._success_modal is not None and self._success_modal.winfo_exists():
+            self._success_modal.lift()
+            return
+        modal = ctk.CTkToplevel(self)
+        self._success_modal = modal
+        modal.title("Éxito")
+        modal.geometry("420x210")
+        modal.resizable(False, False)
+        modal.configure(fg_color=SUCCESS)
+        modal.transient(self)
+        modal.after(100, modal.lift)
+
+        # Botón "✕" arriba a la derecha (cierra sin bloquear nada).
+        ctk.CTkButton(
+            modal, text="✕", width=36, height=36, corner_radius=8,
+            font=ctk.CTkFont(size=16, weight="bold"),
+            fg_color="#1e7e34", hover_color="#186a2b", text_color="#ffffff",
+            command=modal.destroy,
+        ).place(relx=1.0, x=-12, y=12, anchor="ne")
+
+        modal.grid_rowconfigure(0, weight=1)
+        modal.grid_rowconfigure(1, weight=1)
+        modal.grid_columnconfigure(0, weight=1)
+
+        ctk.CTkLabel(
+            modal, text="COMPLETADO", font=ctk.CTkFont(size=34, weight="bold"),
+            text_color="#ffffff",
+        ).grid(row=0, column=0, sticky="s")
+        ctk.CTkLabel(
+            modal, text="¡PROYECTO GENERADO CON ÉXITO!",
+            font=ctk.CTkFont(size=14, weight="bold"), text_color="#eafff0",
+        ).grid(row=1, column=0, sticky="n", pady=(6, 0))
+        self._center_modal(modal)
+
+    @staticmethod
+    def _center_modal(modal: ctk.CTkToplevel) -> None:
+        try:
+            modal.update_idletasks()
+            w, h = 420, 210
+            x = (modal.winfo_screenwidth() - w) // 2
+            y = (modal.winfo_screenheight() - h) // 2
+            modal.geometry(f"{w}x{h}+{x}+{y}")
+        except Exception:  # noqa: BLE001
+            pass
 
     # ------------------------------------------------------------- generacion
     def _on_generate(self) -> None:
@@ -544,6 +734,7 @@ class MainWindow(ctk.CTk):
         self.cancel_event.clear()
         self._running = True
         self._thread_done.clear()
+        self._job_succeeded = False
         self.generate_btn.configure(state="disabled")
         self.cancel_btn.configure(state="normal")
         self.progress.start()
@@ -555,7 +746,13 @@ class MainWindow(ctk.CTk):
             "audio": detection.audio_path,
             "scenes_txt": detection.scene_txt_path,
             "images": images,
+            "subtitle_srt": None,
         }
+        if self._srt_name and self._srt_dir is not None:
+            srt = self._srt_dir / self._srt_name
+            if srt.is_file():
+                data["subtitle_srt"] = srt
+                log.info("Subtítulos: se generarán desde %s", srt)
         t = threading.Thread(target=self._run_job, args=(data,), daemon=True)
         t.start()
 
@@ -631,10 +828,12 @@ class MainWindow(ctk.CTk):
             out = project.generate(
                 data["name"], items, data["audio"], total_us,
                 cancel_event=self.cancel_event,
+                subtitle_srt=data.get("subtitle_srt"),
             )
 
             log.info("Paso 5/5 — ✔ Proyecto creado en: %s", out)
             log.info("IMPORTANTE: cierra la app antes de abrir CapCut.")
+            self._job_succeeded = True
         except GenerationCancelled:
             log.info("Generación cancelada por el usuario.")
         except Exception:  # noqa: BLE001

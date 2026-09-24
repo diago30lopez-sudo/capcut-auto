@@ -3,8 +3,9 @@
 1) Tipo de edición + nombre por defecto "Nexus Paradoja video" (a nivel de UI se
    verifica en session_restore_check; aquí se valida la generación de proyectos).
 2) Escala 'cover' por imagen: clip.scale = max(canvas_w/w, canvas_h/h).
-3) Keyframes de zoom: primer frame = 1.0 (relativo a clip.scale), segundo =
-   1.10 o 1.15 al final de la duración de cada imagen.
+3) Keyframes de zoom: primer frame = escala 'cover' x%/min de esa imagen,
+    segundo = cover x(1.10 o 1.15) al final de la duración de cada imagen
+    (zoom SOBRE la escala base, para que ninguna imagen deje bordes negros).
 4) Cada imagen dura exactamente su frase (SRT) -> duraciones contiguas.
 5) Si la suma de duraciones < duración total del audio, el excedente se reparte
    PROPORCIONALMENTE entre todas las imágenes (el video termina a la vez que el
@@ -119,21 +120,27 @@ def main() -> None:
         data.get("canvas_config", {}).get("width") == 1920
         and data["canvas_config"].get("height") == 1080)
 
-    # cover: escala por imagen -> max(1920/w, 1080/h)
+    # cover: escala por imagen. CapCut aplica clip.scale sobre su ajuste 'fit'
+    # por defecto, así que la escala que cubre el lienzo es la razón entre el
+    # factor más exigente y el que ya cubre CapCut (max/min), MISMA fórmula que
+    # sellan los drafts reales del usuario (#1 Nexus Paradoja: imagen 1200x494
+    # → clip.scale 1.3663967611 = (1080/494)/(1920/1200)).
     for seg, (w, h) in zip(video_segs, sizes):
-        cover = max(1920 / w, 1080 / h)
+        fx, fy = 1920 / w, 1080 / h
+        cover = (max(fx, fy) / min(fx, fy)) if abs(fx - fy) > 1e-12 else 1.0
         sc = seg["clip"]["scale"]
         checks[f"cover img {w}x{h}"] = abs(sc["x"] - cover) < 1e-9 and abs(sc["y"] - cover) < 1e-9
-        # keyframes relativos: primero 1.0, segundo 1.10/1.15 al final
+        # keyframes SOBRE la escala cover: primero = cover exacto, segundo =
+        # cover * 1.10/1.15 al final (la escala nunca vuelve a 1.0 -> sin bordes).
         ks = {k["property_type"]: k["keyframe_list"] for k in seg["common_keyframes"]}
         for axis in ("KFTypeScaleX", "KFTypeScaleY"):
             lst = ks.get(axis)
             checks[f"keyframes {axis} img {w}x{h}"] = (
                 lst is not None
                 and lst[0]["time_offset"] == 0
-                and lst[0]["values"] == [1.0]
+                and abs(lst[0]["values"][0] - cover) < 1e-9
                 and lst[1]["time_offset"] == seg["target_timerange"]["duration"]
-                and lst[1]["values"][0] in (1.10, 1.15)
+                and any(abs(lst[1]["values"][0] - cover * m) < 1e-9 for m in (1.10, 1.15))
                 and lst[1]["curveType"] == "Line")
 
     checks["duraciones proporcionales contiguas"] = all(

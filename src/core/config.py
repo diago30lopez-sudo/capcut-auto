@@ -28,6 +28,8 @@ DEFAULT_USER_CONFIG = {
     "capcut_drafts_dir": "",
     "last_template_name": "",
     "last_video_dir": "",
+    # FASE 2 — archivo .srt elegido para los subtítulos (nombre, no ruta).
+    "last_srt_name": "",
 }
 
 # --- Forced alignment con CrispASR (binario + modelo espanol GGUF, Q4_K) ----

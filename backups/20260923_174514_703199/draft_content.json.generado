@@ -1,0 +1,1469 @@
+{
+  "platform": 1,
+  "materials": {
+    "videos": [
+      {
+        "id": "712A76A9D9994DE192A3FC393F3833A4",
+        "unique_id": "",
+        "type": "photo",
+        "duration": 1025000,
+        "path": "C:/Users/diago_dev/AppData/Local/Temp/fase1_check_cat_01x7/imagenes/escena01.jpg",
+        "media_path": "",
+        "local_id": "",
+        "has_audio": false,
+        "reverse_path": "",
+        "intensifies_path": "",
+        "reverse_intensifies_path": "",
+        "intensifies_audio_path": "",
+        "cartoon_path": "",
+        "width": 800,
+        "height": 600,
+        "category_id": "",
+        "category_name": "local",
+        "material_id": "",
+        "material_name": "escena01",
+        "material_url": "",
+        "crop": {
+          "upper_left_x": 0.0,
+          "upper_left_y": 0.0,
+          "upper_right_x": 1.0,
+          "upper_right_y": 0.0,
+          "lower_left_x": 0.0,
+          "lower_left_y": 1.0,
+          "lower_right_x": 1.0,
+          "lower_right_y": 1.0
+        },
+        "crop_ratio": "free",
+        "audio_fade": null,
+        "crop_scale": 1.0,
+        "extra_type_option": 0,
+        "stable": {
+          "stable_level": 0,
+          "matrix_path": "",
+          "time_range": {
+            "start": 0,
+            "duration": 0
+          }
+        },
+        "matting": {
+          "flag": 0,
+          "path": "",
+          "interactiveTime": [],
+          "has_use_quick_brush": false,
+          "strokes": [],
+          "has_use_quick_eraser": false,
+          "expansion": 0,
+          "feather": 0,
+          "reverse": false,
+          "custom_matting_id": "",
+          "enable_matting_stroke": false,
+          "is_clould": "",
+          "mask_video_path": "",
+          "cloud_product_fps": 0.0
+        },
+        "source": 0,
+        "source_platform": 0,
+        "formula_id": "",
+        "check_flag": 62978047,
+        "video_algorithm": {
+          "algorithms": [],
+          "time_range": null,
+          "path": "",
+          "gameplay_configs": [],
+          "ai_in_painting_config": [],
+          "complement_frame_config": null,
+          "motion_blur_config": null,
+          "deflicker": null,
+          "noise_reduction": null,
+          "quality_enhance": null,
+          "super_resolution": null,
+          "ai_background_configs": [],
+          "smart_complement_frame": null,
+          "aigc_generate": null,
+          "aigc_generate_list": [],
+          "mouth_shape_driver": null,
+          "ai_expression_driven": null,
+          "ai_motion_driven": null,
+          "image_interpretation": null,
+          "story_video_modify_video_config": {
+            "task_id": "",
+            "is_overwrite_last_video": false,
+            "tracker_task_id": "",
+            "generate_id": "",
+            "generate_card_id": ""
+          },
+          "skip_algorithm_index": []
+        },
+        "is_unified_beauty_mode": false,
+        "is_set_beauty_mode": false,
+        "object_locked": null,
+        "smart_motion": null,
+        "multi_camera_info": null,
+        "freeze": null,
+        "picture_from": "none",
+        "picture_set_category_id": "",
+        "picture_set_category_name": "",
+        "team_id": "",
+        "local_material_id": "",
+        "origin_material_id": "",
+        "request_id": "",
+        "has_sound_separated": false,
+        "is_text_edit_overdub": false,
+        "is_ai_generate_content": false,
+        "aigc_type": "none",
+        "is_copyright": false,
+        "aigc_history_id": "",
+        "aigc_item_id": "",
+        "local_material_from": "",
+        "smart_match_info": null,
+        "beauty_face_preset_infos": [],
+        "beauty_body_preset_id": "",
+        "beauty_face_auto_preset": {
+          "preset_id": "",
+          "name": "",
+          "rate_map": "",
+          "scene": ""
+        },
+        "beauty_face_auto_preset_infos": [],
+        "beauty_body_auto_preset": null,
+        "live_photo_timestamp": -1,
+        "live_photo_cover_path": "",
+        "content_feature_info": null,
+        "corner_pin": null,
+        "surface_trackings": [],
+        "video_mask_stroke": {
+          "resource_id": "",
+          "path": "",
+          "type": "",
+          "color": "",
+          "size": 0.0,
+          "alpha": 0.0,
+          "distance": 0.0,
+          "texture": 0.0,
+          "horizontal_shift": 0.0,
+          "vertical_shift": 0.0
+        },
+        "video_mask_shadow": {
+          "resource_id": "",
+          "path": "",
+          "color": "",
+          "alpha": 0.0,
+          "blur": 0.0,
+          "distance": 0.0,
+          "angle": 0.0
+        },
+        "pre_applied_vip_materials": [],
+        "workflow_node_id": ""
+      },
+      {
+        "id": "CD48A91B5D2E4D92B86C11354F6EF71A",
+        "unique_id": "",
+        "type": "photo",
+        "duration": 975000,
+        "path": "C:/Users/diago_dev/AppData/Local/Temp/fase1_check_cat_01x7/imagenes/escena02.jpg",
+        "media_path": "",
+        "local_id": "",
+        "has_audio": false,
+        "reverse_path": "",
+        "intensifies_path": "",
+        "reverse_intensifies_path": "",
+        "intensifies_audio_path": "",
+        "cartoon_path": "",
+        "width": 800,
+        "height": 600,
+        "category_id": "",
+        "category_name": "local",
+        "material_id": "",
+        "material_name": "escena02",
+        "material_url": "",
+        "crop": {
+          "upper_left_x": 0.0,
+          "upper_left_y": 0.0,
+          "upper_right_x": 1.0,
+          "upper_right_y": 0.0,
+          "lower_left_x": 0.0,
+          "lower_left_y": 1.0,
+          "lower_right_x": 1.0,
+          "lower_right_y": 1.0
+        },
+        "crop_ratio": "free",
+        "audio_fade": null,
+        "crop_scale": 1.0,
+        "extra_type_option": 0,
+        "stable": {
+          "stable_level": 0,
+          "matrix_path": "",
+          "time_range": {
+            "start": 0,
+            "duration": 0
+          }
+        },
+        "matting": {
+          "flag": 0,
+          "path": "",
+          "interactiveTime": [],
+          "has_use_quick_brush": false,
+          "strokes": [],
+          "has_use_quick_eraser": false,
+          "expansion": 0,
+          "feather": 0,
+          "reverse": false,
+          "custom_matting_id": "",
+          "enable_matting_stroke": false,
+          "is_clould": "",
+          "mask_video_path": "",
+          "cloud_product_fps": 0.0
+        },
+        "source": 0,
+        "source_platform": 0,
+        "formula_id": "",
+        "check_flag": 62978047,
+        "video_algorithm": {
+          "algorithms": [],
+          "time_range": null,
+          "path": "",
+          "gameplay_configs": [],
+          "ai_in_painting_config": [],
+          "complement_frame_config": null,
+          "motion_blur_config": null,
+          "deflicker": null,
+          "noise_reduction": null,
+          "quality_enhance": null,
+          "super_resolution": null,
+          "ai_background_configs": [],
+          "smart_complement_frame": null,
+          "aigc_generate": null,
+          "aigc_generate_list": [],
+          "mouth_shape_driver": null,
+          "ai_expression_driven": null,
+          "ai_motion_driven": null,
+          "image_interpretation": null,
+          "story_video_modify_video_config": {
+            "task_id": "",
+            "is_overwrite_last_video": false,
+            "tracker_task_id": "",
+            "generate_id": "",
+            "generate_card_id": ""
+          },
+          "skip_algorithm_index": []
+        },
+        "is_unified_beauty_mode": false,
+        "is_set_beauty_mode": false,
+        "object_locked": null,
+        "smart_motion": null,
+        "multi_camera_info": null,
+        "freeze": null,
+        "picture_from": "none",
+        "picture_set_category_id": "",
+        "picture_set_category_name": "",
+        "team_id": "",
+        "local_material_id": "",
+        "origin_material_id": "",
+        "request_id": "",
+        "has_sound_separated": false,
+        "is_text_edit_overdub": false,
+        "is_ai_generate_content": false,
+        "aigc_type": "none",
+        "is_copyright": false,
+        "aigc_history_id": "",
+        "aigc_item_id": "",
+        "local_material_from": "",
+        "smart_match_info": null,
+        "beauty_face_preset_infos": [],
+        "beauty_body_preset_id": "",
+        "beauty_face_auto_preset": {
+          "preset_id": "",
+          "name": "",
+          "rate_map": "",
+          "scene": ""
+        },
+        "beauty_face_auto_preset_infos": [],
+        "beauty_body_auto_preset": null,
+        "live_photo_timestamp": -1,
+        "live_photo_cover_path": "",
+        "content_feature_info": null,
+        "corner_pin": null,
+        "surface_trackings": [],
+        "video_mask_stroke": {
+          "resource_id": "",
+          "path": "",
+          "type": "",
+          "color": "",
+          "size": 0.0,
+          "alpha": 0.0,
+          "distance": 0.0,
+          "texture": 0.0,
+          "horizontal_shift": 0.0,
+          "vertical_shift": 0.0
+        },
+        "video_mask_shadow": {
+          "resource_id": "",
+          "path": "",
+          "color": "",
+          "alpha": 0.0,
+          "blur": 0.0,
+          "distance": 0.0,
+          "angle": 0.0
+        },
+        "pre_applied_vip_materials": [],
+        "workflow_node_id": ""
+      }
+    ],
+    "audios": [
+      {
+        "id": "031CAD7DE95D405BA6D51FEB6DC15BE2",
+        "unique_id": "",
+        "type": "extract_music",
+        "name": "voz",
+        "duration": 2050000,
+        "path": "C:/Users/diago_dev/AppData/Local/Temp/fase1_check_cat_01x7/voz.wav",
+        "category_name": "local",
+        "wave_points": [],
+        "music_id": "d1aacb56-1d0e-483c-81ba-b6d23aff817f",
+        "app_id": 0,
+        "text_id": "",
+        "tone_type": "",
+        "source_platform": 0,
+        "video_id": "",
+        "effect_id": "",
+        "resource_id": "",
+        "third_resource_id": "",
+        "category_id": "",
+        "intensifies_path": "",
+        "formula_id": "",
+        "check_flag": 1,
+        "team_id": "",
+        "local_material_id": "75243a14-268a-449d-8bc1-047b0ed0f293",
+        "tone_speaker": "",
+        "mock_tone_speaker": "",
+        "tone_effect_id": "",
+        "tone_effect_name": "",
+        "tone_platform": "",
+        "cloned_model_type": "",
+        "tone_category_id": "",
+        "tone_category_name": "",
+        "tone_second_category_id": "",
+        "tone_second_category_name": "",
+        "tone_emotion_name_key": "",
+        "tone_emotion_style": "",
+        "tone_emotion_role": "",
+        "tone_emotion_selection": "",
+        "tone_emotion_scale": 0.0,
+        "moyin_emotion": "",
+        "request_id": "",
+        "query": "",
+        "search_id": "",
+        "sound_separate_type": "",
+        "is_text_edit_overdub": false,
+        "is_ugc": false,
+        "is_ai_clone_tone": false,
+        "is_ai_clone_tone_post": false,
+        "source_from": "",
+        "copyright_limit_type": "none",
+        "aigc_history_id": "",
+        "aigc_item_id": "",
+        "music_source": "",
+        "pgc_id": "",
+        "pgc_name": "",
+        "similiar_music_info": {
+          "original_song_id": "",
+          "original_song_name": ""
+        },
+        "ai_music_type": 0,
+        "ai_music_enter_from": "",
+        "lyric_type": 0,
+        "tts_task_id": "",
+        "tts_generate_scene": "",
+        "ai_music_generate_scene": 0,
+        "tts_benefit_info": {
+          "benefit_type": "none",
+          "benefit_log_id": "",
+          "benefit_log_extra": "",
+          "benefit_amount": -1
+        },
+        "tts_language_info": null
+      }
+    ],
+    "texts": [],
+    "stickers": [],
+    "effects": [],
+    "transitions": [
+      {
+        "id": "1931F26A05BF41CA815B01EA8B36A656",
+        "type": "transition",
+        "name": "Abajo II",
+        "effect_id": "6724849276100284942",
+        "resource_id": "6724849276100284942",
+        "third_resource_id": "6724849276100284942",
+        "source_platform": 1,
+        "path": "C:/Users/diago_dev/AppData/Local/CapCut/User Data/Cache/effect/6724849276100284942/9c042543d4846e7c17e8f950ce6f91c2",
+        "duration": 466667,
+        "is_overlap": false,
+        "platform": "all",
+        "category_id": "123456",
+        "category_name": "Transiciones",
+        "request_id": "20260923174514681780",
+        "is_ai_transition": false,
+        "video_path": "",
+        "task_id": ""
+      }
+    ],
+    "hsl": [
+      {
+        "id": "806C767894024D39A78743BA1FF13DF0",
+        "constant_material_id": "80E71062D2744C06A33F596434941DC5",
+        "hsl_color_type": 2,
+        "hue": 0.0,
+        "saturation": 0.15,
+        "lightness": 0.05,
+        "interacting": true,
+        "version": "1",
+        "path": "C:/Users/diago_dev/AppData/Local/CapCut/User Data/Cache/effect/7501974767453474064/20cd8db6531c21bf7e4053026d20e395",
+        "type": "hsl",
+        "lumi_hub_path": "C:/Users/diago_dev/AppData/Local/CapCut/User Data/Cache/effect/7501974767453474064/20cd8db6531c21bf7e4053026d20e395/lumi_hub_path",
+        "custom_color": "#FFA227",
+        "resource_id": "",
+        "source_platform": 0
+      },
+      {
+        "id": "28B9EFA3B6464B1F805DD39B4E076CE7",
+        "constant_material_id": "46C520DD52814F0BAC90D3F23A7C395C",
+        "hsl_color_type": 5,
+        "hue": -0.15,
+        "saturation": 0.2,
+        "lightness": -0.1,
+        "interacting": true,
+        "version": "1",
+        "path": "C:/Users/diago_dev/AppData/Local/CapCut/User Data/Cache/effect/7501974767453474064/20cd8db6531c21bf7e4053026d20e395",
+        "type": "hsl",
+        "lumi_hub_path": "C:/Users/diago_dev/AppData/Local/CapCut/User Data/Cache/effect/7501974767453474064/20cd8db6531c21bf7e4053026d20e395/lumi_hub_path",
+        "custom_color": "#00E5FF",
+        "resource_id": "",
+        "source_platform": 0
+      },
+      {
+        "id": "3E47E0A0F1BF4AEEBF510D061D500D5B",
+        "constant_material_id": "797CDAD42E12477F867EE8A148A7EF74",
+        "hsl_color_type": 6,
+        "hue": -0.15,
+        "saturation": 0.2,
+        "lightness": -0.1,
+        "interacting": true,
+        "version": "1",
+        "path": "C:/Users/diago_dev/AppData/Local/CapCut/User Data/Cache/effect/7501974767453474064/20cd8db6531c21bf7e4053026d20e395",
+        "type": "hsl",
+        "lumi_hub_path": "C:/Users/diago_dev/AppData/Local/CapCut/User Data/Cache/effect/7501974767453474064/20cd8db6531c21bf7e4053026d20e395/lumi_hub_path",
+        "custom_color": "#2D6BFF",
+        "resource_id": "",
+        "source_platform": 0
+      },
+      {
+        "id": "E08A769C79274A55BFAAF195B0248D3F",
+        "constant_material_id": "2A7A0A282AAF41FEB6F6C1AD1DF73A2F",
+        "hsl_color_type": 2,
+        "hue": 0.0,
+        "saturation": 0.15,
+        "lightness": 0.05,
+        "interacting": true,
+        "version": "1",
+        "path": "C:/Users/diago_dev/AppData/Local/CapCut/User Data/Cache/effect/7501974767453474064/20cd8db6531c21bf7e4053026d20e395",
+        "type": "hsl",
+        "lumi_hub_path": "C:/Users/diago_dev/AppData/Local/CapCut/User Data/Cache/effect/7501974767453474064/20cd8db6531c21bf7e4053026d20e395/lumi_hub_path",
+        "custom_color": "#FFA227",
+        "resource_id": "",
+        "source_platform": 0
+      },
+      {
+        "id": "81E73215456C457BB177D7F137D30A60",
+        "constant_material_id": "9C8B6A30C5B24B94A558211A315185D0",
+        "hsl_color_type": 5,
+        "hue": -0.15,
+        "saturation": 0.2,
+        "lightness": -0.1,
+        "interacting": true,
+        "version": "1",
+        "path": "C:/Users/diago_dev/AppData/Local/CapCut/User Data/Cache/effect/7501974767453474064/20cd8db6531c21bf7e4053026d20e395",
+        "type": "hsl",
+        "lumi_hub_path": "C:/Users/diago_dev/AppData/Local/CapCut/User Data/Cache/effect/7501974767453474064/20cd8db6531c21bf7e4053026d20e395/lumi_hub_path",
+        "custom_color": "#00E5FF",
+        "resource_id": "",
+        "source_platform": 0
+      },
+      {
+        "id": "958ADAF86C1B48DD9F621132203B56BB",
+        "constant_material_id": "E8B46662B7C0402B98186EDD3D626685",
+        "hsl_color_type": 6,
+        "hue": -0.15,
+        "saturation": 0.2,
+        "lightness": -0.1,
+        "interacting": true,
+        "version": "1",
+        "path": "C:/Users/diago_dev/AppData/Local/CapCut/User Data/Cache/effect/7501974767453474064/20cd8db6531c21bf7e4053026d20e395",
+        "type": "hsl",
+        "lumi_hub_path": "C:/Users/diago_dev/AppData/Local/CapCut/User Data/Cache/effect/7501974767453474064/20cd8db6531c21bf7e4053026d20e395/lumi_hub_path",
+        "custom_color": "#2D6BFF",
+        "resource_id": "",
+        "source_platform": 0
+      }
+    ]
+  },
+  "tracks": [
+    {
+      "id": "D02B04FE45274A4EB39B7B0BE4CA0B6E",
+      "type": "video",
+      "segments": [
+        {
+          "id": "15E6B45F034D48CB958712A796A6236D",
+          "source_timerange": {
+            "start": 0,
+            "duration": 1025000
+          },
+          "target_timerange": {
+            "start": 50000,
+            "duration": 1025000
+          },
+          "render_timerange": {
+            "start": 0,
+            "duration": 0
+          },
+          "desc": "",
+          "state": 0,
+          "speed": 1.0,
+          "is_loop": false,
+          "is_tone_modify": false,
+          "reverse": false,
+          "intensifies_audio": false,
+          "cartoon": false,
+          "volume": 1.0,
+          "last_nonzero_volume": 1.0,
+          "clip": {
+            "scale": {
+              "x": 1.3333333333333333,
+              "y": 1.3333333333333333
+            },
+            "rotation": 0.0,
+            "transform": {
+              "x": 0.0,
+              "y": 0.0
+            },
+            "flip": {
+              "vertical": false,
+              "horizontal": false
+            },
+            "alpha": 1.0
+          },
+          "uniform_scale": {
+            "on": true,
+            "value": 1.0
+          },
+          "material_id": "712A76A9D9994DE192A3FC393F3833A4",
+          "extra_material_refs": [
+            "806C767894024D39A78743BA1FF13DF0",
+            "28B9EFA3B6464B1F805DD39B4E076CE7",
+            "3E47E0A0F1BF4AEEBF510D061D500D5B"
+          ],
+          "render_index": 0,
+          "keyframe_refs": [],
+          "enable_lut": true,
+          "enable_adjust": true,
+          "enable_hsl": true,
+          "visible": true,
+          "group_id": "",
+          "enable_color_curves": true,
+          "enable_hsl_curves": true,
+          "track_render_index": 0,
+          "hdr_settings": {
+            "mode": 1,
+            "intensity": 1.0,
+            "nits": 1000
+          },
+          "hdr_vivid_settings": null,
+          "enable_color_wheels": true,
+          "track_attribute": 0,
+          "is_placeholder": false,
+          "template_id": "",
+          "enable_smart_color_adjust": false,
+          "template_scene": "default",
+          "common_keyframes": [
+            {
+              "id": "7E7709B2FD5F48E9A7B9B02057008F97",
+              "material_id": "",
+              "property_type": "KFTypeScaleX",
+              "keyframe_list": [
+                {
+                  "id": "7BB0E23B0814477093685986324D857F",
+                  "curveType": "Line",
+                  "time_offset": 0,
+                  "left_control": {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  "right_control": {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  "values": [
+                    1.0
+                  ],
+                  "string_value": "",
+                  "graphID": ""
+                },
+                {
+                  "id": "F264C15AA8F14938B0F456B8957876F4",
+                  "curveType": "Line",
+                  "time_offset": 1025000,
+                  "left_control": {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  "right_control": {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  "values": [
+                    1.1
+                  ],
+                  "string_value": "",
+                  "graphID": ""
+                }
+              ]
+            },
+            {
+              "id": "D51C4629EA2A404895C5B556DBB59865",
+              "material_id": "",
+              "property_type": "KFTypeScaleY",
+              "keyframe_list": [
+                {
+                  "id": "94207888959F4FD4BAF0C693A83CF079",
+                  "curveType": "Line",
+                  "time_offset": 0,
+                  "left_control": {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  "right_control": {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  "values": [
+                    1.0
+                  ],
+                  "string_value": "",
+                  "graphID": ""
+                },
+                {
+                  "id": "6B9F505DBCA8440587D06A04395B57E1",
+                  "curveType": "Line",
+                  "time_offset": 1025000,
+                  "left_control": {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  "right_control": {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  "values": [
+                    1.1
+                  ],
+                  "string_value": "",
+                  "graphID": ""
+                }
+              ]
+            },
+            {
+              "id": "ECF6AEAEE9364DE1833CBC9D8494553D",
+              "material_id": "",
+              "property_type": "KFTypeBrightness",
+              "keyframe_list": [
+                {
+                  "id": "3ABD8EA258FF486E9C2BDDC55BAD3C49",
+                  "curveType": "Line",
+                  "time_offset": 0,
+                  "left_control": {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  "right_control": {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  "values": [
+                    -0.067
+                  ],
+                  "string_value": "",
+                  "graphID": ""
+                }
+              ]
+            },
+            {
+              "id": "BED2CDC7284444CB8F4AD3E675A8DAFB",
+              "material_id": "",
+              "property_type": "KFTypeContrast",
+              "keyframe_list": [
+                {
+                  "id": "97DBBF2AECED4D7D9A777781D1E2E278",
+                  "curveType": "Line",
+                  "time_offset": 0,
+                  "left_control": {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  "right_control": {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  "values": [
+                    0.164
+                  ],
+                  "string_value": "",
+                  "graphID": ""
+                }
+              ]
+            },
+            {
+              "id": "AAD1160D3F184F318E9A21D20FC7F644",
+              "material_id": "",
+              "property_type": "KFTypeLightSensatione",
+              "keyframe_list": [
+                {
+                  "id": "48D7D962A6A949359717B5E22CE08B9B",
+                  "curveType": "Line",
+                  "time_offset": 0,
+                  "left_control": {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  "right_control": {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  "values": [
+                    -0.05
+                  ],
+                  "string_value": "",
+                  "graphID": ""
+                }
+              ]
+            },
+            {
+              "id": "4B9CB9196AC84BD9BC02B52B76FC7F65",
+              "material_id": "",
+              "property_type": "KFTypeSaturation",
+              "keyframe_list": [
+                {
+                  "id": "E9E8690CA82345CF868BF548A0558085",
+                  "curveType": "Line",
+                  "time_offset": 0,
+                  "left_control": {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  "right_control": {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  "values": [
+                    -0.116
+                  ],
+                  "string_value": "",
+                  "graphID": ""
+                }
+              ]
+            },
+            {
+              "id": "501A6BCBCB8F4862B03A0E41305C9786",
+              "material_id": "",
+              "property_type": "KFTypeSharpen",
+              "keyframe_list": [
+                {
+                  "id": "BF6F85990FC14759BB0495B0A5464262",
+                  "curveType": "Line",
+                  "time_offset": 0,
+                  "left_control": {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  "right_control": {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  "values": [
+                    0.292
+                  ],
+                  "string_value": "",
+                  "graphID": ""
+                }
+              ]
+            },
+            {
+              "id": "489F8662829E43C8A76371D0DE02923D",
+              "material_id": "",
+              "property_type": "KFTypeHightLight",
+              "keyframe_list": [
+                {
+                  "id": "3CD95A7FDC6F43F69221A408B3CC38FF",
+                  "curveType": "Line",
+                  "time_offset": 0,
+                  "left_control": {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  "right_control": {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  "values": [
+                    0.1
+                  ],
+                  "string_value": "",
+                  "graphID": ""
+                }
+              ]
+            },
+            {
+              "id": "C1FA5C8A7ECD48D887F397972F658786",
+              "material_id": "",
+              "property_type": "KFTypeShadow",
+              "keyframe_list": [
+                {
+                  "id": "7683BAC093584E7AAC14B242419F9022",
+                  "curveType": "Line",
+                  "time_offset": 0,
+                  "left_control": {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  "right_control": {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  "values": [
+                    -0.1
+                  ],
+                  "string_value": "",
+                  "graphID": ""
+                }
+              ]
+            },
+            {
+              "id": "6596985F4D6A402DAF4A2CA82CF3CAE3",
+              "material_id": "",
+              "property_type": "KFTypeTemperature",
+              "keyframe_list": [
+                {
+                  "id": "E2628845E1D54CDAA965329E242C207E",
+                  "curveType": "Line",
+                  "time_offset": 0,
+                  "left_control": {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  "right_control": {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  "values": [
+                    -0.05
+                  ],
+                  "string_value": "",
+                  "graphID": ""
+                }
+              ]
+            },
+            {
+              "id": "EBFE7F16ED604AE6897F9F89CA3DAE7F",
+              "material_id": "",
+              "property_type": "KFTypeHue",
+              "keyframe_list": [
+                {
+                  "id": "6F045D17CDB44906822D3D100B78D8AF",
+                  "curveType": "Line",
+                  "time_offset": 0,
+                  "left_control": {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  "right_control": {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  "values": [
+                    0.031
+                  ],
+                  "string_value": "",
+                  "graphID": ""
+                }
+              ]
+            },
+            {
+              "id": "AF8E9C236A4B4ED8822B4DBD7C31C613",
+              "material_id": "",
+              "property_type": "KFTypeVignetting",
+              "keyframe_list": [
+                {
+                  "id": "0304D061C3D3423B8DCDFDA39399B07E",
+                  "curveType": "Line",
+                  "time_offset": 0,
+                  "left_control": {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  "right_control": {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  "values": [
+                    0.214
+                  ],
+                  "string_value": "",
+                  "graphID": ""
+                }
+              ]
+            }
+          ],
+          "caption_info": null,
+          "responsive_layout": {
+            "enable": false,
+            "target_follow": "",
+            "size_layout": 0,
+            "horizontal_pos_layout": 0,
+            "vertical_pos_layout": 0
+          },
+          "enable_color_match_adjust": false,
+          "enable_color_correct_adjust": false,
+          "enable_adjust_mask": false,
+          "raw_segment_id": "",
+          "lyric_keyframes": null,
+          "enable_video_mask": true,
+          "digital_human_template_group_id": "",
+          "color_correct_alg_result": "",
+          "source": "segmentsourcenormal",
+          "enable_mask_stroke": false,
+          "enable_mask_shadow": false,
+          "enable_color_adjust_pro": false,
+          "segment_color_tag": ""
+        },
+        {
+          "id": "E72AD9F8E89942F0A2996F44B960B617",
+          "source_timerange": {
+            "start": 0,
+            "duration": 975000
+          },
+          "target_timerange": {
+            "start": 1075000,
+            "duration": 975000
+          },
+          "render_timerange": {
+            "start": 0,
+            "duration": 0
+          },
+          "desc": "",
+          "state": 0,
+          "speed": 1.0,
+          "is_loop": false,
+          "is_tone_modify": false,
+          "reverse": false,
+          "intensifies_audio": false,
+          "cartoon": false,
+          "volume": 1.0,
+          "last_nonzero_volume": 1.0,
+          "clip": {
+            "scale": {
+              "x": 1.3333333333333333,
+              "y": 1.3333333333333333
+            },
+            "rotation": 0.0,
+            "transform": {
+              "x": 0.0,
+              "y": 0.0
+            },
+            "flip": {
+              "vertical": false,
+              "horizontal": false
+            },
+            "alpha": 1.0
+          },
+          "uniform_scale": {
+            "on": true,
+            "value": 1.0
+          },
+          "material_id": "CD48A91B5D2E4D92B86C11354F6EF71A",
+          "extra_material_refs": [
+            "E08A769C79274A55BFAAF195B0248D3F",
+            "81E73215456C457BB177D7F137D30A60",
+            "958ADAF86C1B48DD9F621132203B56BB",
+            "1931F26A05BF41CA815B01EA8B36A656"
+          ],
+          "render_index": 0,
+          "keyframe_refs": [],
+          "enable_lut": true,
+          "enable_adjust": true,
+          "enable_hsl": true,
+          "visible": true,
+          "group_id": "",
+          "enable_color_curves": true,
+          "enable_hsl_curves": true,
+          "track_render_index": 0,
+          "hdr_settings": {
+            "mode": 1,
+            "intensity": 1.0,
+            "nits": 1000
+          },
+          "hdr_vivid_settings": null,
+          "enable_color_wheels": true,
+          "track_attribute": 0,
+          "is_placeholder": false,
+          "template_id": "",
+          "enable_smart_color_adjust": false,
+          "template_scene": "default",
+          "common_keyframes": [
+            {
+              "id": "BB845DDC8AB84A36809C39BE3F6E5433",
+              "material_id": "",
+              "property_type": "KFTypeScaleX",
+              "keyframe_list": [
+                {
+                  "id": "BEDF1868B7154F3BBF1D91F5DF517867",
+                  "curveType": "Line",
+                  "time_offset": 0,
+                  "left_control": {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  "right_control": {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  "values": [
+                    1.0
+                  ],
+                  "string_value": "",
+                  "graphID": ""
+                },
+                {
+                  "id": "277AB167EAFC434A9CDBA12FCA8E8653",
+                  "curveType": "Line",
+                  "time_offset": 975000,
+                  "left_control": {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  "right_control": {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  "values": [
+                    1.1
+                  ],
+                  "string_value": "",
+                  "graphID": ""
+                }
+              ]
+            },
+            {
+              "id": "7AD77632FF71409F863372B42FE25F62",
+              "material_id": "",
+              "property_type": "KFTypeScaleY",
+              "keyframe_list": [
+                {
+                  "id": "C27C74AB72DD4024A6D31EF2AA5E2299",
+                  "curveType": "Line",
+                  "time_offset": 0,
+                  "left_control": {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  "right_control": {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  "values": [
+                    1.0
+                  ],
+                  "string_value": "",
+                  "graphID": ""
+                },
+                {
+                  "id": "AF78FEA591524174B3C31293F63AF7EA",
+                  "curveType": "Line",
+                  "time_offset": 975000,
+                  "left_control": {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  "right_control": {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  "values": [
+                    1.1
+                  ],
+                  "string_value": "",
+                  "graphID": ""
+                }
+              ]
+            },
+            {
+              "id": "CB49FBCC76E647DFB7E2745DD4C5C481",
+              "material_id": "",
+              "property_type": "KFTypeBrightness",
+              "keyframe_list": [
+                {
+                  "id": "17588ADA183948ACBF821DE4C19B873E",
+                  "curveType": "Line",
+                  "time_offset": 0,
+                  "left_control": {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  "right_control": {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  "values": [
+                    -0.062
+                  ],
+                  "string_value": "",
+                  "graphID": ""
+                }
+              ]
+            },
+            {
+              "id": "C905CFE21B5F4CC5B7AD417C09BE2FAF",
+              "material_id": "",
+              "property_type": "KFTypeContrast",
+              "keyframe_list": [
+                {
+                  "id": "F3EE89049D324A07A938EE721C79A525",
+                  "curveType": "Line",
+                  "time_offset": 0,
+                  "left_control": {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  "right_control": {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  "values": [
+                    0.158
+                  ],
+                  "string_value": "",
+                  "graphID": ""
+                }
+              ]
+            },
+            {
+              "id": "373E80285B614686817FD0E9AB996A4E",
+              "material_id": "",
+              "property_type": "KFTypeLightSensatione",
+              "keyframe_list": [
+                {
+                  "id": "779774C3C72445A6A3B891A0A73E736A",
+                  "curveType": "Line",
+                  "time_offset": 0,
+                  "left_control": {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  "right_control": {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  "values": [
+                    -0.05
+                  ],
+                  "string_value": "",
+                  "graphID": ""
+                }
+              ]
+            },
+            {
+              "id": "A5032CE0D8634355873BFCC077262608",
+              "material_id": "",
+              "property_type": "KFTypeSaturation",
+              "keyframe_list": [
+                {
+                  "id": "E436DDC011AF4708BCAAFF2E672859E4",
+                  "curveType": "Line",
+                  "time_offset": 0,
+                  "left_control": {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  "right_control": {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  "values": [
+                    -0.105
+                  ],
+                  "string_value": "",
+                  "graphID": ""
+                }
+              ]
+            },
+            {
+              "id": "11ABD19F1A304FC0AAA16ACC40548CD8",
+              "material_id": "",
+              "property_type": "KFTypeSharpen",
+              "keyframe_list": [
+                {
+                  "id": "75D7D5C6146A49C69B543080D04C996C",
+                  "curveType": "Line",
+                  "time_offset": 0,
+                  "left_control": {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  "right_control": {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  "values": [
+                    0.326
+                  ],
+                  "string_value": "",
+                  "graphID": ""
+                }
+              ]
+            },
+            {
+              "id": "D0C6DC39410F4DD79EE1CADC7FB80DFC",
+              "material_id": "",
+              "property_type": "KFTypeHightLight",
+              "keyframe_list": [
+                {
+                  "id": "90722558B7394CF09F9FE90F392DAD78",
+                  "curveType": "Line",
+                  "time_offset": 0,
+                  "left_control": {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  "right_control": {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  "values": [
+                    0.1
+                  ],
+                  "string_value": "",
+                  "graphID": ""
+                }
+              ]
+            },
+            {
+              "id": "5D3A95240965407896A9CBEAB4E32FAF",
+              "material_id": "",
+              "property_type": "KFTypeShadow",
+              "keyframe_list": [
+                {
+                  "id": "912D84C6A8A0415B872741A10005F28B",
+                  "curveType": "Line",
+                  "time_offset": 0,
+                  "left_control": {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  "right_control": {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  "values": [
+                    -0.1
+                  ],
+                  "string_value": "",
+                  "graphID": ""
+                }
+              ]
+            },
+            {
+              "id": "F37984D5AA5D41AFBE7416A9E6BEACDA",
+              "material_id": "",
+              "property_type": "KFTypeTemperature",
+              "keyframe_list": [
+                {
+                  "id": "4D9B74C11DFF4D0BA466C0161A4BD4F8",
+                  "curveType": "Line",
+                  "time_offset": 0,
+                  "left_control": {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  "right_control": {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  "values": [
+                    -0.05
+                  ],
+                  "string_value": "",
+                  "graphID": ""
+                }
+              ]
+            },
+            {
+              "id": "A616D4DA48824036B01D2E237130EDA4",
+              "material_id": "",
+              "property_type": "KFTypeHue",
+              "keyframe_list": [
+                {
+                  "id": "4FA0270C99BB45FB9271F898C61BBD8F",
+                  "curveType": "Line",
+                  "time_offset": 0,
+                  "left_control": {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  "right_control": {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  "values": [
+                    0.039
+                  ],
+                  "string_value": "",
+                  "graphID": ""
+                }
+              ]
+            },
+            {
+              "id": "371206952984475BB8294431B02B2886",
+              "material_id": "",
+              "property_type": "KFTypeVignetting",
+              "keyframe_list": [
+                {
+                  "id": "C0AC285C91034A4CADD57007E1BE2153",
+                  "curveType": "Line",
+                  "time_offset": 0,
+                  "left_control": {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  "right_control": {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  "values": [
+                    0.201
+                  ],
+                  "string_value": "",
+                  "graphID": ""
+                }
+              ]
+            }
+          ],
+          "caption_info": null,
+          "responsive_layout": {
+            "enable": false,
+            "target_follow": "",
+            "size_layout": 0,
+            "horizontal_pos_layout": 0,
+            "vertical_pos_layout": 0
+          },
+          "enable_color_match_adjust": false,
+          "enable_color_correct_adjust": false,
+          "enable_adjust_mask": false,
+          "raw_segment_id": "",
+          "lyric_keyframes": null,
+          "enable_video_mask": true,
+          "digital_human_template_group_id": "",
+          "color_correct_alg_result": "",
+          "source": "segmentsourcenormal",
+          "enable_mask_stroke": false,
+          "enable_mask_shadow": false,
+          "enable_color_adjust_pro": false,
+          "segment_color_tag": ""
+        }
+      ],
+      "flag": 0,
+      "attribute": 0,
+      "name": "",
+      "is_default_name": true
+    },
+    {
+      "id": "EBE59985FEE644D38F05B9738E73991C",
+      "type": "audio",
+      "segments": [
+        {
+          "id": "CBD67470D76B4DC892D3ECEC91D54C4D",
+          "source_timerange": {
+            "start": 0,
+            "duration": 2050000
+          },
+          "target_timerange": {
+            "start": 0,
+            "duration": 2050000
+          },
+          "render_timerange": {
+            "start": 0,
+            "duration": 0
+          },
+          "desc": "",
+          "state": 0,
+          "speed": 1.0,
+          "is_loop": false,
+          "is_tone_modify": false,
+          "reverse": false,
+          "intensifies_audio": false,
+          "cartoon": false,
+          "volume": 1.9952623149688795,
+          "last_nonzero_volume": 1.9952623149688795,
+          "clip": null,
+          "uniform_scale": null,
+          "material_id": "031CAD7DE95D405BA6D51FEB6DC15BE2",
+          "extra_material_refs": [],
+          "render_index": 0,
+          "keyframe_refs": [],
+          "enable_lut": false,
+          "enable_adjust": false,
+          "enable_hsl": false,
+          "visible": true,
+          "group_id": "",
+          "enable_color_curves": true,
+          "enable_hsl_curves": true,
+          "track_render_index": 1,
+          "hdr_settings": null,
+          "hdr_vivid_settings": null,
+          "enable_color_wheels": true,
+          "track_attribute": 0,
+          "is_placeholder": false,
+          "template_id": "",
+          "enable_smart_color_adjust": false,
+          "template_scene": "default",
+          "common_keyframes": [],
+          "caption_info": null,
+          "responsive_layout": {
+            "enable": false,
+            "target_follow": "",
+            "size_layout": 0,
+            "horizontal_pos_layout": 0,
+            "vertical_pos_layout": 0
+          },
+          "enable_color_match_adjust": false,
+          "enable_color_correct_adjust": false,
+          "enable_adjust_mask": false,
+          "raw_segment_id": "",
+          "lyric_keyframes": null,
+          "enable_video_mask": true,
+          "digital_human_template_group_id": "",
+          "color_correct_alg_result": "",
+          "source": "segmentsourcenormal",
+          "enable_mask_stroke": false,
+          "enable_mask_shadow": false,
+          "enable_color_adjust_pro": false,
+          "segment_color_tag": ""
+        }
+      ],
+      "flag": 0,
+      "attribute": 0,
+      "name": "",
+      "is_default_name": true
+    }
+  ],
+  "ai_used_extract_image": "test",
+  "duration": 2050000,
+  "update_time": 1790199914684
+}

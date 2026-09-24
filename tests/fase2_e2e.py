@@ -24,6 +24,7 @@ from src.core.auto_detect import detect_video_inputs  # noqa: E402
 from src.core.capcut_project import CapCutProject  # noqa: E402
 from src.core.scene_parser import parse_scenes  # noqa: E402
 from src.core.timeline_builder import build_timeline, parse_srt  # noqa: E402
+import json  # noqa: E402
 from src.core.transcriber import align_audio_to_text  # noqa: E402
 
 DRAFTS = r"D:\YOUTUBE AUTOMATIZADO\CaptCut\CapCut Drafts"
@@ -67,9 +68,32 @@ def main() -> None:
     project = CapCutProject(shutil.copytree(Path(DRAFTS) / TEMPLATE_NAME, work / TEMPLATE_NAME))
     project.backup_originals()
     project.dump_schema()
+    # FASE 2 (TAREA 2): el SRT alineado tambien se usa como subtitulos sobre el
+    # video. Cada cue se parte en fragmentos de 2-5 palabras con pop-up.
     out = project.generate(PROJECT_NAME, items, det.audio_path, total_us,
-                           allow_test_names=True)
+                           allow_test_names=True, subtitle_srt=srt_path)
     print(f"PROYECTO GENERADO: {out}")
+
+    final = json.loads((out / "draft_content.json").read_text(encoding="utf-8"))
+    tracks = final.get("tracks") or []
+    texts = (final.get("materials") or {}).get("texts") or []
+    n_text_segs = sum(len(t.get("segments") or [])
+                      for t in tracks if t.get("type") == "text")
+    print(f"validacion: {len(tracks)} pistas · textos material={len(texts)} · "
+          f"segmentos text={n_text_segs}")
+    assert any(t.get("type") == "text" for t in tracks), "sin pista text"
+    assert texts and n_text_segs == len(texts), "texts desalineados con la pista"
+    # El audio queda al final: render_index real de la pista audio > text > video
+    audio_seg = next(s for t in tracks if t.get("type") == "audio"
+                     for s in t.get("segments") or [])
+    text_seg = next(s for t in tracks if t.get("type") == "text"
+                    for s in t.get("segments") or [])
+    video_seg = next(s for t in tracks if t.get("type") == "video"
+                     for s in t.get("segments") or [])
+    assert video_seg["track_render_index"] == 0
+    assert text_seg["track_render_index"] == 1
+    assert audio_seg["track_render_index"] == 2
+    print("E2E CON SUBTITULOS: OK")
 
 
 if __name__ == "__main__":
