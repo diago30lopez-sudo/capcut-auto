@@ -42,6 +42,22 @@ ALIGN_MODEL_REPO = "cstr/stt-es-fastconformer-hybrid-ctc-large-GGUF"
 ALIGN_MODEL_FILENAME = "stt-es-fastconformer-hybrid-ctc-large-q4_k.gguf"
 ALIGN_MODEL_PATH = MODELS_DIR / ALIGN_MODEL_FILENAME
 
+# --- Marca de agua persistente (solo config; no tocar la UI) -----------------
+# Texto tenue tipo marca de agua que cubre todo el video. Con WATERMARK_ENABLED
+# en False no se anade nada al proyecto generado.
+WATERMARK_ENABLED = True
+WATERMARK_TEXT = "NEXUS PARADOJA"
+WATERMARK_FONT_SIZE = 8
+# Opacidad en la MISMA escala float 0-1 que usan los subtitulos (1.0 = 100%).
+WATERMARK_OPACITY = 0.10
+# Espaciado de caracteres en unidades de la UI de CapCut (2 en la UI = 0.10 en
+# el JSON; igual que los subtitulos: 1 en la UI = 0.05 normalizado).
+WATERMARK_LETTER_SPACING = 2
+WATERMARK_POS_X = -1045
+WATERMARK_POS_Y = 892
+WATERMARK_BOLD = True
+WATERMARK_ITALIC = True
+
 
 def ensure_dirs() -> None:
     """Crea las carpetas de trabajo si no existen."""

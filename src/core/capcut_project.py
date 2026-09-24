@@ -45,7 +45,11 @@ from PIL import Image
 
 from src.core import capcut_canonical as canonical
 from src.core import config
-from src.core.subtitles import SUBTITLE_KEYWORDS, build_subtitle_track
+from src.core.subtitles import (
+    SUBTITLE_KEYWORDS,
+    build_subtitle_track,
+    build_watermark_material_and_track,
+)
 from src.core.timeline_builder import (
     GenerationCancelled,
     TimelineItem,
@@ -894,12 +898,22 @@ class CapCutProject:
         audio_track = copy.deepcopy(canonical.AUDIO_TRACK)
         audio_track["id"] = new_id()
         audio_track["segments"] = audio_segs
+        # Pistas de la obra en orden: video (0), subtitulos (1 si los hay),
+        # audio (2/1), sfx (3/2). El watermark (si esta activo,
+        # config.WATERMARK_ENABLED) va al final en su propia pista, separado
+        # de la de subtitulos.
         tracks = [video_track]
         if text_track is not None:
             tracks.append(text_track)
         tracks.append(audio_track)
         if sfx_track is not None:
             tracks.append(sfx_track)
+        if config.WATERMARK_ENABLED:
+            wm_mat, wm_track = build_watermark_material_and_track(
+                config.WATERMARK_TEXT, len(tracks), target_us,
+                canvas_w, canvas_h)
+            materials["texts"].append(wm_mat)
+            tracks.append(wm_track)
         content["tracks"] = tracks
 
         # 6) duración raiz = duración total del audio (real del archivo si existe)

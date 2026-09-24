@@ -30,6 +30,7 @@ import re
 from pathlib import Path
 
 from src.core import capcut_canonical as canonical
+from src.core import config
 from src.core.timeline_builder import parse_srt
 
 log = logging.getLogger("capcutauto")
@@ -339,3 +340,91 @@ def build_subtitle_track(
     track["segments"] = segments
     track["is_default_name"] = True
     return track, materials, segments
+
+
+def _watermark_content(text: str, font_path: str, font_size: float,
+                       bold: bool, italic: bool) -> str:
+    """Content JSON del watermark: un UNICO estilo para todo el texto, sin
+    trazo ni sombra (los estilos por palabra son cosa de los subtitulos)."""
+    end = _utf16_len(text)
+    styles = [{
+        "range": [0, end],
+        "fill": {"content": {"solid": {"color": BASE_COLOR}}},
+        "font": {"id": "", "path": font_path},
+        "size": font_size,
+        "bold": bold,
+        "italic": italic,
+        "underline": False,
+    }]
+    return json.dumps({
+        "text": text,
+        "styles": styles,
+        "layer_weight": 1,
+        "effect": [],
+    }, ensure_ascii=False, separators=(",", ":"))
+
+
+def build_watermark_material_and_track(
+    text: str,
+    track_render_index: int,
+    duration_us: int,
+    canvas_w: int,
+    canvas_h: int,
+) -> tuple[dict, dict]:
+    """Material de texto + pista PROPIA del watermark (marca de agua).
+
+    Reutiliza la misma fuente resuelta y la estructura base de los subtitulos,
+    pero en su propia pista (independiente y separada) que cubre todo el video:
+    target_timerange = [0, duration_us). Sin trazo ni sombra, color blanco al
+    `WATERMARK_OPACITY` y posicion configurable en pixeles sobre el lienzo.
+
+    Devuelve (material, track) listos para insertar en materials["texts"] y
+    content["tracks"]."""
+    font = resolve_subtitle_font()
+    mat = copy.deepcopy(canonical.TEXT_MATERIAL)
+    mat["id"] = _new_id()
+    mat["name"] = text[:40]
+    mat["content"] = _watermark_content(text, font["path"],
+                                        config.WATERMARK_FONT_SIZE,
+                                        config.WATERMARK_BOLD,
+                                        config.WATERMARK_ITALIC)
+    mat["text_color"] = "#FFFFFF"
+    # Misma escala 0-1 que los subtitulos (text_alpha 1.0 = 100%).
+    mat["text_alpha"] = config.WATERMARK_OPACITY
+    mat["font_path"] = font["path"]
+    mat["font_name"] = font["name"]
+    mat["font_title"] = font["title"]
+    mat["font_size"] = float(config.WATERMARK_FONT_SIZE)
+    mat["text_size"] = TEXT_SIZE
+    # UI de CapCut "2" = JSON 0.10, misma escala normalizada (0.05 por unidad).
+    mat["letter_spacing"] = LETTER_SPACING * config.WATERMARK_LETTER_SPACING
+    mat["alignment"] = 1
+    mat["line_feed"] = 1
+    mat["line_spacing"] = 0.02
+    mat["line_max_width"] = 0.82
+    mat["check_flag"] = 7
+    # Sin trazo ni sombra: se dejan los valores por defecto del canonico
+    # (border_mode 0, border_color "", has_shadow False).
+
+    seg = copy.deepcopy(canonical.TEXT_SEGMENT)
+    seg["id"] = _new_id()
+    seg["material_id"] = mat["id"]
+    seg["render_index"] = 14000
+    seg["track_render_index"] = track_render_index
+    # La marca cubre TODO el video, desde el inicio hasta el final del audio.
+    seg["target_timerange"] = {"start": 0, "duration": int(duration_us)}
+    seg["source_timerange"] = {"start": 0, "duration": int(duration_us)}
+    # Mismo convenio de signo verificado en los subtitulos (negativo = abajo);
+    # aqui el usuario pide X=-1045 px (izquierda) e Y=892 px (arriba) sobre el
+    # lienzo, normalizados por ancho/alto.
+    seg["clip"]["transform"] = {
+        "x": config.WATERMARK_POS_X / float(canvas_w),
+        "y": config.WATERMARK_POS_Y / float(canvas_h),
+    }
+    seg["clip"]["scale"] = {"x": 1.0, "y": 1.0}
+
+    track = copy.deepcopy(canonical.TEXT_TRACK)
+    track["id"] = _new_id()
+    track["segments"] = [seg]
+    track["is_default_name"] = True
+    return mat, track
