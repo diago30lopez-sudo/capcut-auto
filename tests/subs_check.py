@@ -57,7 +57,7 @@ def main() -> None:
     assert segments[0]["target_timerange"]["start"] == 0
 
     # cada cue con >5 palabras debe partirse en >=2 fragmentos
-    long_cue = [m for m in materials if "poder" in m["content"]]
+    long_cue = [m for m in materials if "PODER" in m["content"]]
     assert long_cue, "no se encontro la cue larga"
 
     # 4) estilo del material
@@ -65,10 +65,11 @@ def main() -> None:
     for k in TEXT_MATERIAL:
         assert k in mat, f"material.texts pierde campo {k}"
     content = json.loads(mat["content"])
-    assert content["text"] == "El héroe es invencible", content["text"]
+    assert content["text"] == "EL HÉROE ES INVENCIBLE", content["text"]
     # espaciado: el content usa exactamente un espacio ASCII entre palabras
     assert "  " not in content["text"]
     assert content["text"] == " ".join(content["text"].split())
+    assert content["text"] == content["text"].upper(), "Texto debe estar en MAYÚSCULAS"
     assert content["styles"], "sin estilos"
     for st in content["styles"]:
         assert st["range"][1] > st["range"][0]
@@ -84,7 +85,7 @@ def main() -> None:
         assert st["strokes"][0]["mode"] == STROKE_MODE, st
         assert st["strokes"][0]["content"]["solid"]["color"] == [0.0, 0.0, 0.0], st
     assert mat["font_size"] == FONT_SIZE, mat["font_size"]
-    assert mat["letter_spacing"] == LETTER_SPACING, mat["letter_spacing"]
+    assert mat["letter_spacing"] == LETTER_SPACING == 0.0, mat["letter_spacing"]
     assert mat["border_width"] == BORDER_WIDTH, mat["border_width"]  # UI "30"
     assert abs(mat["border_width"] - 0.06) < 1e-6, mat["border_width"]  # UI "30" /500
     assert mat["border_alpha"] == 1.0
@@ -96,21 +97,21 @@ def main() -> None:
     assert mat["shadow_distance"] == 15.0
     assert mat["text_color"] == "#FFFFFF"
 
-    # palabra clave debe estar en amarillo (fragmentos de la cue con 'ataque')
+    # palabra clave debe estar en amarillo (fragmentos de la cue con 'ATAQUE')
     kw_mats = []
     for m in materials:
         c = json.loads(m["content"])
-        words = c["text"].lower().split()
-        if any(w.strip("¿?¡!,.;:()") == "ataque" for w in words):
+        words = c["text"].split()  # ya en mayusculas
+        if any(w.strip("¿?¡!,.;:()") == "ATAQUE" for w in words):
             kw_mats.append(c)
-    assert kw_mats, "keyword 'ataque' no presente"
+    assert kw_mats, "keyword 'ATAQUE' no presente"
     assert any(
         s["fill"]["content"]["solid"]["color"] == KEYWORD_COLOR
         for c in kw_mats for s in c["styles"]
     )
 
-    # 5) segmento de texto: pop-up de entrada + posicion Y CONSTANTE -0.6111111
-    #    (escala confirmada empiricamente JSON = UI_Y/1080 = -660/1080) y
+    # 5) segmento de texto: pop-up de entrada + posicion Y CONSTANTE -0.8333333
+    #    (escala confirmada empiricamente JSON = UI_Y/1080 = -900/1080) y
     #    ESTATICO tras la entrada (escala 1.0 = sin zoom continuo durante toda
     #    la duracion).
     seg = segments[0]

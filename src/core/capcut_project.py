@@ -175,12 +175,25 @@ HSL_ENABLED = True
 HSL_EFFECT_ID = "7501974767453474064"
 HSL_EFFECT_HASH = "20cd8db6531c21bf7e4053026d20e395"
 HSL_CHANNELS = (
-    {"hsl_color_type": 2, "hue": 0.0, "saturation": 0.15, "lightness": 0.05,
+    {"hsl_color_type": 2, "hue": 0.0, "saturation": 0.0, "lightness": 0.0,
      "custom_color": "#FFA227"},    # Naranja
-    {"hsl_color_type": 5, "hue": -0.15, "saturation": 0.20, "lightness": -0.10,
+    {"hsl_color_type": 5, "hue": 0.0, "saturation": 0.0, "lightness": 0.0,
      "custom_color": "#00E5FF"},    # Cian
-    {"hsl_color_type": 6, "hue": -0.15, "saturation": 0.20, "lightness": -0.10,
+    {"hsl_color_type": 6, "hue": 0.0, "saturation": 0.0, "lightness": 0.0,
      "custom_color": "#2D6BFF"},    # Azul
+)
+
+# FASE 3 — Color Grading (Adjust) — efectos de ajuste tipo CapCut.
+# Basado en diff real: materials.effects[] con type="saturation"/"temperature"/"tint"
+# y value normalizado (-1.0 a 1.0). effect_id = 7501974767453474064 (mismo que HSL).
+ADJUST_ENABLED = True
+ADJUST_EFFECT_ID = "7501974767453474064"
+ADJUST_EFFECT_HASH = "20cd8db6531c21bf7e4053026d20e395"
+# Canales de ajuste: saturation, temperature, tint (valores normalizados -1.0 a 1.0)
+ADJUST_CHANNELS = (
+    {"type": "saturation", "value": 0.15, "custom_color": "#FFFFFF"},   # Saturación +15%
+    {"type": "temperature", "value": -0.02, "custom_color": "#FFFFFF"}, # Temperatura -2
+    {"type": "tint", "value": 0.01, "custom_color": "#FFFFFF"},         # Tinte +1
 )
 
 # FASE 3 — SFX/BGM con ducking según la guía: VO a +6 dB y BGM a -20 dB cuando
@@ -461,6 +474,12 @@ class CapCutProject:
         log.info("Esquema de la plantilla volcado a %s", target)
         return target
 
+    def _check_cancelled(self) -> None:
+        if self.cancel_event is not None and self.cancel_event.is_set():
+            log.info("Generación cancelada por el usuario.")
+            shutil.rmtree(self.new_dir, ignore_errors=True)
+            raise GenerationCancelled("Generación cancelada por el usuario.")
+
     # -- helpers de construccion -------------------------------------------------
     def _timeline_id(self, content: dict) -> str | None:
         """Id del timeline raiz = content['id']; el mismo que nombra la carpeta
@@ -471,6 +490,7 @@ class CapCutProject:
                               height: int, duration_us: int, name: str) -> dict:
         mat = copy.deepcopy(canonical.PHOTO_MATERIAL)
         mat["id"] = new_id()
+        mat["unique_id"] = new_id()
         mat["path"] = abs_path
         mat["duration"] = duration_us
         mat["width"] = width
@@ -479,11 +499,12 @@ class CapCutProject:
         return mat
 
     def _build_photo_segment(self, content: dict, mat_id: str, start_us: int,
-                             duration_us: int, cover_scale: float = 1.0,
-                             zoom_mult: float = 1.0, zoom_base: float = 1.0,
-                             position_points: list | None = None,
-                             enable_hsl: bool = True,
-                             extra_refs: list | None = None) -> dict:
+                              duration_us: int, cover_scale: float = 1.0,
+                              zoom_mult: float = 1.0, zoom_base: float = 1.0,
+                              position_points: list | None = None,
+                              enable_hsl: bool = True,
+                              enable_adjust: bool = True,
+                              extra_refs: list | None = None) -> dict:
         seg = copy.deepcopy(canonical.PHOTO_SEGMENT)
         seg["id"] = new_id()
         seg["material_id"] = mat_id
@@ -507,9 +528,12 @@ class CapCutProject:
         kfs.extend(_position_entries(position_points))
         seg["common_keyframes"] = kfs
         # FASE 3: HSL por canal activado + referencias a materials.hsl.
+        # FASE 3 — Color Grading (Adjust): enable_adjust para activar efectos.
         seg["enable_hsl"] = bool(enable_hsl)
+        seg["enable_adjust"] = bool(enable_adjust)
         seg["extra_material_refs"] = list(extra_refs or [])
         return seg
+
 
     def _build_audio_material(self, content: dict, abs_path: str,
                               duration_us: int, name: str) -> dict:
@@ -584,26 +608,57 @@ class CapCutProject:
         """Material HSL por canal, con el MISMO formato que los drafts reales
         del usuario (#1 Nexus Paradoja / Nexus Paradoja video 1). El efecto
         7501974767453474064 ya está descargado en esta máquina (path del draft
-        real); CapCut reutiliza esa caché, no descarga nada nuevo."""
+        real); CapCut reutiliza esa caché, no descarga nada nuevo.
+        IMPORTANTE: hue/saturation/lightness base = 0 (keyframes animan)."""
         effect_path = (
             Path.home() / "AppData" / "Local" / "CapCut" / "User Data" / "Cache"
             / "effect" / HSL_EFFECT_ID / HSL_EFFECT_HASH
         ).as_posix()
         return {
             "id": new_id(),
+            "unique_id": new_id(),
             "constant_material_id": new_id(),
             "hsl_color_type": channel["hsl_color_type"],
-            "hue": channel["hue"],
-            "saturation": channel["saturation"],
-            "lightness": channel["lightness"],
+            "hue": 0.0,
+            "saturation": 0.0,
+            "lightness": 0.0,
             "interacting": True,
             "version": "1",
             "path": effect_path,
             "type": "hsl",
-            "lumi_hub_path": effect_path + "/lumi_hub_path",
+            "lumi_hub_path": effect_path,
             "custom_color": channel["custom_color"],
             "resource_id": "",
             "source_platform": 0,
+        }
+
+    # -- generacion ----------------------------------------------------------
+    def _adjust_material(self, channel: dict) -> dict:
+        """Material Adjust (Color Grading) por canal, con el MISMO formato que los drafts reales.
+        Basado en diff real: materials.effects[] con type saturation/temperature/tint."""
+        effect_path = (
+            Path.home() / "AppData" / "Local" / "CapCut" / "User Data" / "Cache"
+            / "effect" / ADJUST_EFFECT_ID / ADJUST_EFFECT_HASH
+        ).as_posix()
+        return {
+            "id": new_id(),
+            "unique_id": new_id(),
+            "effect_id": ADJUST_EFFECT_ID,
+            "resource_id": ADJUST_EFFECT_ID,
+            "third_resource_id": "",
+            "name": "",
+            "report_name": "",
+            "type": channel["type"],
+            "sub_type": "none",
+            "path": effect_path,
+            "value": channel["value"],
+            "visible": True,
+            "item_effect_type": 0,
+            "category_id": "",
+            "category_name": "",
+            "category_key": "",
+            "sub_category_id": "",
+            "sub_category_name": "",
         }
 
     # -- generacion ----------------------------------------------------------
@@ -631,28 +686,25 @@ class CapCutProject:
         # BUG 2: el proyecto se crea en la carpeta PADRE de la plantilla
         base = self.template_dir.parent
         base.mkdir(parents=True, exist_ok=True)
-        new_dir = base / project_name
-        if new_dir.exists():
+        self.new_dir = base / project_name
+        if self.new_dir.exists():
             raise CapCutProjectError(
                 f"Ya existe un proyecto llamado '{project_name}' en {base}"
             )
 
-        def _check_cancelled() -> None:
-            if cancel_event is not None and cancel_event.is_set():
-                log.info("Generación cancelada por el usuario.")
-                shutil.rmtree(new_dir, ignore_errors=True)
-                raise GenerationCancelled("Generación cancelada por el usuario.")
-
-        _check_cancelled()
+        self.cancel_event = cancel_event
+        self._check_cancelled()
 
         # 1) clonado de la plantilla
-        log.info("Proyecto se creará en: %s", new_dir)
-        shutil.copytree(self.template_dir, new_dir)
-        _check_cancelled()
+        log.info("Proyecto se creará en: %s", self.new_dir)
+        shutil.copytree(self.template_dir, self.new_dir)
+        self._check_cancelled()
 
         # 2) deep-copy: el JSON final es superconjunto del de la plantilla
         content = copy.deepcopy(self.content)
         materials = content.setdefault("materials", {})
+        # Habilitar color grading (adjust) en la config
+        content.setdefault("config", {})["adjust_max_index"] = 1
 
         audio_src = Path(audio_path)
 
@@ -681,9 +733,10 @@ class CapCutProject:
         photo_materials: list[dict] = []
         video_segments: list[dict] = []
         hsl_materials: list[dict] = []
+        adjust_materials: list[dict] = []
         prev_end = 0
         for it in items:
-            _check_cancelled()
+            self._check_cancelled()
             if it.image_path is None:
                 log.warning("Escena %d sin imagen; se omite material.", it.order)
                 continue
@@ -748,6 +801,15 @@ class CapCutProject:
                     hsl_materials.append(mat)
                     refs.append(mat["id"])
 
+            # FASE 3 — Color Grading (Adjust): cada segmento referencia sus
+            # materials.effects (saturación, temperatura, tinte), mismo mecanismo
+            # que el draft real. Se añaden a los refs del segmento.
+            if ADJUST_ENABLED:
+                for channel in ADJUST_CHANNELS:
+                    mat = self._adjust_material(channel)
+                    adjust_materials.append(mat)
+                    refs.append(mat["id"])
+
             log.info(
                 "Escena %02d · %s: %dx%d → cover=%.3f · zoom=+%.0f%% · %s%s%s",
                 it.order, it.image_path.name, width, height,
@@ -764,7 +826,7 @@ class CapCutProject:
                 self._build_photo_segment(
                     content, mat["id"], start_us, duration_us, cover_scale, zoom_mult,
                     zoom_base=zoom_base, position_points=position_points,
-                    enable_hsl=HSL_ENABLED, extra_refs=refs))
+                    enable_hsl=HSL_ENABLED, enable_adjust=ADJUST_ENABLED, extra_refs=refs))
 
         # Transiciones: se aplican sobre el 98% de los bordes internos entre
         # imágenes (el 2% restante queda con corte limpio). Cada transición se
@@ -886,6 +948,8 @@ class CapCutProject:
         materials["texts"] = text_materials
         if hsl_materials:
             materials["hsl"] = hsl_materials
+        if adjust_materials:
+            materials["effects"] = adjust_materials
         if sfx_materials:
             materials["audios"].extend(sfx_materials)
 
@@ -920,35 +984,35 @@ class CapCutProject:
         content["update_time"] = _now_ms()
 
         # 7) escribir JSON en RAÍZ y en Timelines/<id>/ (CapCut lee ambos)
-        _check_cancelled()
-        self._write_draft_content(new_dir, content)
+        self._check_cancelled()
+        self._write_draft_content(self.new_dir, content)
 
         # 8) draft_meta_info.json (rutas coherentes con la carpeta padre)
-        _check_cancelled()
+        self._check_cancelled()
         meta = copy.deepcopy(self.meta)
         now_ms = _now_ms()
         meta["draft_id"] = str(uuid.uuid4())
         meta["draft_name"] = project_name
-        meta["draft_fold_path"] = new_dir.as_posix()
+        meta["draft_fold_path"] = self.new_dir.as_posix()
         meta["draft_root_path"] = base.as_posix()
         meta["tm_draft_create"] = now_ms
         meta["tm_draft_modified"] = now_ms
         for k in ("tm_draft_last_modified", "tm_draft_last_open"):
             if k in meta:
                 meta[k] = now_ms
-        (new_dir / META_JSON).write_text(
+        (self.new_dir / META_JSON).write_text(
             json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8"
         )
 
         # 9) validacion post-generacion: nunca dejar un proyecto vacío
-        _check_cancelled()
-        final = json.loads((new_dir / CONTENT_JSON).read_text(encoding="utf-8"))
+        self._check_cancelled()
+        final = json.loads((self.new_dir / CONTENT_JSON).read_text(encoding="utf-8"))
         n_tracks = len(final.get("tracks") or [])
         n_segments = sum(
             len(t.get("segments") or []) for t in (final.get("tracks") or [])
         )
         if n_tracks == 0 or n_segments == 0:
-            shutil.rmtree(new_dir, ignore_errors=True)
+            shutil.rmtree(self.new_dir, ignore_errors=True)
             raise CapCutProjectError(
                 "Proyecto generado vacío (sin pistas o sin segmentos); se eliminó."
             )
@@ -962,13 +1026,13 @@ class CapCutProject:
             log.warning("No se pudo volcar schema_plantilla_full.json (%s)", exc)
         try:
             bak = self.backup_originals()
-            shutil.copy2(new_dir / CONTENT_JSON, bak / f"{CONTENT_JSON}.generado")
-            shutil.copy2(new_dir / META_JSON, bak / f"{META_JSON}.generado")
+            shutil.copy2(self.new_dir / CONTENT_JSON, bak / f"{CONTENT_JSON}.generado")
+            shutil.copy2(self.new_dir / META_JSON, bak / f"{META_JSON}.generado")
         except Exception as exc:  # noqa: BLE001 - copia de inspeccion no critica
             log.warning("No se pudo copiar JSON generado a backups (%s)", exc)
 
-        log.info("PROYECTO GENERADO: %s", new_dir)
-        return new_dir
+        log.info("PROYECTO GENERADO: %s", self.new_dir)
+        return self.new_dir
 
     def _write_draft_content(self, project_dir: Path, content: dict) -> None:
         """Escribe draft_content.json en la raiz y en Timelines/<id>/ (si existe)."""

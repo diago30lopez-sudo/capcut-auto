@@ -33,6 +33,7 @@ import customtkinter as ctk
 
 from src.core import config
 from src.core.auto_detect import DetectionResult, detect_video_inputs, find_capcut_templates
+from src.core.bootstrap import ensure_dependencies
 from src.core.capcut_project import CapCutProject
 from src.core.config import load_user_config, save_user_config
 from src.core.scene_parser import parse_scenes
@@ -164,6 +165,7 @@ class MainWindow(ctk.CTk):
         )
         self.cancel_btn.grid(row=0, column=1, sticky="ew", padx=(6, 0))
 
+        # Barra de progreso (indeterminada, sin label de porcentaje)
         self.progress = ctk.CTkProgressBar(
             left_outer, mode="indeterminate", height=8,
             progress_color=ACCENT, fg_color="#2a2a2a",
@@ -853,11 +855,27 @@ class MainWindow(ctk.CTk):
         self.cancel_event.set()
 
 
+def _bootstrap_dependencies() -> None:
+    """Hilo de fondo: comprueba y descarga (si falta) CrispASR + modelo espanol
+    en el primer uso. No debe lanzar excepciones al hilo (log unicamente)."""
+    try:
+        ensure_dependencies()
+    except Exception:  # noqa: BLE001 - hilo de fondo: nunca crashear la app
+        log.error("No se pudieron comprobar/descargar las dependencias en el arranque:")
+        log.error(traceback.format_exc())
+
+
 def launch() -> None:
     config.ensure_dirs()
     log_queue: queue.Queue = queue.Queue()
     setup_logging(log_queue, config.APP_LOG_FILE)
     log.info("CapCut Auto iniciado.")
     log.info("Los proyectos se generarán en la carpeta de la plantilla elegida.")
+    # Primer uso: comprobar/descargar dependencias en hilo aparte (no bloquea
+    # la UI; si ya estan en disco no hace nada).
+    threading.Thread(
+        target=_bootstrap_dependencies, daemon=True,
+        name="bootstrap-deps",
+    ).start()
     app = MainWindow(log_queue)
     app.mainloop()

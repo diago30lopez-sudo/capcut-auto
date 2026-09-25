@@ -122,14 +122,14 @@ WATERMARK_POS_Y = 896
 WATERMARK_BOLD = True
 WATERMARK_ITALIC = True
 
-# Posicion vertical del centro de los subtitulos. UI Y=-650 px (abajo del
+# Posicion vertical del centro de los subtitulos. UI Y=-900 px (abajo del
 # centro; convenio verificado: NEGATIVO = abajo). Escala CONFIRMADA
-# empiricamente: JSON = UI_Y / CANVAS_HEIGHT = -650/1080 = -0.6018519. Valores
+# empiricamente: JSON = UI_Y / CANVAS_HEIGHT = -900/1080 = -0.8333333. Valores
 # JSON se aplican SIN calculo dinamico a todos los subtitulos
 # (config.SUBTITLE_POS_Y_JSON).
-SUBTITLE_POS_Y = -650
-SUBTITLE_POS_Y_JSON = -650 / CANVAS_HEIGHT      # -0.6018519...
-SUBTITLE_POS_Y_JSON_HALF = -650 / HALF_H        # referencia antigua, NO usar
+SUBTITLE_POS_Y = -900
+SUBTITLE_POS_Y_JSON = -900 / CANVAS_HEIGHT      # -0.8333333...
+SUBTITLE_POS_Y_JSON_HALF = -900 / HALF_H        # referencia antigua, NO usar
 
 # Grosor del trazo (stroke) de los subtitulos. ESCALA CONFIRMADA empiricamente
 # (v1.4.0): UI = JSON * 500 -> UI 30 = JSON 0.06 (border_width y strokes[].width).

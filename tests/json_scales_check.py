@@ -2,7 +2,7 @@
 JSON <-> CapCut UI (confirmada empiricamente; docs/capcut_json_scales.md).
 
 Canvas del proyecto: 1920x1080 (CapCut multiplica transform por el canvas
-COMPLETO, no por su mitad). Escalas CONFIRMADAS empiricamente (v1.5.1, contra
+COMPLETO, no por su mitad). Escalas CONFIRMADAS empiricamente (v1.3.0-dev, contra
 el draft real del usuario y mediciones en CapCut):
   - strokes[0].width / border_width = UI / 500  (UI 30    -> 0.06)
   - global_alpha (opacidad)           = UI / 100   (15%      -> 0.15)
@@ -10,7 +10,7 @@ el draft real del usuario y mediciones en CapCut):
   - letter_spacing                  = UI * 0.05  (UI 2     -> 0.10)
   - transform.x (watermark)         = UI_X / 1920 (UI -1098 -> -0.571875)
   - transform.y (watermark)         = UI_Y / 1080 (UI 896   -> 0.8296296
-  - transform.y (subtitulos)        = UI_Y / 1080 (UI -650  -> -0.6018519
+  - transform.y (subtitulos)        = UI_Y / 1080 (UI -900  -> -0.8333333
 
 No genera proyectos ni abre CapCut: usa los builders directamente y comprueba
 que el JSON que se escribira en draft_content.json lleva EXACTAMENTE esos
@@ -59,8 +59,8 @@ def main() -> None:
         abs(config.WATERMARK_POS_X_JSON - (-1098 / CANVAS_W)) < 1e-9)
     checks["watermark Y UI 896 -> JSON 0.8296296 (896/1080)"] = (
         abs(config.WATERMARK_POS_Y_JSON - (896 / CANVAS_H)) < 1e-9)
-    checks["subtitulos Y UI -650 -> JSON -0.6018519 (-650/1080)"] = (
-        abs(config.SUBTITLE_POS_Y_JSON - (-650 / CANVAS_H)) < 1e-9)
+    checks["subtitulos Y UI -900 -> JSON -0.8333333 (-900/1080)"] = (
+        abs(config.SUBTITLE_POS_Y_JSON - (-900 / CANVAS_H)) < 1e-9)
     checks["watermark font size 8.0"] = config.WATERMARK_FONT_SIZE == 8.0
     checks["watermark bold+italic"] = (
         config.WATERMARK_BOLD is True and config.WATERMARK_ITALIC is True)
@@ -77,6 +77,8 @@ def main() -> None:
     checks["subtitulos: un solo espacio ASCII entre palabras"] = (
         sub_content["text"] == " ".join(sub_content["text"].split())
         and "  " not in sub_content["text"])
+    checks["subtitulos: texto en MAYUSCULAS"] = (
+        sub_content["text"] == sub_content["text"].upper())
     styles = sub_content["styles"]
     stroke = styles[0]["strokes"][0]
     checks["subtitulos: strokes[0].enable = true"] = stroke["enable"] is True
@@ -86,12 +88,12 @@ def main() -> None:
         stroke["content"]["solid"]["color"] == [0.0, 0.0, 0.0])
     checks["subtitulos: mat.border_width = 0.06 / border_mode = 1"] = (
         abs(mat["border_width"] - 0.06) < 1e-6 and mat["border_mode"] == 1)
-    checks["subtitulos: letter_spacing = 0.05 (UI 1 x0.05)"] = (
-        mat["letter_spacing"] == 0.05)
+    checks["subtitulos: letter_spacing = 0.0 (UI 0)"] = (
+        mat["letter_spacing"] == 0.0)
     seg = segments[0]
-    checks["subtitulos: clip.transform.y = -0.6018519 (UI -650)"] = (
+    checks["subtitulos: clip.transform.y = -0.8333333 (UI -900)"] = (
         seg["clip"]["transform"]["y"] == config.SUBTITLE_POS_Y_JSON
-        and abs(seg["clip"]["transform"]["y"] - (-650 / CANVAS_H)) < 1e-6)
+        and abs(seg["clip"]["transform"]["y"] - (-900 / CANVAS_H)) < 1e-6)
     checks["subtitulos: clip.transform.x = 0.0 (centrado)"] = (
         seg["clip"]["transform"]["x"] == 0.0)
 
