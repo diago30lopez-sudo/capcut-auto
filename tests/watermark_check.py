@@ -16,7 +16,7 @@ Se reporta el mapeo de posicion (X=-1098, Y=896) -> JSON CONFIRMADO
    empiricamente x=-0.571875 (-1098/1920), y=0.8296296 (896/1080) en
    clip.transform, y la constatacion de que el watermark va en el EXTREMO
    superior-izquierdo, independiente de la fila de los subtitulos
-   (Y=-0.6018519 = UI -650).
+   (Y=-0.8333333 = UI -900).
 
 Ejecutar desde la raiz:
     & .venv\\Scripts\\python.exe -X utf8 tests\\watermark_check.py
@@ -182,7 +182,7 @@ def main() -> None:
     print(f"  letter_spacing JSON = {wm.get('letter_spacing')} (UI '2' x0.05)")
     print(f"  global_alpha = {wm.get('global_alpha')} (15%), text_alpha = {wm.get('text_alpha')}")
     print("  -> watermark Y=896 (ARRIBA), X=-1098 (extremo izquierdo);"
-          " subtitulos centrados en Y=-650 (abajo).")
+          " subtitulos centrados en Y=-900 (abajo).")
     if not ok:
         print("WATERMARK_FAIL")
         sys.exit(1)

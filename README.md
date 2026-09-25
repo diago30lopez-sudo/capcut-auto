@@ -1,95 +1,59 @@
 # 🎬 CapCut Auto — Nexus Paradoja
 
-**Versión actual:** v1.5.1
+**Versión actual:** v1.2.1 (última taggeada) · v1.3.0 en desarrollo
 **Última actualización:** 2026-09-24
 
-Genera automáticamente un **proyecto CapCut** (Windows) a partir de:
+> ⚠️ **IMPORTANTE:** Las versiones v1.3.0, v1.4.0, v1.5.0, v1.5.1 que aparecían en versiones anteriores de este README **eran inventadas y no existen como tags reales**. El historial real de tags es el que se muestra a continuación. v1.3.0 está actualmente en desarrollo.
 
-1. Un proyecto **plantilla** de CapCut (carpeta dentro de una carpeta
-   "CapCut Drafts" que contenga `draft_content.json` + `draft_meta_info.json`).
-2. Una carpeta de **video** con **audio**, un **.txt de escenas** y una
-   **carpeta de imágenes** — todos detectados automáticamente.
-3. Un **nombre** para el nuevo proyecto.
-
-La app:
-
-- 🔍 **Detecta** el audio, el .txt de escenas y las imágenes de forma inteligente
-  (`src/core/auto_detect.py`) sin que el usuario tenga que elegir archivo a
-  archivo.
-- 🎯 **Alinea** el audio con el guion (VOZ EN OFF de cada escena) mediante
-  **forced alignment** con **CrispASR** y el modelo español
-  `stt-es-fastconformer-hybrid-ctc-large-GGUF` (Q4_K, ~70 MB). Genera un SRT
-  donde cada línea = una escena; sin fuzzy matching, sin transcripción.
-- 📦 **Clona la plantilla**, edita `draft_content.json` y `draft_meta_info.json`,
-  y escribe el nuevo proyecto en la carpeta de proyectos de CapCut.
-- ❌ Permite **cancelar** la generación en cualquier momento (clic en *Cancelar*);
-  si se llega a clonar, limpia la carpeta a medias y **nunca toca la plantilla**.
-- 💾 Persiste tu configuración en `config_user.json` para rellenar la UI al
-  reabrir la app.
-
-> ⚠️ **IMPORTANTE:** NO abras CapCut mientras se genera. La app copia la
-> plantilla y edita los JSON **después**: crea el proyecto nuevo primero y
-> luego edita el JSON de ¡ESE proyecto nuevo! (nunca la plantilla original).
-> El proyecto se crea con **CapCut cerrado**.
+> ⚠️ **IMPORTANTE:** CapCut debe estar **CERRADO** durante la generación.
 
 ---
 
-## 📐 Escalas JSON ↔ CapCut UI (oficial)
+## 📌 Estado del proyecto
 
-Mapa de conversión entre el JSON del `draft_content.json` y los valores del
-panel de CapCut (confirmado por investigación; ejemplos y recálculo en
-[`docs/capcut_json_scales.md`](docs/capcut_json_scales.md)). Aplica
-únicamente a este proyecto **1920×1080** (half width = 960, half height = 540).
-
-| Propiedad CapCut UI      | Campo en `draft_content.json`        | Fórmula (UI → JSON) |
-|--------------------------|--------------------------------------|---------------------|
-| Grosor trazo             | `strokes[0].width` (y `border_width`)| UI / 500            |
-| Opacidad (%)             | `global_alpha` (material)            | UI / 100            |
-| Letter spacing           | `letter_spacing`                     | UI × 0.05           |
-| Posición X               | `transform.x`                        | UI_X / 1920         |
-| Posición Y               | `transform.y`                        | UI_Y / 1080         |
-
-**Valores calculados para este proyecto:**
-
-| Propiedad            | UI deseada | Valor JSON                                    |
-|----------------------|------------|-----------------------------------------------|
-| Grosor trazo subtítulos | 30       | `0.06`    (= 30 / 500)                        |
-| Opacidad watermark   | 15%        | `0.15`    (= 15 / 100, material `global_alpha`) |
-| Letter spacing watermark | 2       | `0.10`    (= 2 × 0.05)                        |
-| Watermark posición X | -1098      | `-0.571875` (= -1098 / 1920)                  |
-| Watermark posición Y | 896        | `0.8296`    (= 896 / 1080, ≈0.8296)           |
-| Subtítulos posición Y| -650       | `-0.6018519`  (= -650 / 1080)                 |
-
-> ⚠️ **Verificar empíricamente:** abre el proyecto generado en CapCut. Si los
-> valores mostrados NO son exactamente los de la columna "UI deseada", ajusta
-> el JSON proporcionalmente (constantes `*_JSON` en `src/core/config.py`) hasta
-> que coincidan y documenta la corrección aquí y en
-> `docs/capcut_json_scales.md`.
+| Fase | Descripción | Estado |
+|---|---|---|
+| **v1.0.0** | Alineación CrispASR + sincronización escenas | ✅ Taggeada |
+| **v1.1.0** | UI 2 paneles, subtítulos, modal verde | ✅ Taggeada |
+| **v1.2.0** | Camera shake, HSL, paneos, SFX | ✅ Taggeada |
+| **v1.2.1** | Limpieza de tracking (backups/cache/logs/models fuera) | ✅ Taggeada |
+| **v1.3.0** | Watermark, auto-descarga, fixes de escalas, color grading, subtítulos | ⏳ En desarrollo |
 
 ---
 
-## 💻 Requisitos
+## 📐 Escalas JSON ↔ CapCut UI
 
-- 🪟 Windows 10/11 con **CapCut instalado**.
-- 🐍 Python 3.11+.
-- 🌐 Internet la **primera vez** (descarga de CrispASR ~8 MB y del modelo español
-  GGUF Q4_K (~70 MB) a `bin/` y `models/`); las siguientes ejecuciones van
-  totalmente en local.
+Aplica a canvas **1920×1080** (half_w = 960, half_h = 540).
+
+| Propiedad UI | Campo JSON | Fórmula (UI → JSON) | Ejemplo |
+|---|---|---|---|
+| Grosor trazo | `strokes[0].width` | `UI / 500` | 30 → `0.06` |
+| Opacidad (%) | `global_alpha` | `UI / 100` | 15 → `0.15` |
+| Letter spacing | `letter_spacing` | `UI × 0.05` | 0 → `0.0` |
+| Posición X | `transform.x` | `UI_X / 1920` | -1098 → `-0.571875` |
+| Posición Y | `transform.y` | `UI_Y / 1080` | -900 → `-0.8333333` |
+
+### Valores vigentes (v1.3.0 en desarrollo)
+
+| Elemento | UI | JSON |
+|---|---|---|
+| Trazo subtítulos | 30 | `0.06` |
+| Opacidad watermark | 15% | `0.15` |
+| Letter spacing watermark | 2 | `0.10` |
+| Letter spacing subtítulos | **0** | **`0.0`** |
+| Posición X watermark | -1098 | `-0.571875` |
+| Posición Y watermark | 896 | `0.8296` |
+| Posición Y subtítulos | **-900** | **`-0.8333333`** |
+| Mayúsculas subtítulos | Sí | ver `docs` |
 
 ---
 
-## ⚙️ Instalación
+## 🚀 Instalación
 
 ```powershell
 python -m venv .venv
 & .venv\Scripts\Activate.ps1
 pip install -r requirements.txt
-```
-
-## ▶️ Ejecución
-
-```powershell
-& .venv\Scripts\Activate.ps1
 python src\main.py
 ```
 
@@ -112,7 +76,7 @@ La ventana tiene **3 secciones** + botones **Generar proyecto** y **Cancelar**:
 
 2. **Carpeta del video**
    - Botón *Seleccionar carpeta…*. Al elegirla se ejecuta el **escaneo
-     inteligente** (ver abajo) y se muestran 3 resúmenes con ✓/✗:
+     inteligente** y se muestran 3 resúmenes con ✓/✗:
 
      ```
      ✓ Audio   : guion.wav
@@ -238,7 +202,9 @@ capcut-auto/
 │   ├── transcriber_import_check.py  # anti-typo CRISPASR + imports (sin red)
 │   ├── bootstrap_check.py       # descarga bin/modelo simulada (sin red)
 │   ├── subs_check.py            # subtítulos: fragmentación, estilo, trazo, pop-up
+│   ├── subtitle_layout_check.py # subtítulos: layout interno (texto centrado en su caja)
 │   ├── watermark_check.py       # marca de agua "NEXUS PARADOJA" (toggles, UI/JSON)
+│   ├── color_grading_check.py   # color grading HSL por canal
 │   ├── json_scales_check.py     # valores JSON EXACTOS de las escalas UI
 │   ├── fase2_e2e.py             # descarga real + alineación del guion (autorizado)
 │   └── build_helpers.py         # plantilla/audio sintéticos
@@ -261,25 +227,71 @@ capcut-auto/
 # 3) Arranque de la UI
 & .venv\Scripts\python.exe -X utf8 tests\ui_boot.py
 
-# 4) Restauración de config_user.json al reabrir la app
+# 4) Restauración de config_user.json al reabrir la UI
 & .venv\Scripts\python.exe -X utf8 tests\session_restore_check.py
 
 # 5) Import de transcriber + anti-typo CRISPASR (sin red ni descargas)
 & .venv\Scripts\python.exe -X utf8 tests\transcriber_import_check.py
 
-# 6) Subtítulos: fragmentación 2-5 palabras, estilo, espaciado U+0020, trazo UI 30
+# 6) Subtítulos: fragmentación 2-5 palabras, estilo, trazo, pop-up, MAYÚSCULAS, spacing 0
 & .venv\Scripts\python.exe -X utf8 tests\subs_check.py
 
 # 7) Marca de agua "NEXUS PARADOJA": UI/JSON, toggle ON/OFF (draft temporal)
 & .venv\Scripts\python.exe -X utf8 tests\watermark_check.py
 
-# 8) Valores JSON EXACTOS de las escalas JSON<->CapCut UI (trazo, opacidad,
-#    spacing, posiciones de subtítulos y watermark)
+# 8) Valores JSON EXACTOS de las escalas JSON<->CapCut UI
 & .venv\Scripts\python.exe -X utf8 tests\json_scales_check.py
 
-# 9) E2E real autorizado: descarga bin+modelo y alinea el guion (toca bin/models y CapCut)
+# 9) E2E real autorizado: descarga bin+modelo y alinea el guion
 & .venv\Scripts\python.exe -X utf8 tests\fase2_e2e.py
+
+# 10) Subtítulos: layout interno (Fix 1-5 + cobertura contigua de estilos)
+& .venv\Scripts\python.exe -X utf8 tests\subtitle_layout_check.py
 ```
+
+---
+
+## 🐞 Texto de los subtítulos pegado abajo dentro de su caja
+
+**Síntoma.** Los subtítulos están bien posicionados en el eje Y, pero DENTRO de
+su propia caja el texto se ve pegado al borde inferior, con un hueco vacío
+grande arriba. La caja es más alta que los glifos. No es
+`clip.transform.y` (la posición del objeto): es la composición del texto dentro
+de su caja.
+
+**Causa raíz (verificada, no supuesta).** Los `range` de `content.styles[]` no
+cubrían el texto entero. El código saltaba el espacio entre palabras
+(`cursor = end + 1` en `build_text_content`), así que **los espacios se
+quedaban sin estilo** y CapCut los componía con su estilo **por defecto**: la
+caja se calculaba con una altura mayor que la de los glifos y el texto se
+dibujaba pegado abajo.
+
+Contraste con el **draft real de referencia** (el proyecto del usuario
+`Nexus Paradoja video 10100`, 740 materiales de texto, que en CapCut se ve
+bien): los **740/740 tienen cobertura CONTIGUA de `[0, len)`**, con un estilo
+por cada palabra **y otro por cada grupo de espacios** (1120 runs son solo
+espacios). Ese formato es el que CapCut escribe, y es el que se genera ahora.
+
+**Los 5 fixes aplicados** (`src/core/subtitles.py`):
+
+| # | Fix | Qué se hizo |
+|---|---|---|
+| 1 | `font_size` material ↔ content sincronizados | `build_text_material` resuelve `font_size = float(FONT_SIZE)` **una sola vez** y la usa tanto en `material.font_size` como en `content.styles[].size`. Si se desincronizan, CapCut mide la caja con un tamaño y dibuja los glifos con el otro. **OJO: en el `content` la clave se llama `size`, no `font_size`** — es el nombre que usa CapCut (`font_size` no existe en su esquema; ver `watermark_check.py`, que ya leía `size`). |
+| 2 | Alineación explícita | `content.styles[]` lleva `align_type: 1` (centro horizontal) y `vertical_align: 1` (centro vertical dentro del cuadro); el material lleva `alignment: 1`, `line_feed: 1`, `typesetting: 0`. |
+| 3 | `line_spacing` a cero | `line_spacing: 0.0` en **todos** los `content.styles[]` y en el `material`. |
+| 4 | Texto limpio de invisibles | `clean_srt_text` es ahora la única puerta: quita tags/entidades HTML, elimina los caracteres **invisibles** (zero-width `\u200b\u200c\u200d`, `\u2060`, BOM `\ufeff`, soft hyphen `\u00ad` — que Python **no** considera whitespace y sobrevivían a `split()`), convierte cualquier espacio Unicode (`\u00A0`, `\u2003`, `\u2009`, `\u202F`, `\u3000`, `\t`, `\n`, `\r`) en **un** espacio ASCII y aplica `.strip()`. `build_text_content` pasa por él, así que el texto sale limpio aunque se llame directamente. |
+| 5 | Campos de caja del material | `fixed_height: -1.0`, `fixed_width: -1.0`, `inner_padding: -1.0` (**float**, como los escribe CapCut), `typesetting: 0`, `line_feed: 1`, `alignment: 1`, `preset_has_set_alignment: false`. La caja queda en automático: sin alto fijo ni padding, ceñida al texto. |
+| **Raíz** | **Cobertura contigua de estilos** | **`text_runs()` divide el texto en runs máximos palabra/espacio y cubre `[0, len_utf16)` SIN huecos.** Los espacios heredan el color del run anterior, igual que en el draft real. Los offsets se calculan con `_utf16_at()` (offsets UTF-16 exactos con tildes). |
+
+**Lo que NO se ha tocado:** `clip.transform.y` (`config.SUBTITLE_POS_Y_JSON` =
+`-0.8333333` = UI −900, idéntico al del draft real de referencia), sincronización,
+transiciones, color grading, HSL, paneos, camera shake, SFX, marca de agua ni UI.
+
+**Verificado por `tests/subtitle_layout_check.py`** (3 subtítulos, incluidos los
+que tienen espacios Unicode y zero-width): Fix 1 (mismo float en material y
+content), Fix 2, Fix 3, Fix 4, Fix 5, **cobertura contigua sin huecos**,
+sincronización intacta y posición Y intacta. El test **falla** si alguien
+vuelve a dejar un espacio sin estilo (regresión comprobada).
 
 ---
 
@@ -287,14 +299,40 @@ capcut-auto/
 
 Reglas estrictas para tocar este repo (las verifican los tests):
 
-1. **Un solo espacio ASCII entre palabras de subtítulos.** `build_text_content`
-   normaliza el texto con `" ".join(text.split())`: entre palabras hay
-   EXACTAMENTE un U+0020. Prohibido `\u2003`, `\u00A0`, `\t`, `\n` o múltiples
-   espacios (producen huecos enormes en CapCut). Verificado por `subs_check.py`.
+1. **Un solo espacio ASCII entre palabras de subtítulos.** `clean_srt_text`
+   normaliza el texto y devuelve `" ".join(text.split())`: entre palabras hay
+   EXACTAMENTE un U+0020. Prohibido `\u2003`, `\u00A0`, `\u202F`, `\u3000`,
+   `\t`, `\n` o múltiples espacios (producen huecos enormes en CapCut).
+   Verificado por `subs_check.py` y `subtitle_layout_check.py`.
+
+1b. **`content.styles[]` cubre el texto INTEGRO y sin huecos.** Los `range`
+   (offsets UTF-16) son contiguos de `[0, len_utf16(text))`: un estilo por
+   palabra **y otro por cada grupo de espacios**. Un carácter sin estilo
+   (p. ej. un espacio) lo compone CapCut con su estilo por defecto, la caja
+   crece y **el texto se ve pegado abajo con un hueco arriba**. Se genera con
+   `subtitles.text_runs()`. Verificado por `subtitle_layout_check.py`
+   (contraste: los 740 materiales del draft real de CapCut son 740/740
+   contiguos).
+
+1c. **Ningún carácter invisible en el texto de subtítulos.** `clean_srt_text`
+   borra los `Cf` de Unicode que Python NO ve como whitespace: `\u200b`,
+   `\u200c`, `\u200d`, `\u2060`, `\ufeff` (BOM) y `\u00ad`.
+
+1d. **Un único tamaño de fuente.** `material.font_size` y
+   `content.styles[].size` son el MISMO float, resuelto una sola vez en
+   `build_text_material` desde `subtitles.FONT_SIZE`. En el `content` la clave
+   es `size` (así la llama CapCut), no `font_size`.
+   Verificado por `subs_check.py` y `subtitle_layout_check.py`.
+
+1e. **`line_spacing = 0.0` y caja automática.** `line_spacing: 0.0` en el
+   `content` y en el material; `fixed_height`/`fixed_width`/`inner_padding` =
+   `-1.0` (float), `typesetting: 0`, `line_feed: 1`, `alignment: 1`,
+   `preset_has_set_alignment: false`.
+   Verificado por `subtitle_layout_check.py`.
 
 2. **Posición vertical de subtítulos constante.** Todos los subtítulos usan la
-   misma `config.SUBTITLE_POS_Y_JSON = -0.6018519` (= UI "-650", escala
-   UI_Y/1080 = -650/1080), aplicada SIN cálculo dinámico en
+   misma `config.SUBTITLE_POS_Y_JSON = -0.8333333` (= UI "-900", escala
+   UI_Y/1080 = -900/1080), aplicada SIN cálculo dinámico en
    `subtitles.SUBTITLE_Y`. Nada de Y calculada por contenido.
 
 3. **Trazo de subtítulos = 30 en la UI.** `config.SUBTITLE_STROKE_WIDTH_JSON =
@@ -302,7 +340,13 @@ Reglas estrictas para tocar este repo (las verifican los tests):
    `content`: `strokes[0].enable = true`, `border_mode 1`), color negro puro.
    Verificado por `subs_check.py`.
 
-4. **Marca de agua propia, pista independiente.** "NEXUS PARADOJA",
+4. **Letter spacing subtítulos = 0.** `config.LETTER_SPACING = 0.0` (JSON) = "0"
+   en CapCut. Verificado por `subs_check.py`.
+
+5. **Subtítulos en MAYÚSCULAS.** `build_text_content` aplica `.upper()` al
+   texto final. Verificado por `subs_check.py`.
+
+6. **Marca de agua propia, pista independiente.** "NEXUS PARADOJA",
    `transform.x = -0.571875` (UI X=-1098), `transform.y = 0.8296` (UI Y=896),
    `global_alpha = 0.15` (15%), `text_alpha = 1.0` fijo, `fill.alpha = 1.0`
    en content, `letter_spacing = 0.10` (espaciado 2), tamaño 8,
@@ -311,36 +355,38 @@ Reglas estrictas para tocar este repo (las verifican los tests):
    `json_scales_check.py`. Fórmula opacidad: UI% = global_alpha × 100
    (draft real: global_alpha=0.1005 → ~10%).
 
-5. **Nunca tocar código no relacionado.** Un cambio toca solo su bug/feature.
+7. **Color grading HSL por canal.** 3 materiales HSL (Naranja, Cian, Azul) con
+   `hue=0, saturation=0, lightness=0` base; keyframes `KFTypeHue`,
+   `KFTypeSaturation`, `KFTypeLightSensatione` en segmentos de video.
+   Materiales referenciados via `extra_material_refs` + `enable_hsl=true`.
 
-6. **README siempre al día.** Cada cambio funcional actualiza esta sección.
+7. **Nunca tocar código no relacionado.** Un cambio toca solo su bug/feature.
 
-### Escalas JSON ↔ UI de CapCut (confirmadas; ver docs/capcut_json_scales.md)
-
-Use las constantes de `src/core/config.py` (versionadas como `*_UI` y `*_JSON`):
-
-| Concepto | Escala (UI → JSON) | Ejemplo verificado |
-|---|---|---|
-| `strokes[0].width` / `border_width` (trazo) | UI / 500 | UI 30 → `0.06` |
-| `global_alpha` (opacidad) | UI / 100 | 15% → `0.15` |
-| `letter_spacing` | UI × 0.05 | UI 2 → `0.10` · UI 1 → `0.05` |
-| `transform.x` | UI_X / 1920 | -1098/1920 → `-0.571875` |
-| `transform.y` | UI_Y / 1080 | 896/1080 → `0.8296` · -650/1080 → `-0.6018519` |
+8. **README siempre al día.** Cada cambio funcional actualiza esta sección.
 
 ---
 
-## 📜 Historial de versiones
+## 🎨 Color Grading HSL (detalle técnico)
+
+- 3 materiales HSL en `materials.hsl[]`: Naranja (tipo 2), Cian (tipo 5), Azul (tipo 6).
+- Base: `hue=0, saturation=0, lightness=0` → animación 100% por keyframes.
+- Keyframes en segmentos: `KFTypeHue`, `KFTypeSaturation`, `KFTypeLightSensatione`.
+- Referencia: `extra_material_refs` en segmento + `enable_hsl=true`.
+- `lumi_hub_path` = `path` (no `path/lumi_hub_path`).
+- Verificado por `color_grading_check.py`.
+
+---
+
+## 📜 Historial de versiones (solo tags reales)
 
 | Versión | Fecha | Descripción |
 |---|---|---|
-| **v1.5.1** | 2026-09-24 | **Patch:** Subtítulos Y -900 → -650; Watermark 30% → 15%; Barra progreso revertida a indeterminada; README reordenado. |
-| **v1.5.0** | 2026-09-24 | Subtítulos Y -660 → -900; Watermark opacidad 100% → 30% (`global_alpha`); Fix espacios subtítulos; Barra progreso con label % (0→100%). Tests: `json_scales_check`, `watermark_check`, `subs_check`, nuevo `progress_check`. |
-| **v1.4.0** | 2026-09-24 | Corrección escalas JSON↔UI: CapCut usa canvas completo (1920×1080). Posiciones: watermark X/Y JSON `-0.571875`/`0.8296` (UI -1098/896), subtítulos Y `-0.6111111` (UI -660). Trazo UI/500 (0.30 → 150). Watermark opacidad: `text_alpha`+`fill.alpha` (40%). Fix huecos palabras. |
-| **v1.3.0** | 2026-09-23 | Watermark "NEXUS PARADOJA" inicial + fix contorno subtítulos (trazo UI 30) + posición vertical constante. Fix huecos palabras (1 espacio ASCII). Nuevo `tests/json_scales_check.py` y `docs/capcut_json_scales.md`. |
 | **v1.2.1** | 2026-09-23 | Chore: limpieza de tracking (backups, cache, logs, models fuera del repo). |
 | **v1.2.0** | 2026-09-23 | Fase 3: camera shake, HSL, paneos, SFX. |
 | **v1.1.0** | 2026-09-22 | Fase 2: UI 2 paneles, subtítulos, modal verde. |
 | **v1.0.0** | 2026-09-22 | Fase 1: alineación CrispASR + sincronización. |
+
+> **Nota:** Las versiones v1.3.0, v1.4.0, v1.5.0, v1.5.1 que aparecían en versiones anteriores de este README **eran inventadas y no existen como tags reales**. v1.3.0 está en desarrollo.
 
 ---
 

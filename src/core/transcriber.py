@@ -2,8 +2,9 @@
 
 Genera un SRT donde cada linea del guion se alinea contra el audio (1 linea de
 texto = 1 cue con sus timestamps reales). El binario de CrispASR y el modelo
-espanol (GGUF Q4_K ~70 MB) se descargan automaticamente en la primera
-ejecucion dentro de bin/ y models/; en las siguientes se cargan desde disco.
+espanol (GGUF Q4_K ~70 MB) se descargan automaticamente la primera ejecucion
+via src/core/bootstrap.ensure_dependencies() en bin/ y models/; en las
+siguientes se cargan desde disco.
 """
 
 from __future__ import annotations
@@ -18,6 +19,7 @@ import zipfile
 from pathlib import Path
 
 from src.core import config
+from src.core.bootstrap import ensure_dependencies
 from src.core.timeline_builder import GenerationCancelled
 
 log = logging.getLogger("capcutauto")
@@ -125,8 +127,9 @@ def align_audio_to_text(
     if not lines:
         raise ValueError("No hay texto de guion (VOZ EN OFF) para alinear.")
 
-    _ensure_crispasr_exe(cancel_event)
-    _ensure_align_model(cancel_event)
+    # Primer uso: comprueba y descarga (si falta) el binario de CrispASR y el
+    # modelo espanol antes de invocar el binario.
+    ensure_dependencies(cancel_event)
     if cancel_event is not None and cancel_event.is_set():
         raise GenerationCancelled("Generación cancelada por el usuario.")
 

@@ -7,22 +7,28 @@ Convierte un archivo .srt en la pista de texto de CapCut:
    al numero de palabras de cada fragmento.
 2. ESTILO (valores EXACTOS de la captura de CapCut): fuente
    montserrat/bebas/impact si estan en el sistema (si no, SystemFont), tamano
-   12, Negrita + Italica activos, espaciado de caracteres 1, texto blanco puro
-(palabras clave en amarillo #FFD700), trazo negro 30 (= JSON 0.06, escala
-    empirica UI = JSON * 500), sombra negra con desenfoque 20% y distancia 15,
-    posicion Y = -660 (JSON -660/1080 = -0.6111111, aplicada a TODOS los
-    subtitulos).
+   `FONT_SIZE` (unica fuente de verdad: se escribe a la vez en
+   `material.font_size` y en `content.styles[].size`), Negrita + Italica
+   activos, espaciado de caracteres 0, texto blanco puro
+   (palabras clave en amarillo #FFD700), trazo negro 30 (= JSON 0.06, escala
+   empirica UI = JSON * 500), sombra negra con desenfoque 20% y distancia 15,
+   posicion Y = `config.SUBTITLE_POS_Y_JSON` (aplicada a TODOS los subtitulos;
+   NO se calcula aqui).
 3. ANIMACION pop-up: los fragmentos entran con escalas 0.8 -> 1.0 en 0.1 s
    mediante keyframes de escala (KFTypeScaleX/KFTypeScaleY) y DESPUES se
    mantienen ESTATICOS en su escala base (1.0) durante toda la duracion del
    texto (no hay zoom continuo).
 
 El `content` del material de texto es un JSON dentro de un string con un
-`styles[]`: cada palabra lleva su range [inicio, fin) en offsets UTF-16 LE
-(para texto espanol sin emojis el offset de caracter == offset en bytes LE).
+`styles[]`: cada run de texto (palabra o grupo de espacios) lleva su range
+[inicio, fin) en offsets UTF-16 LE. Los runs son CONTIGUOS y cubren el texto
+integro; dejar un caracter sin estilo (p.ej. un espacio) hace que CapCut lo
+componga con su estilo por defecto, la caja crezca y el texto quede pegado a
+su borde inferior. Ver `text_runs` y `clean_srt_text`.
 """
 
 from __future__ import annotations
+
 
 import copy
 import json
@@ -63,13 +69,17 @@ BASE_COLOR = [1.0, 1.0, 1.0]               # blanco puro
 # en clip.transform.y.
 SUBTITLE_Y = float(config.SUBTITLE_POS_Y_JSON)
 
-# Espaciado de caracteres EXACTO = 1 en la UI de CapCut. CapCut guarda el
-# valor NORMALIZADO en el JSON: 1.0 en el JSON se muestra como "20" en el
-# panel; 0.05 se muestra como "1" (mismo default del draft real #1 Nexus
-# Paradoja).
-FONT_SIZE = 12.0           # content.styles[].size
+# Espaciado de caracteres: 0 en la UI de CapCut (sin espacio extra entre caracteres).
+# El valor NORMALIZADO en el JSON: 0.0 = UI "0".
+# FIX 1 (offset vertical del texto): FONT_SIZE es la UNICA fuente de verdad del
+# tamano de fuente. `build_text_material` la escribe en el material
+# (`font_size`) y la pasa al content (`styles[].size`) como el MISMO float. Si
+# se desincronizasen, CapCut mediria la caja con un tamano y dibujaria los
+# glifos con el otro -> texto pegado al borde de su caja. Ojo: en el content la
+# clave se llama `size` (NO `font_size`), es el nombre que usa CapCut.
+FONT_SIZE = 12.0           # material.font_size == content.styles[].size
 TEXT_SIZE = 30             # material.text_size
-LETTER_SPACING = 0.05      # material.letter_spacing (= UI "1")
+LETTER_SPACING = 0.0       # material.letter_spacing (= UI "0")
 STYLE_BOLD = True          # Negrita
 STYLE_ITALIC = True        # Italica
 
@@ -105,6 +115,18 @@ def _utf16_len(text: str) -> int:
     return len(text.encode("utf-16-le")) // 2
 
 
+def _utf16_at(text: str, char_index: int) -> int:
+    """Offset en unidades UTF-16 del caracter `char_index` de `text` (los range
+    de CapCut son offsets UTF-16, no indices de caracter)."""
+    return len(text[:char_index].encode("utf-16-le")) // 2
+
+
+# Caracteres INVISIBLES (categoría Cf de Unicode) que Python NO considera
+# whitespace y que sobreviven a un .split(): zero-width space/joiner, BOM,
+# soft hyphen... CapCut los compone como glifos y rompen el calculo de la caja.
+INVISIBLE_CHARS_RE = re.compile("[\u200b\u200c\u200d\u2060\ufeff\u00ad]")
+
+
 FONT_CANDIDATES = (
     # Montserrat / Bebas Neue / Impact: si estan instaladas se usan, si no se
     # cae a la SystemFont de CapCut (la que usa el draft real 0921).
@@ -131,11 +153,52 @@ def resolve_subtitle_font() -> dict:
 
 
 def clean_srt_text(raw: str) -> str:
-    """Limpia una linea de SRT: quita tags HTML (<i>,<b>,<font...>) y normaliza
-    espacios. Mantiene la puntuacion (necesaria para los range offsets)."""
+    """Limpia una linea de SRT para que CapCut la componga bien. Fix 4.
+
+    1) quita tags HTML (<i>,<b>,<font...>) y desescapa entidades,
+    2) elimina los caracteres INVISIBLES (zero-width, BOM, soft hyphen),
+    3) convierte CUALQUIER espacio Unicode (\\u00A0, \\u2003, \\u2009, \\u202F,
+       \\u3000, \\t, \\n, \\r) en un unico espacio ASCII U+0020,
+    4) aplica .strip(): el texto nunca empieza ni termina en espacio/salto.
+
+    Resultado: entre palabras hay EXACTAMENTE un espacio ASCII y no queda
+    ningun \\n, \\r, \\t ni espacio no-ASCII (CapCut los lee como lineas/vacios
+    extra y desplazan el texto dentro de su caja). Mantiene la puntuacion, las
+    tildes y las mayusculas originales (los range offsets dependen de ello)."""
     text = re.sub(r"<[^>]+>", "", raw or "")
     text = text.replace("&amp;", "&").replace("&lt;", "<").replace("&gt;", ">")
-    return re.sub(r"\s+", " ", text).strip()
+    text = INVISIBLE_CHARS_RE.sub("", text)
+    # split() parte por TODOS los espacios Unicode de Python; join() los
+    # unifica en un solo U+0020 (y de paso elimina \n, \r y \t).
+    return " ".join(text.split()).strip()
+
+
+def text_runs(text: str) -> list[tuple[int, int, bool]]:
+    """Divide `text` en runs MAXIMOS de palabra / espacios y devuelve
+    [(start_char, end_char, es_espacio), ...].
+
+    Los runs son CONTIGUOS y cubren el texto INTEGRO: [0, 0) ... [n, n).
+    Es el formato que escribe CapCut en `content.styles` (un estilo por
+    palabra + un estilo por cada grupo de espacios, verificado en los 740
+    materiales de texto del draft real de referencia).
+
+    BUG DEL OFFSET VERTICAL: si un caracter se queda SIN estilo (p.ej. el
+    espacio entre palabras, que antes se saltaba con `cursor = end + 1`),
+    CapCut lo compone con su estilo por DEFECTO. La caja de texto se calcula
+    con la altura de ese estilo por defecto, que es mayor que la de los
+    glifos, y el texto se dibuja pegado al borde INFERIOR de su caja dejando
+    un hueco vacio arriba. Cubrir el 100% del texto con estilos propios es lo
+    que mantiene la caja ceñida al texto."""
+    runs: list[tuple[int, int, bool]] = []
+    i, n = 0, len(text)
+    while i < n:
+        is_space = text[i] == " "
+        j = i + 1
+        while j < n and (text[j] == " ") == is_space:
+            j += 1
+        runs.append((i, j, is_space))
+        i = j
+    return runs
 
 
 def split_into_fragments(text: str) -> list[list[str]]:
@@ -176,34 +239,46 @@ def build_text_content(
     font_path: str,
     font_size: float,
 ) -> str:
-    """Construye el `content` JSON (string) con un estilo POR PALABRA.
+    """Construye el `content` JSON (string) con un estilo POR RUN de texto.
 
     El `range` de cada estilo es [inicio, fin) en offsets UTF-16 dentro de
-    `text`. Las palabras reservadas (SUBTITLE_KEYWORDS) van en amarillo #FFD700;
-    el resto en blanco puro. Los offsets se calculan con _utf16_len para no
-    desalinear con acentos.
+    `text` y los runs son CONTIGUOS: cubren el texto INTEGRO, incluidos los
+    espacios entre palabras (ver `text_runs`). Las palabras reservadas
+    (SUBTITLE_KEYWORDS) van en amarillo #FFD700; el resto en blanco puro. Los
+    espacios heredan el color del run anterior (igual que hace CapCut). Los
+    offsets se calculan con `_utf16_at` para no desalinear con acentos.
 
     REGLA DE ORO (PASO 1): entre palabras hay EXACTAMENTE un espacio ASCII
-    (U+0020). Se normaliza aqui cualquier separador raro (\\u2003, \\u00A0, \\t,
-    \\n o multiples espacios) que provoque huecos enormes en CapCut."""
-    text = " ".join(str(text or "").split())  # un solo espacio ASCII entre palabras
+    (U+0020) y el texto viene limpio de `clean_srt_text` (sin \\n, \\r, \\t,
+    \\u00A0, \\u2003 ni caracteres invisibles), que producers de huecos
+    enormes en CapCut.
+    Regla BUG 4: TODO el texto de subtitulos en MAYUSCULAS.
+    Fix 1: `font_size` (clave `size` del content, que es como la llama CapCut)
+    lo inyecta el material, de modo que SIEMPRE coincide con
+    `material.font_size`."""
+    text = clean_srt_text(text).upper()  # Fix 4 + un espacio ASCII + MAYUSCULAS
 
     def normalize_word(w: str) -> str:
         return w.lower().strip("¿?¡!,.;:()\"«»")
 
     styles: list[dict] = []
-    cursor = 0
-    for word in text.split():
-        end = cursor + _utf16_len(word)
-        color = KEYWORD_COLOR if normalize_word(word) in SUBTITLE_KEYWORDS else BASE_COLOR
+    color = BASE_COLOR
+    for start, end, is_space in text_runs(text):
+        if not is_space:
+            word = text[start:end]
+            color = KEYWORD_COLOR if normalize_word(word) in SUBTITLE_KEYWORDS else BASE_COLOR
         styles.append({
-            "range": [cursor, end],
-            "fill": {"content": {"solid": {"color": color}}},
+            "range": [_utf16_at(text, start), _utf16_at(text, end)],
+            "fill": {"content": {"solid": {"color": color}}, "alpha": 1.0},
             "font": {"id": "", "path": font_path},
             "size": font_size,
             "bold": STYLE_BOLD,
             "italic": STYLE_ITALIC,
             "underline": False,
+            "align_type": 1,          # 1 = centro horizontal
+            "vertical_align": 1,      # 1 = centro vertical dentro del cuadro
+            "line_spacing": 0.0,      # sin espacio extra entre líneas
+            "letter_spacing": 0.0,    # sin espacio extra entre caracteres
             "strokes": [{
                 "content": {"render_type": "solid", "solid": {"color": [0.0, 0.0, 0.0]}},
                 "width": BORDER_WIDTH,
@@ -211,7 +286,6 @@ def build_text_content(
                 "enable": True,
             }],
         })
-        cursor = end + 1  # el espacio entre palabras
     return json.dumps({
         "text": text,
         "styles": styles,
@@ -222,25 +296,41 @@ def build_text_content(
 
 def build_text_material(text: str) -> dict:
     """Material de texto con el estilo de la guia (trazo negro, sombra negra,
-    fuente resuelta, color blanco base + keywords amarillos)."""
+    fuente resuelta, color blanco base + keywords amarillos).
+
+    Fix 1: `font_size` se resuelve UNA sola vez aqui y se usa tanto en
+    `material.font_size` como en `content.styles[].size`. Si los dos valores
+    se desincronizan, CapCut dimensiona la caja con uno y dibuja los glifos con
+    el otro, y el texto queda pegado al borde de su caja.
+    Fix 5: caja sin padding ni altura fija (auto) y alineacion centrada, los
+    mismos valores que escribe CapCut en el draft real de referencia."""
     font = resolve_subtitle_font()
+    font_size = float(FONT_SIZE)
     mat = copy.deepcopy(canonical.TEXT_MATERIAL)
     mat["id"] = _new_id()
     mat["name"] = text[:40]
-    mat["content"] = build_text_content(text, font["path"], FONT_SIZE)
+    mat["content"] = build_text_content(text, font["path"], font_size)
     mat["text_color"] = "#FFFFFF"
     mat["text_alpha"] = 1.0
     mat["font_path"] = font["path"]
     mat["font_name"] = font["name"]
     mat["font_title"] = font["title"]
-    mat["font_size"] = FONT_SIZE
+    mat["font_size"] = font_size
     mat["text_size"] = TEXT_SIZE
     mat["letter_spacing"] = LETTER_SPACING
-    mat["alignment"] = 1  # centro
+    mat["alignment"] = 1              # centro horizontal
     mat["line_feed"] = 1
-    mat["line_spacing"] = 0.02
+    mat["line_spacing"] = 0.0         # sin espacio extra entre líneas
     mat["line_max_width"] = 0.82
     mat["check_flag"] = 7
+    # Fix 5 (caja del texto): -1.0 = AUTOMATICO en CapCut (sin alto/ancho fijo
+    # ni padding). Con valores fijos o con padding la caja queda mas alta que
+    # los glifos y el texto se ve pegado abajo. Valores del draft real.
+    mat["fixed_height"] = -1.0
+    mat["fixed_width"] = -1.0
+    mat["inner_padding"] = -1.0
+    mat["typesetting"] = 0
+    mat["preset_has_set_alignment"] = False
     # Trazo negro ACTIVADO (casilla "Trazo" en la UI) con grosor 30 = 0.06.
     mat["border_mode"] = BORDER_MODE
     mat["border_alpha"] = BORDER_ALPHA
