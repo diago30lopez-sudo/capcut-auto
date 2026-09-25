@@ -3,17 +3,17 @@
 Mapa de conversión entre el `draft_content.json` generado y los valores que
 muestra el panel de CapCut (propiedades de texto). Confirmadas **empíricamente**
 contra el draft real del usuario (`#1 Nexus Paradoja`) y mediciones directas en
-CapCut en **v1.4.0** (documenta el bug de la v1.3.0: escalas de posición
+CapCut en **v1.5.1** (documenta el bug de la v1.4.0: escalas de posición
 duplicadas y trazo/opacidad mal escalados). Son la fuente de verdad del
 proyecto: las constantes viven en `src/core/config.py` (pares `*_UI` y
 `*_JSON`).
 
-## Tabla de escalas (CONFIRMADAS empiricamente, v1.4.0)
+## Tabla de escalas (CONFIRMADAS empiricamente, v1.5.1)
 
 | Propiedad CapCut UI      | Campo en `draft_content.json`        | Fórmula (UI → JSON)    |
 |--------------------------|--------------------------------------|------------------------|
 | Grosor trazo             | `strokes[0].width` (y `border_width`)| UI / 500               |
-| Opacidad (%)             | `text_alpha` (+ `styles[].fill.alpha`)| UI / 100, con `fill.alpha = 1.0` |
+| Opacidad (%)             | `global_alpha` (material)            | UI / 100               |
 | Letter spacing           | `letter_spacing`                     | UI × 0.05              |
 | Posición X               | `transform.x`                        | UI_X / 1920            |
 | Posición Y               | `transform.y`                        | UI_Y / 1080            |
@@ -22,9 +22,10 @@ proyecto: las constantes viven en `src/core/config.py` (pares `*_UI` y
 > **COMPLETO** (1920×1080), NO por su mitad (960×540). El valor de la v1.3.0
 > `JSON = UI/960` se mostró DUPLICADO en CapCut (UI X=-1098 → mostraba -2196).
 >
-> **Opacidad:** `text_alpha = UI/100` NO basta: sin `styles[].fill.alpha`
-> CapCut aplica un factor ~0.75 y `text_alpha 0.40` se muestra como **30%**
-> (bug v1.3.0). El builder escribe `fill.alpha = 1.0` explícito → 40% real.
+> **Opacidad (v1.5.0):** CapCut usa `global_alpha` (material) como control principal,
+> NO `text_alpha`. Draft real: `global_alpha=0.1005` → ~10%. El builder
+> escribe `global_alpha = UI/100` (15% → 0.15), `text_alpha = 1.0` fijo,
+> y `styles[].fill.alpha = 1.0`. Fórmula: UI% = global_alpha × 100.
 >
 > **Trazo:** `border_width/strokes.width` usa escala **UI/500** (0.30 de la
 > v1.3.0 se mostraba como **150**). Para UI 30 → JSON `0.06`.
@@ -43,11 +44,11 @@ CANVAS_HEIGHT = 1080
 | Propiedad            | UI deseada | Valor JSON                          |
 |----------------------|------------|-------------------------------------|
 | Grosor trazo subtítulos | 30        | `0.06`   (= 30 / 500)               |
-| Opacidad watermark   | 40%        | `0.40`   (= 40 / 100) + `fill.alpha 1.0` |
+| Opacidad watermark   | 15%        | `0.15`   (= 15 / 100, `global_alpha`)     |
 | Letter spacing watermark | 2       | `0.10`   (= 2 × 0.05)               |
 | Watermark posición X | -1098      | `-0.571875` (= -1098 / 1920)        |
 | Watermark posición Y | 896        | `0.8296` (= 896 / 1080, ≈0.8296)     |
-| Subtítulos posición Y| -660       | `-0.6111111` (= -660 / 1080)        |
+| Subtítulos posición Y| -650       | `-0.6018519` (= -650 / 1080)        |
 
 > Convenio de signo de Y verificado: **positivo = arriba**, **negativo = abajo**
 > del centro del lienzo. X negativo = izquierda (watermark al extremo
@@ -71,13 +72,13 @@ CANVAS_HEIGHT = 1080
     "mode": 0,
     "enable": true
   },
-  "clip.transform": { "x": 0.0, "y": -0.6111111 }
+  "clip.transform": { "x": 0.0, "y": -0.6018519 }
 }
 ```
 
 - `strokes[0].width = 0.06` → UI **30** (trazo activado con `enable: true`).
 - `letter_spacing = 0.05` → UI **1** (espaciado de subtítulos).
-- `transform.y = -0.6111111` → UI **Y = -660** (constante, todos los subtítulos
+- `transform.y = -0.6018519` → UI **Y = -650** (constante, todos los subtítulos
   a la misma altura).
 - Entre palabras del `content.text` hay SIEMPRE exactamente 1 espacio ASCII
   (`U+0020`). Prohibidos `\u2003`, `\u00A0`, `\t`, `\n` y múltiples espacios
@@ -94,7 +95,7 @@ CANVAS_HEIGHT = 1080
                             "alpha": 1.0 },
                   "range": [0, 14] } ]
   },
-  "material": { "text_alpha": 0.40, "letter_spacing": 0.10, "font_size": 8.0 },
+  "material": { "global_alpha": 0.15, "text_alpha": 1.0, "letter_spacing": 0.10, "font_size": 8.0 },
   "clip.transform": { "x": -0.571875, "y": 0.8296 },
   "target_timerange": { "start": 0, "duration": 1234567 }
 }
@@ -102,8 +103,7 @@ CANVAS_HEIGHT = 1080
 
 - `transform.x = -0.571875` → UI **X = -1098** (izquierda).
 - `transform.y = 0.8296` → UI **Y = 896** (arriba).
-- `text_alpha = 0.40` + `fill.alpha = 1.0` → opacidad **40%** (sin el
-  `fill.alpha` se vería 30%).
+- `global_alpha = 0.15`, `text_alpha = 1.0`, `fill.alpha = 1.0` → opacidad **15%**.
 - `letter_spacing = 0.10` → espaciado **2**.
 - `size = 8.0`, `bold` + `italic`; misma fuente (`font.path`) que los subtítulos.
 - `target_timerange.start = 0`, `duration = duración del audio` → cubre todo el
