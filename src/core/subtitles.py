@@ -399,10 +399,11 @@ def build_watermark_material_and_track(
                                         config.WATERMARK_BOLD,
                                         config.WATERMARK_ITALIC)
     mat["text_color"] = "#FFFFFF"
-    # Opacidad 40% = text_alpha 0.40 CON fill.alpha 1.0 explicito en el content:
-    # sin ese alpha CapCut aplica ~0.75 y 0.40 se muestra como 30% (v1.3.0).
-    # UI = text_alpha * fill.alpha * 100.
-    mat["text_alpha"] = config.WATERMARK_ALPHA_JSON
+    # Opacidad: CapCut usa global_alpha como control principal (draft real:
+    # text_alpha=1.0, global_alpha=0.1005 -> ~10%). UI% = global_alpha * 100.
+    # Target 30% -> global_alpha = 0.30. text_alpha se deja en 1.0.
+    mat["text_alpha"] = 1.0
+    mat["global_alpha"] = config.WATERMARK_ALPHA_JSON  # 0.30 para 30%
     mat["font_path"] = font["path"]
     mat["font_name"] = font["name"]
     mat["font_title"] = font["title"]

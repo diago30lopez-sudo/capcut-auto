@@ -2,14 +2,15 @@
 JSON <-> CapCut UI (confirmada empiricamente; docs/capcut_json_scales.md).
 
 Canvas del proyecto: 1920x1080 (CapCut multiplica transform por el canvas
-COMPLETO, no por su mitad). Escalas CONFIRMADAS empiricamente (v1.4.0, contra
+COMPLETO, no por su mitad). Escalas CONFIRMADAS empiricamente (v1.5.1, contra
 el draft real del usuario y mediciones en CapCut):
   - strokes[0].width / border_width = UI / 500  (UI 30    -> 0.06)
-  - text_alpha (opacidad)           = UI / 100   (40%      -> 0.40) + fill.alpha 1.0
+  - global_alpha (opacidad)           = UI / 100   (15%      -> 0.15)
+    (text_alpha=1.0 fijo; CapCut usa global_alpha como control principal)
   - letter_spacing                  = UI * 0.05  (UI 2     -> 0.10)
   - transform.x (watermark)         = UI_X / 1920 (UI -1098 -> -0.571875)
   - transform.y (watermark)         = UI_Y / 1080 (UI 896   -> 0.8296296
-  - transform.y (subtitulos)        = UI_Y / 1080 (UI -660  -> -0.6111111
+  - transform.y (subtitulos)        = UI_Y / 1080 (UI -650  -> -0.6018519
 
 No genera proyectos ni abre CapCut: usa los builders directamente y comprueba
 que el JSON que se escribira en draft_content.json lleva EXACTAMENTE esos
@@ -50,16 +51,16 @@ def main() -> None:
     # --- 1) Constantes de escalas en config --------------------------------
     checks["trazo UI 30 -> JSON 0.06 (UI /500)"] = (
         abs(config.SUBTITLE_STROKE_WIDTH_JSON - 0.06) < 1e-6)
-    checks["opacidad 40% -> JSON 0.40 (UI /100)"] = (
-        config.WATERMARK_ALPHA_JSON == 0.40)
+    checks["opacidad 15% -> global_alpha 0.15 (UI /100)"] = (
+        config.WATERMARK_ALPHA_JSON == 0.15)
     checks["letter spacing UI 2 -> JSON 0.10 (UI x0.05)"] = (
         config.WATERMARK_LETTER_SPACING_JSON == 0.10)
     checks["watermark X UI -1098 -> JSON -0.571875 (-1098/1920)"] = (
         abs(config.WATERMARK_POS_X_JSON - (-1098 / CANVAS_W)) < 1e-9)
     checks["watermark Y UI 896 -> JSON 0.8296296 (896/1080)"] = (
         abs(config.WATERMARK_POS_Y_JSON - (896 / CANVAS_H)) < 1e-9)
-    checks["subtitulos Y UI -660 -> JSON -0.6111111 (-660/1080)"] = (
-        abs(config.SUBTITLE_POS_Y_JSON - (-660 / CANVAS_H)) < 1e-9)
+    checks["subtitulos Y UI -650 -> JSON -0.6018519 (-650/1080)"] = (
+        abs(config.SUBTITLE_POS_Y_JSON - (-650 / CANVAS_H)) < 1e-9)
     checks["watermark font size 8.0"] = config.WATERMARK_FONT_SIZE == 8.0
     checks["watermark bold+italic"] = (
         config.WATERMARK_BOLD is True and config.WATERMARK_ITALIC is True)
@@ -88,9 +89,9 @@ def main() -> None:
     checks["subtitulos: letter_spacing = 0.05 (UI 1 x0.05)"] = (
         mat["letter_spacing"] == 0.05)
     seg = segments[0]
-    checks["subtitulos: clip.transform.y = -0.6111111 (UI -660)"] = (
+    checks["subtitulos: clip.transform.y = -0.6018519 (UI -650)"] = (
         seg["clip"]["transform"]["y"] == config.SUBTITLE_POS_Y_JSON
-        and abs(seg["clip"]["transform"]["y"] - (-660 / CANVAS_H)) < 1e-6)
+        and abs(seg["clip"]["transform"]["y"] - (-650 / CANVAS_H)) < 1e-6)
     checks["subtitulos: clip.transform.x = 0.0 (centrado)"] = (
         seg["clip"]["transform"]["x"] == 0.0)
 
@@ -110,11 +111,13 @@ def main() -> None:
     checks["watermark: content size 8.0 / bold / italic"] = (
         wm_style["size"] == 8.0 and wm_style["bold"] is True
         and wm_style["italic"] is True)
-    checks["watermark: content fill.alpha = 1.0 (40% real)"] = (
+    checks["watermark: content fill.alpha = 1.0"] = (
         wm_style.get("fill", {}).get("alpha") == 1.0)
     checks["watermark: mat.font_size = 8.0"] = wm_mat["font_size"] == 8.0
-    checks["watermark: text_alpha = 0.40 (40%)"] = (
-        wm_mat["text_alpha"] == 0.40)
+    checks["watermark: global_alpha = 0.15 (15%)"] = (
+        wm_mat["global_alpha"] == 0.15)
+    checks["watermark: text_alpha = 1.0 (fijo)"] = (
+        wm_mat["text_alpha"] == 1.0)
     checks["watermark: letter_spacing = 0.10 (UI 2)"] = (
         wm_mat["letter_spacing"] == 0.10)
     wm_seg = wm_track["segments"][0]
@@ -154,6 +157,7 @@ def main() -> None:
     print(json.dumps({
         "content": wm_content,
         "material": {
+            "global_alpha": wm_mat["global_alpha"],
             "text_alpha": wm_mat["text_alpha"],
             "letter_spacing": wm_mat["letter_spacing"],
             "font_size": wm_mat["font_size"],

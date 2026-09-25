@@ -5,7 +5,8 @@ temporal, sin tocar los drafts):
 
 1) Material `text` con el texto exacto, tamano 8, negrita+italica, espaciado de
    caracteres '2' de la UI (= 0.10 en el JSON normalizado de CapCut) y opacidad
-   40% en la MISMA escala float 0-1 de los subtitulos (text_alpha).
+   15% via global_alpha=0.15 (text_alpha=1.0 fijo; CapCut usa global_alpha
+   como control principal, segun draft real).
 2) Segmento propio que cubre TODO el video: target_timerange [0, audio_dur).
 3) Pista propia SEPARADA de la pista de subtitulos (dos pistas text distintas).
 4) target_timerange del watermark en el mismo eje temporal que el audio.
@@ -15,7 +16,7 @@ Se reporta el mapeo de posicion (X=-1098, Y=896) -> JSON CONFIRMADO
    empiricamente x=-0.571875 (-1098/1920), y=0.8296296 (896/1080) en
    clip.transform, y la constatacion de que el watermark va en el EXTREMO
    superior-izquierdo, independiente de la fila de los subtitulos
-   (Y=-0.6111111 = UI -660).
+   (Y=-0.6018519 = UI -650).
 
 Ejecutar desde la raiz:
     & .venv\\Scripts\\python.exe -X utf8 tests\\watermark_check.py
@@ -123,11 +124,12 @@ def main() -> None:
     # UI '2' de espaciado = 0.10 JSON (escala confirmada: UI * 0.05).
     checks["espaciado chars '2' = 0.10 JSON"] = (
         wm_mats and abs(wm["letter_spacing"] - config.WATERMARK_LETTER_SPACING_JSON) < 1e-9)
-    # Opacidad 40% = text_alpha 0.40 CON fill.alpha 1.0 en el content (sin ese
-    # alpha CapCut aplica ~0.75 y 0.40 se ve como 30%).
-    checks["opacidad 40% (text_alpha 0.40 + fill.alpha 1.0)"] = (
+    # Opacidad 15% = global_alpha 0.15, text_alpha 1.0 (CapCut usa global_alpha
+    # como control principal; draft real: global_alpha=0.1005 -> ~10%).
+    checks["opacidad 15% (global_alpha 0.15, text_alpha 1.0)"] = (
         wm_mats
-        and abs(wm["text_alpha"] - config.WATERMARK_ALPHA_JSON) < 1e-9
+        and abs(wm["global_alpha"] - config.WATERMARK_ALPHA_JSON) < 1e-9
+        and wm["text_alpha"] == 1.0
         and (styles[0].get("fill") or {}).get("alpha") == 1.0)
     # Sin trazo ni sombra: defaults del canonico (desactivados).
     checks["sin trazo ni sombra"] = (
@@ -178,9 +180,9 @@ def main() -> None:
     print(f"  posicion JSON (directo): x = {transform.get('x', 0)} "
           f"(=-1098/1920), y = {transform.get('y', 0)} (=896/1080)")
     print(f"  letter_spacing JSON = {wm.get('letter_spacing')} (UI '2' x0.05)")
-    print(f"  text_alpha = {wm.get('text_alpha')} + fill.alpha 1.0 (40%)")
+    print(f"  global_alpha = {wm.get('global_alpha')} (15%), text_alpha = {wm.get('text_alpha')}")
     print("  -> watermark Y=896 (ARRIBA), X=-1098 (extremo izquierdo);"
-          " subtitulos centrados en Y=-660 (abajo).")
+          " subtitulos centrados en Y=-650 (abajo).")
     if not ok:
         print("WATERMARK_FAIL")
         sys.exit(1)

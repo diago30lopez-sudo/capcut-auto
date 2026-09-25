@@ -88,12 +88,13 @@ WATERMARK_ENABLED = True
 WATERMARK_TEXT = "NEXUS PARADOJA"
 WATERMARK_FONT_SIZE = 8.0
 
-# --- Opacidad: pares UI / JSON (escala: JSON = UI / 100; 40% -> 0.40) -------
-# El builder escribe TAMBIEN styles[0].fill.alpha = 1.0: sin ese alpha CapCut
-# aplica un factor ~0.75 y 0.40 se muestra como 30% (verificado en v1.3.0).
-WATERMARK_ALPHA_UI = 40
-WATERMARK_ALPHA_JSON = 0.40
-# Alias historicos (misma escala float 0-1 que los subtitulos; text_alpha).
+# --- Opacidad: pares UI / JSON (escala: UI% = global_alpha * 100) ------------
+# CapCut usa global_alpha como control principal de opacidad (draft real:
+# text_alpha=1.0, global_alpha=0.1005 -> ~10%). Target 15% -> global_alpha=0.15.
+# El builder escribe global_alpha = WATERMARK_ALPHA_JSON y text_alpha = 1.0.
+WATERMARK_ALPHA_UI = 15
+WATERMARK_ALPHA_JSON = 0.15
+# Alias historicos (misma escala float 0-1 que los subtitulos; global_alpha).
 WATERMARK_OPACITY_UI = WATERMARK_ALPHA_UI
 WATERMARK_OPACITY_JSON = WATERMARK_ALPHA_JSON
 WATERMARK_OPACITY = WATERMARK_ALPHA_JSON
@@ -121,14 +122,14 @@ WATERMARK_POS_Y = 896
 WATERMARK_BOLD = True
 WATERMARK_ITALIC = True
 
-# Posicion vertical del centro de los subtitulos. UI Y=-660 px (abajo del
+# Posicion vertical del centro de los subtitulos. UI Y=-650 px (abajo del
 # centro; convenio verificado: NEGATIVO = abajo). Escala CONFIRMADA
-# empiricamente: JSON = UI_Y / CANVAS_HEIGHT = -660/1080 = -0.6111111. Valores
+# empiricamente: JSON = UI_Y / CANVAS_HEIGHT = -650/1080 = -0.6018519. Valores
 # JSON se aplican SIN calculo dinamico a todos los subtitulos
 # (config.SUBTITLE_POS_Y_JSON).
-SUBTITLE_POS_Y = -660
-SUBTITLE_POS_Y_JSON = -660 / CANVAS_HEIGHT      # -0.6111111...
-SUBTITLE_POS_Y_JSON_HALF = -660 / HALF_H        # referencia antigua, NO usar
+SUBTITLE_POS_Y = -650
+SUBTITLE_POS_Y_JSON = -650 / CANVAS_HEIGHT      # -0.6018519...
+SUBTITLE_POS_Y_JSON_HALF = -650 / HALF_H        # referencia antigua, NO usar
 
 # Grosor del trazo (stroke) de los subtitulos. ESCALA CONFIRMADA empiricamente
 # (v1.4.0): UI = JSON * 500 -> UI 30 = JSON 0.06 (border_width y strokes[].width).
