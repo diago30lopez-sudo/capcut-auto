@@ -22,6 +22,7 @@ from src.core.auto_detect import (  # noqa: E402
     detect_video_inputs,
     find_capcut_templates,
     natural_sort_key,
+    detect_audios,
 )
 from src.core.capcut_project import CapCutProject  # noqa: E402
 from src.core.config import load_user_config, save_user_config  # noqa: E402
@@ -75,6 +76,64 @@ def test_audio_detection() -> None:
           str(res.audio_path))
     check("musica descartada",
           any("musica.mp3" in w for w in res.warnings), "; ".join(res.warnings))
+
+
+def test_detect_audios() -> None:
+    """Test para la nueva función detect_audios (v1.5.0)."""
+    print("[detect_audios]")
+    
+    # 1. Caso: hay archivo con "guion" en el nombre
+    t = Path(tempfile.mkdtemp())
+    (t / "guion.wav").write_bytes(b"x" * 1000)
+    (t / "sonido1.mp3").write_bytes(b"x" * 1000)
+    (t / "sonido2.mp3").write_bytes(b"x" * 1000)
+    res = detect_audios(t)
+    check("guion detectado por nombre", res["guion"] is not None and res["guion"].name == "guion.wav")
+    check("otros = 2 audios", len(res["otros"]) == 2)
+    check("otros incluyen sonido1.mp3", any(p.name == "sonido1.mp3" for p in res["otros"]))
+    check("otros incluyen sonido2.mp3", any(p.name == "sonido2.mp3" for p in res["otros"]))
+    
+    # 2. Caso: NO hay "guion", hay .wav -> primer .wav es guion
+    t = Path(tempfile.mkdtemp())
+    (t / "voz.wav").write_bytes(b"x" * 1000)
+    (t / "ambiente.mp3").write_bytes(b"x" * 1000)
+    (t / "efecto.ogg").write_bytes(b"x" * 1000)
+    res = detect_audios(t)
+    check("primer .wav como guion", res["guion"] is not None and res["guion"].name == "voz.wav")
+    check("otros = 2 audios", len(res["otros"]) == 2)
+    
+    # 3. Caso: NO hay "guion", NO hay .wav -> primer audio por orden natural
+    t = Path(tempfile.mkdtemp())
+    (t / "c_ambiente.mp3").write_bytes(b"x" * 1000)
+    (t / "a_efecto.mp3").write_bytes(b"x" * 1000)
+    (t / "b_musica.mp3").write_bytes(b"x" * 1000)
+    res = detect_audios(t)
+    check("primer por orden natural", res["guion"] is not None and res["guion"].name == "a_efecto.mp3")
+    check("otros = 2 audios", len(res["otros"]) == 2)
+    
+    # 4. Caso: tildes en "guión"
+    t = Path(tempfile.mkdtemp())
+    (t / "guión.wav").write_bytes(b"x" * 1000)
+    (t / "otro.mp3").write_bytes(b"x" * 1000)
+    res = detect_audios(t)
+    check("guión con tilde detectado", res["guion"] is not None and res["guion"].name == "guión.wav")
+    
+    # 5. Caso: recursividad (subcarpeta)
+    t = Path(tempfile.mkdtemp())
+    sub = t / "audios"
+    sub.mkdir()
+    (sub / "guion.wav").write_bytes(b"x" * 1000)
+    (t / "sonido.mp3").write_bytes(b"x" * 1000)
+    res = detect_audios(t)
+    check("guion en subcarpeta detectado", res["guion"] is not None and res["guion"].name == "guion.wav")
+    check("otros = 1 audio en raíz", len(res["otros"]) == 1 and res["otros"][0].name == "sonido.mp3")
+    
+    # 6. Caso: carpeta sin audios
+    t = Path(tempfile.mkdtemp())
+    (t / "imagen.jpg").write_bytes(b"x" * 1000)
+    res = detect_audios(t)
+    check("sin audios -> guion=None", res["guion"] is None)
+    check("sin audios -> otros=[]", res["otros"] == [])
 
 
 def test_scenes_detection() -> None:
@@ -224,9 +283,9 @@ def Image_write(path: Path) -> None:
 def main() -> None:
     config.ensure_dirs()
     tests = [
-        test_natural_sort, test_audio_detection, test_scenes_detection,
-        test_scene_ask_callback, test_images_detection, test_cross_validation_warning,
-        test_templates_finder, test_user_config_roundtrip,
+        test_natural_sort, test_audio_detection, test_detect_audios,
+        test_scenes_detection, test_scene_ask_callback, test_images_detection,
+        test_cross_validation_warning, test_templates_finder, test_user_config_roundtrip,
         test_timeline_cancel, test_generate_cancel_cleanup,
     ]
     for fn in tests:

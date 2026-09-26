@@ -1,9 +1,7 @@
 # 🎬 CapCut Auto — Nexus Paradoja
 
-**Versión actual:** v1.2.1 (última taggeada) · v1.3.0 en desarrollo
-**Última actualización:** 2026-09-24
-
-> ⚠️ **IMPORTANTE:** Las versiones v1.3.0, v1.4.0, v1.5.0, v1.5.1 que aparecían en versiones anteriores de este README **eran inventadas y no existen como tags reales**. El historial real de tags es el que se muestra a continuación. v1.3.0 está actualmente en desarrollo.
+**Versión actual:** v1.4.0 (última taggeada) · v1.5.0 en desarrollo
+**Última actualización:** 2026-09-26
 
 > ⚠️ **IMPORTANTE:** CapCut debe estar **CERRADO** durante la generación.
 
@@ -17,7 +15,9 @@
 | **v1.1.0** | UI 2 paneles, subtítulos, modal verde | ✅ Taggeada |
 | **v1.2.0** | Camera shake, HSL, paneos, SFX | ✅ Taggeada |
 | **v1.2.1** | Limpieza de tracking (backups/cache/logs/models fuera) | ✅ Taggeada |
-| **v1.3.0** | Watermark, auto-descarga, fixes de escalas, color grading, subtítulos | ⏳ En desarrollo |
+| **v1.3.0** | Watermark, auto-descarga, fixes de escalas, color grading, subtítulos, pop-up | ✅ Taggeada |
+| **v1.4.0** | "Imagina esto" — centrado de subtítulos con keyword + ocultamiento de vídeo | ✅ Taggeada |
+| **v1.5.0** | Selector de audios en UI — detección recursiva, dropdown guion, lista otros | ⏳ En desarrollo |
 
 ---
 
@@ -63,7 +63,7 @@ o directamente `run.bat`.
 
 ## 🖥️ La nueva interfaz
 
-La ventana tiene **3 secciones** + botones **Generar proyecto** y **Cancelar**:
+La ventana tiene **4 secciones** + botones **Generar proyecto** y **Cancelar**:
 
 1. **Carpeta CapCut Drafts**
    - Botón *Seleccionar carpeta…* (y un pequeño *Cambiar…* junto a la ruta).
@@ -87,7 +87,31 @@ La ventana tiene **3 secciones** + botones **Generar proyecto** y **Cancelar**:
    - Si algo no se detecta, su etiqueta sale en **rojo** con `✗ No se
      encontró …` y el botón *Generar proyecto* se deshabilita.
 
-3. **Nombre del nuevo proyecto** — campo de texto.
+3. **Subtítulos (.srt)**
+   - Botón *Buscar .srt…* que escanea la carpeta del video y el caché de
+     alineación.
+   - Desplegable con todos los `.srt` encontrados; el último elegido se restaura
+     al reabrir la app.
+   - Los subtítulos se dividen en fragmentos de 2-5 palabras con timing
+     proporcional durante la generación.
+
+4. **Audios del proyecto** (v1.5.0)
+   - Al seleccionar la carpeta del video, se escanean **recursivamente** todos
+     los archivos de audio (`.wav`, `.mp3`, `.m4a`, `.aac`, `.flac`, `.ogg`).
+   - **Audio guion (narración principal)** — desplegable con todos los audios
+     encontrados. Clasificación automática:
+     - Si existe un archivo con *"guion"* en el nombre (case-insensitive, sin
+       tildes) → se autoselecciona.
+     - Si no existe → el primer `.wav` encontrado se propone como guion.
+     - El usuario puede cambiarlo manualmente; la elección se guarda en
+       `config_user.json` como `last_guion_name` y se restaura al reabrir.
+   - **Otros audios detectados** — lista visual de los archivos restantes
+     (ambiente/SFX). Se usarán para *ducking* en v1.7.0+.
+   - Si no hay audios, el dropdown aparece deshabilitado con el mensaje
+     *"No se detectaron audios en la carpeta"* y no bloquea la generación
+     (el pipeline sigue autodetectando como en v1.4.0).
+
+5. **Nombre del nuevo proyecto** — campo de texto.
 
 Los botones *Generar* (verde) y *Cancelar* (rojo) están deshabilitados salvo
 que correspondan; debajo está la **barra de progreso (indeterminada)** y el
@@ -101,7 +125,10 @@ Se crea en la raíz del proyecto (`D:\capcut-auto\config_user.json`) con:
 {
   "capcut_drafts_dir": "D:\\...\\CapCut Drafts",
   "last_template_name": "1.PLANTILLA",
-  "last_video_dir": "D:\\...\\VIDEO_1"
+  "last_video_dir": "D:\\...\\VIDEO_1",
+  "last_srt_dir": "D:\\...\\VIDEO_1",
+  "last_srt_name": "guion.srt",
+  "last_guion_name": "guion.wav"
 }
 ```
 
@@ -122,6 +149,17 @@ registrada en `warnings`.
   excluyendo nombres con *musica/music/bgm/background*. Puntúa:
   `+3` si el nombre sugiere guion/voz (*guion|voz|voice|narration|locucion|narra*)
   y `+1` por MB (cap a +10). Gana el de mayor score.
+- **Nuevo (v1.5.0)**: `detect_audios(root) -> dict` para el selector de UI.
+  Escanea recursivamente todos los audios y devuelve:
+  ```python
+  {"guion": Path | None, "otros": [Path, ...]}
+  ```
+  Clasificación:
+  1. Busca "guion" en el nombre (normalizado: sin tildes, minúsculas).
+  2. Si no hay, el primer `.wav` por orden natural.
+  3. Si no hay `.wav`, el primer audio por orden natural.
+  El resto van a `otros`. Se usa en la UI para el dropdown de guion.
+
 - **Escenas (.txt)**: lista los `.txt` recursivos, valida las primeras 200
   líneas (al menos 2 `ESCENA #` y 1 `VOZ EN OFF:`). Puntúa: `+5` si el nombre
   sugiere *escena|scene|guion|script* y `+1` por cada 10 escenas. Desempate
@@ -247,7 +285,57 @@ capcut-auto/
 
 # 10) Subtítulos: layout interno (Fix 1-5 + cobertura contigua de estilos)
 & .venv\Scripts\python.exe -X utf8 tests\subtitle_layout_check.py
+
+# 11) Audio selector (v1.5.0): detect_audios con casos guion, .wav, recursividad, tildes
+& .venv\Scripts\python.exe -X utf8 tests\auto_detect_check.py
 ```
+
+---
+
+## 🔧 FIX v1.5.0 — Restauración "Imagina esto" + Audio seleccionado en pipeline
+
+### Fix 1 — Restauración completa de "Imagina esto" (v1.4.0)
+El post-proceso **se había perdido** en v1.5.0 (el módulo `imagina_esto.py` fue eliminado y la llamada en `capcut_project.py` se borró). Se ha restaurado:
+
+- **Módulo restaurado**: `src/core/imagina_esto.py` (desde tag `v1.4.0`)
+- **Llamada restaurada** en `src/core/capcut_project.py:989` tras `_write_draft_content`:
+  ```python
+  if text_track is not None:
+      try:
+          imagina_esto.aplicar(
+              self.new_dir,
+              track_text_id=text_track["id"],
+              timeline_id=self._timeline_id(content),
+          )
+      except ImaginaEstoError:
+          shutil.rmtree(self.new_dir, ignore_errors=True)
+          raise
+  ```
+- **Config restaurada**: `IMAGINA_ESTO_KEYWORDS` (20 frases, 4 grupos A-D) + `IMAGINA_ESTO_CENTER_X/Y = 0.0` en `config.py`
+- **Log obligatorio**: al generar un proyecto con keyword "imagina esto", la consola muestra:
+  ```
+  [IMAGINA-ESTO] RESUMEN
+  bloque_idx | texto_normalizado | keyword? | t_start_ms | t_end_ms | segmentos_afectados | ocultos_ok
+  ...
+  TOTAL: N bloques afectados, M segmentos ocultos, 0 errores
+  ```
+  Si el log **NO aparece** o dice `ERROR`, el post-proceso falló → revisar `imagina_esto.py`.
+
+### Fix 2 — Audio seleccionado en el pipeline
+El audio elegido en el dropdown **"Audio guion (narración principal)"** ahora se usa como audio principal del proyecto:
+
+- En `src/ui/main_window.py`, al generar el proyecto se pasa `self._audio_guion` (si el usuario cambió el dropdown) o fallback a `detection.audio_path` (auto-detección v1.4.0).
+- El audio seleccionado se guarda en `config_user.json` como `last_guion_name` y se restaura al reabrir.
+- **Test manual**: cambiar dropdown a `sonido1.mp3` → generar → en CapCut el audio de la pista principal es `sonido1.mp3`.
+
+**Lo que NO cambia**: imágenes, transiciones, color grading, HSL, paneos, camera shake, SFX, watermark, subtítulos (salvo centrado "imagina esto"), `maintrack_adsorb=false`.
+
+### Verificación visual obligatoria en CapCut
+1. Generar proyecto con frase "IMAGINA ESTO" en el guion.
+2. Abrir en CapCut → el preview debe mostrar **FONDO NEGRO PURO** durante el subtítulo centrado.
+3. Subtítulo centrado (X=0, Y=0), pop-up 0.8→1.0, stroke negro, keyword amarilla.
+4. Cambiar dropdown a otro audio → generar → el audio en la pista principal cambia.
+5. Diff JSON contra v1.4.0 (mismo proyecto, mismo guion): solo cambia la ruta del audio si se cambió el guion.
 
 ---
 

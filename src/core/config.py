@@ -30,6 +30,8 @@ DEFAULT_USER_CONFIG = {
     "last_video_dir": "",
     # FASE 2 — archivo .srt elegido para los subtítulos (nombre, no ruta).
     "last_srt_name": "",
+    # FASE v1.5.0 — audio guion seleccionado por el usuario (nombre, no ruta).
+    "last_guion_name": "",
 }
 
 # --- Forced alignment con CrispASR (binario + modelo espanol GGUF, Q4_K) ----
@@ -139,6 +141,45 @@ SUBTITLE_POS_Y_JSON_HALF = -900 / HALF_H        # referencia antigua, NO usar
 SUBTITLE_STROKE_WIDTH_UI = 30
 SUBTITLE_STROKE_WIDTH_JSON = 30 / 500.0         # 0.06
 SUBTITLE_STROKE_WIDTH = SUBTITLE_STROKE_WIDTH_JSON
+
+# ---------------------------------------------------------------------------
+# v1.4.0 "Imagina esto": keywords que activan el centrado + ocultamiento.
+# La detección se hace en `src/core/imagina_esto.py` (FASE B) sobre los
+# subtítulos ya generados (materials.texts + target_timerange). Las frases
+# se normalizan (minúsculas, sin tildes, sin signos, espacios colapsados) y
+# se busca como subcadena. Se permite keyword partida entre 2-3 bloques
+# contiguos (misma escena temporal sin huecos).
+# ---------------------------------------------------------------------------
+IMAGINA_ESTO_KEYWORDS = (
+    # Grupo A — frases base
+    "imagina esto",
+    "imagine this",
+    "imagina que",
+    "imagináte esto",
+    "supón que",
+    "supongamos que",
+    # Grupo B — gancho inicial (0:00 - 0:30)
+    "visualiza por un segundo",
+    "ponerte en esta situación",
+    "cierra los ojos e imagina",
+    "y si te dijera que",
+    # Grupo C — divergencia / punto de quiebre
+    "en este nuevo escenario",
+    "ahora todo es diferente porque",
+    "pero esta vez la historia da un giro",
+    "despierta en un mundo donde",
+    "sin embargo hay una variable que nadie vio venir",
+    # Grupo D — tensión / revelación
+    "piensa en las consecuencias de",
+    "no es solo teoría mira lo que sucede cuando",
+    "aquí es donde todo se rompe",
+    "siente la diferencia entre",
+    "esto no es un sueño es la nueva realidad",
+)
+
+# Posición del subtítulo cuando hay keyword: CENTRADO en el lienzo
+IMAGINA_ESTO_CENTER_X = 0.0
+IMAGINA_ESTO_CENTER_Y = 0.0
 
 
 def ensure_dirs() -> None:
