@@ -32,7 +32,7 @@ from tkinter import filedialog, messagebox
 import customtkinter as ctk
 
 from src.core import config
-from src.core.auto_detect import DetectionResult, detect_video_inputs, find_capcut_templates
+from src.core.auto_detect import DetectionResult, detect_video_inputs, find_capcut_templates, detect_audios
 from src.core.bootstrap import ensure_dependencies
 from src.core.capcut_project import CapCutProject
 from src.core.config import load_user_config, save_user_config
@@ -88,6 +88,8 @@ class MainWindow(ctk.CTk):
         self._detection: DetectionResult | None = None
         self._srt_dir: Path | None = None  # carpeta donde esta el .srt elegido
         self._srt_name: str = ""           # nombre del .srt elegido
+        self._audio_guion: Path | None = None  # audio guion seleccionado
+        self._audio_otros: list[Path] = []     # otros audios detectados
 
         self.title("CapCut Auto")
         self.configure(fg_color=BG)
@@ -140,12 +142,13 @@ class MainWindow(ctk.CTk):
         self._build_section1_drafts(left_outer, row=0)
         self._build_section2_video(left_outer, row=1)
         self._build_section_subtitles(left_outer, row=2)
-        self._build_section_edit_type(left_outer, row=3)
-        self._build_section3_name(left_outer, row=4)
+        self._build_section_audio(left_outer, row=3)
+        self._build_section_edit_type(left_outer, row=4)
+        self._build_section3_name(left_outer, row=5)
 
         # Botones y barra de progreso en el panel izquierdo al final
         buttons_frame = ctk.CTkFrame(left_outer, fg_color=BG)
-        buttons_frame.grid(row=5, column=0, sticky="ew", padx=0, pady=(10, 4))
+        buttons_frame.grid(row=6, column=0, sticky="ew", padx=0, pady=(10, 4))
         buttons_frame.grid_columnconfigure(0, weight=1)
         buttons_frame.grid_columnconfigure(1, weight=1)
 
@@ -170,7 +173,7 @@ class MainWindow(ctk.CTk):
             left_outer, mode="indeterminate", height=8,
             progress_color=ACCENT, fg_color="#2a2a2a",
         )
-        self.progress.grid(row=6, column=0, sticky="ew", padx=0, pady=(6, 12))
+        self.progress.grid(row=7, column=0, sticky="ew", padx=0, pady=(6, 12))
         self.progress.set(0)
 
         # Panel derecho: única y exclusivamente el área de texto de logs
@@ -299,6 +302,40 @@ class MainWindow(ctk.CTk):
         )
         self._srt_footer.grid(row=3, column=0, columnspan=3, sticky="ew", padx=12, pady=(0, 10))
 
+    def _build_section_audio(self, parent, row: int) -> None:
+        panel = ctk.CTkFrame(parent, fg_color=PANEL, corner_radius=10)
+        panel.grid(row=row, column=0, sticky="ew", padx=0, pady=6)
+        panel.grid_columnconfigure(1, weight=1)
+
+        self._section_title(panel, "6 · Audios del proyecto").grid(
+            row=0, column=0, columnspan=2, sticky="w", padx=12, pady=(8, 4))
+
+        ctk.CTkLabel(
+            panel, text="Audio guion (narración principal):",
+            font=ctk.CTkFont(size=12), text_color=TEXT,
+        ).grid(row=1, column=0, columnspan=2, sticky="w", padx=12, pady=(0, 4))
+
+        self._audio_guion_var = ctk.StringVar(value="— sin detectar —")
+        self._audio_guion_menu = ctk.CTkOptionMenu(
+            panel, values=["— sin detectar —"], variable=self._audio_guion_var,
+            height=30, corner_radius=8, state="disabled",
+            fg_color="#2a2a2a", button_color="#334155",
+            button_hover_color="#475569",
+            command=self._on_audio_guion_changed,
+        )
+        self._audio_guion_menu.grid(row=2, column=0, columnspan=2, sticky="ew", padx=12, pady=(0, 6))
+
+        ctk.CTkLabel(
+            panel, text="Otros audios detectados:",
+            font=ctk.CTkFont(size=12), text_color=TEXT,
+        ).grid(row=3, column=0, columnspan=2, sticky="w", padx=12, pady=(0, 4))
+
+        self._audio_otros_label = ctk.CTkLabel(
+            panel, text="—", font=ctk.CTkFont(size=11),
+            text_color=MUTED, anchor="w", justify="left",
+        )
+        self._audio_otros_label.grid(row=4, column=0, columnspan=2, sticky="ew", padx=12, pady=(0, 10))
+
     def _build_section_edit_type(self, parent, row: int) -> None:
         panel = ctk.CTkFrame(parent, fg_color=PANEL, corner_radius=10)
         panel.grid(row=row, column=0, sticky="ew", padx=0, pady=6)
@@ -340,6 +377,7 @@ class MainWindow(ctk.CTk):
         self._user_config["last_video_dir"] = str(self._video_dir) if self._video_dir else ""
         self._user_config["last_srt_dir"] = str(self._srt_dir) if self._srt_dir else ""
         self._user_config["last_srt_name"] = self._srt_name or ""
+        self._user_config["last_guion_name"] = self._user_config.get("last_guion_name", "")
         save_user_config(self._user_config)
 
     def _scan_srt_files(self, folder: Path) -> list[Path]:
@@ -482,6 +520,7 @@ class MainWindow(ctk.CTk):
             log.info("Detección · %s", warning)
 
         self._refresh_srt_menu()
+        self._refresh_audio_menu()
 
         if persist:
             self._save_user_config()
@@ -517,6 +556,60 @@ class MainWindow(ctk.CTk):
         else:
             log.warning("El .srt elegido ya no existe: %s", value)
             self._refresh_srt_menu()
+
+    def _refresh_audio_menu(self) -> None:
+        """Rellena el dropdown de audio guion y la lista de otros audios
+        basándose en la carpeta del video."""
+        if not self._video_dir:
+            self._audio_guion_menu.configure(values=["— sin detectar —"], state="disabled")
+            self._audio_guion_var.set("— sin detectar —")
+            self._audio_otros_label.configure(text="No se detectaron audios en la carpeta")
+            self._audio_guion = None
+            self._audio_otros = []
+            return
+
+        result = detect_audios(self._video_dir)
+        self._audio_guion = result["guion"]
+        self._audio_otros = result["otros"]
+
+        audio_names = [p.name for p in result["otros"]]
+
+        # Dropdown del audio guion
+        all_audios = [result["guion"]] + result["otros"] if result["guion"] else result["otros"]
+        all_names = [p.name for p in all_audios]
+        values = all_names if all_names else ["— sin detectar —"]
+
+        # Recuperar selección guardada
+        saved_name = self._user_config.get("last_guion_name", "")
+        selected = saved_name if saved_name in values else (values[0] if values else "— sin detectar —")
+
+        self._audio_guion_menu.configure(values=values, state="normal" if values != ["— sin detectar —"] else "disabled")
+        self._audio_guion_var.set(selected)
+
+        # Actualizar lista de otros audios
+        if audio_names:
+            self._audio_otros_label.configure(text="\n".join(f"• {n}" for n in audio_names))
+        else:
+            self._audio_otros_label.configure(text="—")
+
+        # Actualizar self._audio_guion según lo seleccionado
+        self._audio_guion = next((p for p in all_audios if p.name == selected), None)
+
+    def _on_audio_guion_changed(self, value: str) -> None:
+        if not value or value == "— sin detectar —":
+            self._audio_guion = None
+            self._user_config["last_guion_name"] = ""
+            self._save_user_config()
+            return
+        # Buscar el path completo
+        guion = next((p for p in ([self._audio_guion] if self._audio_guion else []) + self._audio_otros if p.name == value), None)
+        if guion:
+            self._audio_guion = guion
+            self._user_config["last_guion_name"] = guion.name
+            self._save_user_config()
+            log.info("Audio guion seleccionado: %s", guion.name)
+        else:
+            log.warning("Audio guion no encontrado: %s", value)
 
     def _ask_scene_user(self, candidates: list[Path]) -> Path | None:
         dialog = ctk.CTkToplevel(self)
@@ -742,10 +835,12 @@ class MainWindow(ctk.CTk):
         self.progress.start()
         self._log_widget("▶ Iniciando generación en hilo secundario...", "INFO")
 
+        # FIX 2: usar el audio guion seleccionado por el usuario, si hay; si no, fallback al detectado
+        audio_path = self._audio_guion if self._audio_guion is not None else detection.audio_path
         data = {
             "template": template_dir,
             "name": name,
-            "audio": detection.audio_path,
+            "audio": audio_path,
             "scenes_txt": detection.scene_txt_path,
             "images": images,
             "subtitle_srt": None,
@@ -789,7 +884,7 @@ class MainWindow(ctk.CTk):
         try:
             log.info("== CapCut Auto — inicio de generación ==")
             log.info("Plantilla : %s", data["template"])
-            log.info("Audio     : %s", data["audio"])
+            log.info("Audio     : %s  (seleccionado: %s)", data["audio"], getattr(self._audio_guion, 'name', 'auto'))
             log.info("Escenas   : %s", data["scenes_txt"])
             log.info("Imágenes  : %d archivos", len(data["images"]))
             log.info("Nombre    : %s", data["name"])

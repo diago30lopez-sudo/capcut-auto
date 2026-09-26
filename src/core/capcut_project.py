@@ -45,6 +45,7 @@ from PIL import Image
 
 from src.core import capcut_canonical as canonical
 from src.core import config
+from src.core.imagina_esto import aplicar, ImaginaEstoError
 from src.core.subtitles import (
     SUBTITLE_KEYWORDS,
     build_subtitle_track,
@@ -986,6 +987,28 @@ class CapCutProject:
         # 7) escribir JSON en RAÍZ y en Timelines/<id>/ (CapCut lee ambos)
         self._check_cancelled()
         self._write_draft_content(self.new_dir, content)
+
+        # 7b) v1.4.0 FIX v4 "imagina esto" (POST-PROCESO, FASE B/C/D): la
+        # detección se hace sobre los SUBTÍTULOS YA GENERADOS (materials.texts
+        # + su target_timerange) y no sobre escenas.txt, así que no hay que
+        # emparejar escenas con segmentos: el rango del bloque de subtítulo ES
+        # el rango que hay que ocultar en la imagen. Se ejecuta DESPUÉS de
+        # escribir el JSON, sobre el proyecto ya completo, y por eso vive en su
+        # propio módulo (`src/core/imagina_esto.py`) y no aquí: la generación
+        # de arriba es exactamente la de v1.3.0.
+        # Se le pasa el id de la pista de SUBTÍTULOS para que la del WATERMARK
+        # (también type="text") nunca se toque. Si la verificación final falla,
+        # el módulo lanza excepción y aquí se aborta la generación.
+        if text_track is not None:
+            try:
+                aplicar(
+                    self.new_dir,
+                    track_text_id=text_track["id"],
+                    timeline_id=self._timeline_id(content),
+                )
+            except ImaginaEstoError:
+                shutil.rmtree(self.new_dir, ignore_errors=True)
+                raise
 
         # 8) draft_meta_info.json (rutas coherentes con la carpeta padre)
         self._check_cancelled()

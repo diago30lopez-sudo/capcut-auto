@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import logging
 import re
+import unicodedata
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable
@@ -229,9 +230,30 @@ def _detect_images(root: Path, warnings: list[str]) -> tuple[Path | None, list[P
     return None, []
 
 
-# ---------------------------------------------------------------------------
-# API publica
-# ---------------------------------------------------------------------------
+def detect_audios(video_dir: str | Path) -> dict:
+    """Escanea audios en video_dir y devuelve {"guion": path|None, "otros": [paths]}."""
+    video_dir = Path(video_dir)
+    if not video_dir.is_dir():
+        return {"guion": None, "otros": []}
+
+    audios = [p for p in video_dir.iterdir()
+              if p.suffix.lower() in config.AUDIO_EXTENSIONS]
+
+    guion = None
+    # 1. Buscar "guion"
+    for p in audios:
+        if _AUDIO_HINT_RE.search(p.name):
+            guion = p
+            break
+    
+    # 2. Si no hay guion, buscar el primer .wav
+    if not guion:
+        wavs = [p for p in audios if p.suffix.lower() == ".wav"]
+        if wavs:
+            guion = wavs[0]
+
+    otros = [p for p in audios if p != guion]
+    return {"guion": guion, "otros": otros}
 def detect_video_inputs(
     root: str | Path,
     ask_scene: Callable[[list[Path]], Path | None] | None = None,
@@ -265,6 +287,44 @@ def detect_video_inputs(
         scene_count=scene_count,
         warnings=warnings,
     )
+
+
+def detect_audios(video_dir: str | Path) -> dict:
+    """Escanea audios en video_dir de forma recursiva y devuelve {"guion": path|None, "otros": [paths]}."""
+    video_dir = Path(video_dir)
+    if not video_dir.is_dir():
+        return {"guion": None, "otros": []}
+
+    audios = [
+        p for p in video_dir.rglob("*")
+        if p.is_file() and p.suffix.lower() in config.AUDIO_EXTENSIONS
+    ]
+    audios = sorted(audios, key=natural_sort_key)
+
+    guion = None
+    # 1. Buscar "guion"
+    for p in audios:
+        name_norm = "".join(
+            c for c in unicodedata.normalize("NFKD", p.stem.lower())
+            if not unicodedata.combining(c)
+        )
+        if "guion" in name_norm:
+            guion = p
+            break
+
+    # 2. Si no hay guion, el primer .wav encontrado
+    if not guion:
+        for p in audios:
+            if p.suffix.lower() == ".wav":
+                guion = p
+                break
+
+    # 3. Si no hay .wav, el primer audio por orden natural
+    if not guion and audios:
+        guion = audios[0]
+
+    otros = [p for p in audios if p != guion]
+    return {"guion": guion, "otros": otros}
 
 
 def find_capcut_templates(drafts_dir: str | Path) -> list[Path]:
