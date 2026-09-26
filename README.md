@@ -339,6 +339,46 @@ El audio elegido en el dropdown **"Audio guion (narración principal)"** ahora s
 
 ---
 
+### 🔥 HOTFIX v1.5.1 (round 3) — 2 bugs puntuales corregidos
+
+### FIX A — `_refresh_audio_menu` usaba comparación case-sensitive
+**Síntoma:** Al recargar el dropdown de audios, la comparación `p.name == selected` fallaba si el filesystem devolvía distinto case (ej. `guion.MP3` vs `guion.mp3`). Resultado: `self._audio_guion` quedaba en `None` → fallback al auto-detect → warning falso "Audio guion no encontrado" + audio incorrecto en pista principal.
+
+**Fix:** Comparación case-insensitive en `_refresh_audio_menu` (línea 597): `p.name.lower() == selected.lower()`. Ahora el audio seleccionado en el dropdown **siempre** se usa como pista principal.
+
+### FIX B — `_on_audio_guion_changed` ya estaba OK (round 2), pero se confirmaron ambos paths
+**Nota:** El fix del round 2 solo corrigió `_on_audio_guion_changed` (línea 606). El round 3 completa el fix corrigiendo también `_refresh_audio_menu` (línea 597). Ahora **ambos paths usan comparación case-insensitive** y el audio seleccionado en el dropdown **siempre** es el que se usa en la pista principal.
+
+---
+
+### Verificación obligatoria en CapCut
+1. Generar proyecto con frase "IMAGINA ESTO" → preview: **FONDO NEGRO PURO**, subtítulo centrado (X=0,Y=0), pop-up 0.8→1.0, stroke negro, keyword amarilla.
+2. Cambiar dropdown a otro audio → generar → audio en pista principal = seleccionado.
+3. Cancelar durante alineación → `crispasr.exe` muere → NO hay "Alineación completada" después → reiniciar sin error "Ya existe".
+4. Bordes alrededor de "IMAGINA ESTO" → cortes limpios (sin transición).
+
+---
+
+### Tests (todos verdes)
+```
+cancel_check.py:      8/8   OK
+auto_detect_check.py: 37/37 OK
+smoke.py:             OK
+subs_check.py:        OK
+watermark_check.py:   OK
+json_scales_check.py: OK
+color_grading_check:  OK
+subtitle_layout:      OK
+session_restore:      OK
+bootstrap_check:      OK
+transcriber_import:   OK
+ui_boot:              OK
+features_check:       OK
+fase1_check:          OK
+```
+
+---
+
 ## 🐞 Texto de los subtítulos pegado abajo dentro de su caja
 
 **Síntoma.** Los subtítulos están bien posicionados en el eje Y, pero DENTRO de

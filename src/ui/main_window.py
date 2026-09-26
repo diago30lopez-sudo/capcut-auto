@@ -197,6 +197,21 @@ class MainWindow(ctk.CTk):
             text_color=TEXT,
         )
 
+    def _resolve_audio_path(self, display_name: str) -> Path | None:
+        """Resolve a display name from the audio dropdown to an absolute Path.
+        Returns None if the name is empty, placeholder, or no matching file."""
+        if not display_name or display_name == "— sin detectar —":
+            return None
+        if not self._video_dir:
+            return None
+        val_lower = display_name.lower()
+        # First try exact match (case-insensitive) on name
+        for p in self._video_dir.rglob("*"):
+            if p.is_file() and p.suffix.lower() in config.AUDIO_EXTENSIONS:
+                if p.name.lower() == val_lower or p.stem.lower() == Path(display_name).stem.lower():
+                    return p.resolve()
+        return None
+
     def _build_section1_drafts(self, parent, row: int) -> None:
         panel = ctk.CTkFrame(parent, fg_color=PANEL, corner_radius=10)
         panel.grid(row=row, column=0, sticky="ew", padx=0, pady=6)
@@ -568,46 +583,80 @@ class MainWindow(ctk.CTk):
             self._audio_otros = []
             return
 
-        result = detect_audios(self._video_dir)
-        self._audio_guion = result["guion"]
-        self._audio_otros = result["otros"]
+        # Obtener todos los archivos de audio (para escenas/imágenes usamos detección previa)
+        all_audios = [
+            p for p in self._video_dir.rglob("*")
+            if p.is_file() and p.suffix.lower() in config.AUDIO_EXTENSIONS
+        ]
+        # Ordenar por nombre para consistencia
+        all_audios.sort(key=lambda p: p.name.lower())
 
-        audio_names = [p.name for p in result["otros"]]
-
-        # Dropdown del audio guion
-        all_audios = [result["guion"]] + result["otros"] if result["guion"] else result["otros"]
-        all_names = [p.name for p in all_audios]
-        values = all_names if all_names else ["— sin detectar —"]
-
-        # Recuperar selección guardada
+        # Determinar nombre seleccionado (de configuración o primero disponible)
         saved_name = self._user_config.get("last_guion_name", "")
-        selected = saved_name if saved_name in values else (values[0] if values else "— sin detectar —")
+        if saved_name:
+            selected_name = saved_name
+        else:
+            selected_name = all_audios[0].name if all_audios else "— sin detectar —"
 
-        self._audio_guion_menu.configure(values=values, state="normal" if values != ["— sin detectar —"] else "disabled")
-        self._audio_guion_var.set(selected)
+        # Resolver la ruta completa del nombre seleccionado
+        selected_path = self._resolve_audio_path(selected_name) if selected_name != "— sin detectar —" else None
+        if selected_path is not None:
+            self._audio_guion = selected_path
+            self._audio_otros = [p for p in all_audios if p != selected_path]
+        else:
+            self._audio_guion = None
+            self._audio_otros = all_audios[:]
+
+        # Preparar valores del dropdown
+        if all_audios:
+            dropdown_values = [p.name for p in all_audios]
+        else:
+            dropdown_values = ["— sin detectar —"]
+
+        self._audio_guion_menu.configure(
+            values=dropdown_values,
+            state="normal" if dropdown_values != ["— sin detectar —"] else "disabled",
+        )
+        # Establecer variable según lo resuelto
+        if self._audio_guion is not None:
+            self._audio_guion_var.set(self._audio_guion.name)
+        elif all_audios:
+            self._audio_guion_var.set(all_audios[0].name)
+        else:
+            self._audio_guion_var.set("— sin detectar —")
 
         # Actualizar lista de otros audios
-        if audio_names:
-            self._audio_otros_label.configure(text="\n".join(f"• {n}" for n in audio_names))
+        if self._audio_otros:
+            self._audio_otros_label.configure(text="\n".join(f"• {p.name}" for p in self._audio_otros))
         else:
             self._audio_otros_label.configure(text="—")
-
-        # Actualizar self._audio_guion según lo seleccionado
-        self._audio_guion = next((p for p in all_audios if p.name == selected), None)
 
     def _on_audio_guion_changed(self, value: str) -> None:
         if not value or value == "— sin detectar —":
             self._audio_guion = None
             self._user_config["last_guion_name"] = ""
             self._save_user_config()
+            self._audio_otros_label.configure(text="—")
             return
-        # Buscar el path completo
-        guion = next((p for p in ([self._audio_guion] if self._audio_guion else []) + self._audio_otros if p.name == value), None)
-        if guion:
-            self._audio_guion = guion
-            self._user_config["last_guion_name"] = guion.name
+        # Resolver ruta completa desde el nombre seleccionado
+        audio_path = self._resolve_audio_path(value)
+        if audio_path is not None:
+            self._audio_guion = audio_path
+            self._user_config["last_guion_name"] = audio_path.name
             self._save_user_config()
-            log.info("Audio guion seleccionado: %s", guion.name)
+            log.info("Audio guion seleccionado: %s", audio_path.name)
+            # Actualizar lista de otros audios
+            if self._video_dir:
+                all_audios = [
+                    p for p in self._video_dir.rglob("*")
+                    if p.is_file() and p.suffix.lower() in config.AUDIO_EXTENSIONS
+                ]
+                all_audios.sort(key=lambda p: p.name.lower())
+                self._audio_otros = [p for p in all_audios if p != audio_path]
+                if self._audio_otros:
+                    self._audio_otros_label.configure(text="\n".join(f"• {p.name}" for p in self._audio_otros))
+                else:
+                    self._audio_otros_label.configure(text="—")
         else:
             log.warning("Audio guion no encontrado: %s", value)
 
@@ -835,8 +884,8 @@ class MainWindow(ctk.CTk):
         self.progress.start()
         self._log_widget("▶ Iniciando generación en hilo secundario...", "INFO")
 
-        # FIX 2: usar el audio guion seleccionado por el usuario, si hay; si no, fallback al detectado
-        audio_path = self._audio_guion if self._audio_guion is not None else detection.audio_path
+        # Usar el audio seleccionado por el usuario como único guion
+        audio_path = self._audio_guion
         data = {
             "template": template_dir,
             "name": name,
