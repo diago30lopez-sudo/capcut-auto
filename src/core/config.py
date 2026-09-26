@@ -140,6 +140,58 @@ SUBTITLE_STROKE_WIDTH_UI = 30
 SUBTITLE_STROKE_WIDTH_JSON = 30 / 500.0         # 0.06
 SUBTITLE_STROKE_WIDTH = SUBTITLE_STROKE_WIDTH_JSON
 
+# ---------------------------------------------------------------------------
+# v1.4.0 "Imagina esto": si el TEXTO COMPLETO de la voz en off de una escena
+# contiene alguna de estas frases, los bloques de subtitulo que solapan la frase
+# se CENTRAN (transform {x: 0.0, y: 0.0} en lugar de SUBTITLE_POS_Y_JSON) y el
+# video se parte en sub-segmentos: los que caen bajo esos bloques se OCULTAN
+# (visible=false + clip.alpha=0.0 + keyframe KFTypeAlpha=0.0, tres capas a la
+# vez porque el preview de CapCut puede ignorar `visible`) y los demas se ven
+# igual que en v1.3.0. El lienzo de CapCut ya es negro, asi que el bloque
+# centrado queda sobre FONDO NEGRO PURO sin anadir ningun clip de fondo.
+#
+# La deteccion se hace UNA sola vez, sobre el texto completo de la escena (no
+# bloque a bloque) y sin tildes ni mayusculas: timeline_builder.keyword_hits
+# devuelve el rango de PALABRAS de la frase, y de ahi salen TANTO los bloques
+# centrados (subtitles.build_subtitle_blocks) COMO los sub-segmentos ocultos
+# (capcut_project._keyword_cuts). Al derivar ambos de la misma lista, emparejada
+# por TimelineItem.cue_index, la imagen que se oculta es siempre la de la
+# escena que tiene la keyword y el negro cae justo bajo el texto centrado.
+# El resto NO cambia: pop-up, trazo, color, duracion, zoom, paneo, HSL, color
+# grading, transiciones y fragmentacion en bloques de 2-5 palabras.
+IMAGINA_ESTO_KEYWORDS = (
+    # Grupo A — frases base
+    "imagina esto",
+    "imagine this",
+    "imagina que",
+    "imagináte esto",
+    "supón que",
+    "supongamos que",
+    # Grupo B — gancho inicial (0:00 - 0:30)
+    "visualiza por un segundo",
+    "ponerte en esta situación",
+    "cierra los ojos e imagina",
+    "y si te dijera que",
+    # Grupo C — divergencia / punto de quiebre
+    "en este nuevo escenario",
+    "ahora todo es diferente porque",
+    "pero esta vez la historia da un giro",
+    "despierta en un mundo donde",
+    "sin embargo hay una variable que nadie vio venir",
+    # Grupo D — tensión / revelación
+    "piensa en las consecuencias de",
+    "no es solo teoría mira lo que sucede cuando",
+    "aquí es donde todo se rompe",
+    "siente la diferencia entre",
+    "esto no es un sueño es la nueva realidad",
+)
+
+
+# Posicion de los subtitulos de una escena "imagina esto": CENTRADOS en el
+# lienzo (no abajo). Es la UNICA desviacion de posicion de la v1.4.0.
+IMAGINA_ESTO_CENTER_X = 0.0
+IMAGINA_ESTO_CENTER_Y = 0.0
+
 
 def ensure_dirs() -> None:
     """Crea las carpetas de trabajo si no existen."""

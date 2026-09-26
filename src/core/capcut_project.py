@@ -1,4 +1,4 @@
-"""Clonado y edicion de un proyecto plantilla de CapCut.
+﻿"""Clonado y edicion de un proyecto plantilla de CapCut.
 
 La plantilla del usuario es un esqueleto 100% vacio (tracks: [], materials: []
 en draft_content.json y en Timelines/<id>/draft_content.json), asi que no hay
@@ -45,6 +45,7 @@ from PIL import Image
 
 from src.core import capcut_canonical as canonical
 from src.core import config
+from src.core import imagina_esto
 from src.core.subtitles import (
     SUBTITLE_KEYWORDS,
     build_subtitle_track,
@@ -534,7 +535,6 @@ class CapCutProject:
         seg["extra_material_refs"] = list(extra_refs or [])
         return seg
 
-
     def _build_audio_material(self, content: dict, abs_path: str,
                               duration_us: int, name: str) -> dict:
         mat = copy.deepcopy(canonical.AUDIO_MATERIAL)
@@ -822,6 +822,7 @@ class CapCutProject:
             mat = self._build_photo_material(
                 content, abs_path, width, height, duration_us, it.image_path.stem)
             photo_materials.append(mat)
+
             video_segments.append(
                 self._build_photo_segment(
                     content, mat["id"], start_us, duration_us, cover_scale, zoom_mult,
@@ -987,6 +988,28 @@ class CapCutProject:
         self._check_cancelled()
         self._write_draft_content(self.new_dir, content)
 
+        # 7b) v1.4.0 FIX v4 "imagina esto" (POST-PROCESO, FASE B/C/D): la
+        # deteccion se hace sobre los SUBTITULOS YA GENERADOS (materials.texts
+        # + su target_timerange) y no sobre escenas.txt, asi que no hay que
+        # emparejar escenas con segmentos: el rango del bloque de subtitulo ES
+        # el rango que hay que ocultar en la imagen. Se ejecuta DESPUES de
+        # escribir el JSON, sobre el proyecto ya completo, y por eso vive en su
+        # propio modulo (`src/core/imagina_esto.py`) y no aqui: la generacion
+        # de arriba es exactamente la de v1.3.0.
+        # Se le pasa el id de la pista de SUBTITULOS para que la del WATERMARK
+        # (tambien type="text") nunca se toque. Si la verificacion final falla,
+        # el modulo lanza excepcion y aqui se aborta la generacion.
+        if text_track is not None:
+            try:
+                imagina_esto.aplicar(
+                    self.new_dir,
+                    track_text_id=text_track["id"],
+                    timeline_id=self._timeline_id(content),
+                )
+            except imagina_esto.ImaginaEstoError:
+                shutil.rmtree(self.new_dir, ignore_errors=True)
+                raise
+
         # 8) draft_meta_info.json (rutas coherentes con la carpeta padre)
         self._check_cancelled()
         meta = copy.deepcopy(self.meta)
@@ -1036,6 +1059,13 @@ class CapCutProject:
 
     def _write_draft_content(self, project_dir: Path, content: dict) -> None:
         """Escribe draft_content.json en la raiz y en Timelines/<id>/ (si existe)."""
+        # v1.4.0 (imán de pista): el botón "imán de pista" de CapCut es
+        # `config.maintrack_adsorb` de draft_content.json. La plantilla
+        # 1.PLANTILLA lo trae en TRUE, así que los proyectos generados salían
+        # con el imán ENCENDIDO (los clips se pegaban entre sí al editar). Se
+        # fuerza a False, que es lo que tienen los drafts reales del usuario
+        # ("Nexus Paradoja Video #1" = false). No afecta a nada del render.
+        content.setdefault("config", {})["maintrack_adsorb"] = False
         text = json.dumps(content, ensure_ascii=False, indent=2)
         (project_dir / CONTENT_JSON).write_text(text, encoding="utf-8")
         timeline_id = self._timeline_id(content)
