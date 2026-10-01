@@ -22,6 +22,8 @@ DRAFT_CONTENT_FILE = "draft_content.json"
 DRAFT_META_FILE = "draft_meta_info.json"
 
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
+VIDEO_EXTENSIONS = {".mp4", ".mov", ".avi", ".mkv", ".webm", ".m4v"}
+MEDIA_EXTENSIONS = IMAGE_EXTENSIONS | VIDEO_EXTENSIONS
 AUDIO_EXTENSIONS = {".mp3", ".wav", ".m4a", ".aac", ".flac", ".ogg"}
 
 DEFAULT_USER_CONFIG = {
@@ -32,6 +34,10 @@ DEFAULT_USER_CONFIG = {
     "last_srt_name": "",
     # FASE v1.5.0 — audio guion seleccionado por el usuario (nombre, no ruta).
     "last_guion_name": "",
+    # FASE v1.7.0 — rutas excluidas del escaneo (archivo o carpeta).
+    "excluded_paths": "",
+    # FASE v1.6.0 — tipo de edicion seleccionado por el usuario.
+    "last_edit_type": "",
 }
 
 # --- Forced alignment con CrispASR (binario + modelo espanol GGUF, Q4_K) ----
@@ -224,6 +230,12 @@ def load_user_config() -> dict:
         value = raw.get(key)
         if isinstance(value, str):
             cfg[key] = value
+    # Clave especial: excluded_paths es una lista, serializada como CSV en el JSON.
+    raw_excluded = raw.get("excluded_paths", [])
+    if isinstance(raw_excluded, list):
+        cfg["excluded_paths"] = ",".join(str(p) for p in raw_excluded if p)
+    elif isinstance(raw_excluded, str) and raw_excluded:
+        cfg["excluded_paths"] = raw_excluded
     return cfg
 
 
@@ -234,6 +246,12 @@ def save_user_config(user_config: dict) -> None:
         value = (user_config or {}).get(key)
         if isinstance(value, str):
             data[key] = value
+    # excluded_paths: lista → CSV para persistencia, o lista si ya es lista.
+    raw_excluded = (user_config or {}).get("excluded_paths", "")
+    if isinstance(raw_excluded, list):
+        data["excluded_paths"] = [p for p in raw_excluded if p]
+    elif isinstance(raw_excluded, str) and raw_excluded:
+        data["excluded_paths"] = [p.strip() for p in raw_excluded.split(",") if p.strip()]
     try:
         USER_CONFIG_FILE.write_text(
             json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8"

@@ -45,6 +45,7 @@ from PIL import Image
 
 from src.core import capcut_canonical as canonical
 from src.core import config
+from src.core.edit_types import EditProfile
 from src.core.imagina_esto import aplicar, ImaginaEstoError
 from src.core.subtitles import (
     SUBTITLE_KEYWORDS,
@@ -232,6 +233,28 @@ def _image_size(path: Path) -> tuple[int, int]:
     except Exception as exc:  # noqa: BLE001
         log.warning("No se pudo leer dimensiones de %s (%s); default 1920x1080.", path, exc)
         return 1920, 1080
+
+
+def _video_duration_us(path: Path) -> int | None:
+    """Mide la duracion real de un archivo de video en microsegundos usando ffprobe.
+    Devuelve None si no se puede medir (ffprobe no disponible o error)."""
+    try:
+        import subprocess
+        result = subprocess.run(
+            [
+                "ffprobe", "-v", "error",
+                "-show_entries", "format=duration",
+                "-of", "default=noprint_wrappers=1:nokey=1",
+                str(path),
+            ],
+            capture_output=True, text=True, timeout=10,
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            dur_s = float(result.stdout.strip())
+            return int(round(dur_s * 1_000_000))
+    except Exception:  # noqa: BLE001
+        pass
+    return None
 
 
 def _canvas_size(content: dict) -> tuple[int, int]:
@@ -548,8 +571,9 @@ class CapCutProject:
         return mat
 
     def _build_audio_segment(self, content: dict, mat_id: str,
-                             duration_us: int, track_index: int,
-                             volume: float = AUDIO_GAIN_LINEAR) -> dict:
+                              duration_us: int, track_index: int,
+                              volume: float = AUDIO_GAIN_LINEAR,
+                              common_keyframes: list[dict] | None = None) -> dict:
         seg = copy.deepcopy(canonical.AUDIO_SEGMENT)
         seg["id"] = new_id()
         seg["material_id"] = mat_id
@@ -563,6 +587,7 @@ class CapCutProject:
         # FASE 3: BGM usa el mismo aparato con ducking a -20 dB (volume ≈ 0.1).
         seg["volume"] = volume
         seg["last_nonzero_volume"] = volume
+        seg["common_keyframes"] = list(common_keyframes or [])
         return seg
 
     def _build_transition_material(self, entry: tuple) -> dict:
@@ -674,6 +699,7 @@ class CapCutProject:
         subtitle_srt: str | Path | None = None,
         bgm_path: str | Path | None = None,
         sfx_dir: str | Path | None = None,
+        edit_profile: EditProfile | None = None,
     ) -> Path:
         project_name = project_name.strip()
         if not project_name:
@@ -727,7 +753,12 @@ class CapCutProject:
 
         canvas_w, canvas_h = _canvas_size(content)
 
-        # 3) materials.videos (fotos) + segments de la pista de video.
+        # Resolver perfil de edicion (default: Nexus Paradoja)
+        if edit_profile is None:
+            from src.core.edit_types import NEXUS_PARADOJA
+            edit_profile = NEXUS_PARADOJA
+
+        # 3) materials.videos (fotos + videos) + segments de la pista de video.
         #    Se referencian las rutas ABSOLUTAS de los archivos fuente (mismo
         #    formato que el draft real 0921: D:/.../escenas 2/xxx.jpg), nunca
         #    rutas relativas que CapCut no resuelve y muestra como "Media Not Found".
@@ -747,96 +778,153 @@ class CapCutProject:
             duration_us = it.duration_us if it.duration_us > 0 else 1_000_000
             prev_end = start_us + duration_us
 
-            width, height = _image_size(it.image_path)
             abs_path = it.image_path.resolve().as_posix()
+            is_video = it.image_path.suffix.lower() in config.VIDEO_EXTENSIONS
 
-            # Punto 2: escala 'cover' INDIVIDUAL por imagen (cubre el lienzo sin
-            # deformar). Se analiza cada imagen con sus propias dimensiones: una
-            # vertical se amplía mucho; una 16:9 queda cubierta con escala 1.0.
-            cover_scale = _cover_scale(canvas_w, canvas_h, width, height)
-            # Punto 3: zoom aleatorio por imagen (10% o 15%) al final de la misma,
-            # calculado SIEMPRE sobre su escala base individual (cover_scale).
-            zoom_mult = random.choice(ZOOM_END_OPTIONS)
+            if is_video:
+                # VIDEO: medir duracion real y aplicar speed si es mas corto que la frase
+                width, height = 1920, 1080  # fallback si no se puede medir
+                try:
+                    import subprocess
+                    result = subprocess.run(
+                        ["ffprobe", "-v", "error",
+                         "-show_entries", "format=duration",
+                         "-of", "default=noprint_wrappers=1:nokey=1",
+                         str(it.image_path)],
+                        capture_output=True, text=True, timeout=10,
+                    )
+                    if result.returncode == 0 and result.stdout.strip():
+                        vid_dur_s = float(result.stdout.strip())
+                        vid_dur_us = int(round(vid_dur_s * 1_000_000))
+                        if vid_dur_us < duration_us:
+                            speed = round(vid_dur_us / duration_us, 4)
+                            log.info(
+                                "Escena %d · video %s: dur=%d us < frase=%d us → speed=%.4f",
+                                it.order, it.image_path.name, vid_dur_us, duration_us, speed,
+                            )
+                        else:
+                            speed = 1.0
+                    else:
+                        speed = 1.0
+                except Exception:  # noqa: BLE001
+                    speed = 1.0
 
-            # FASE 3 — paneo Ken Burns opcional (60% de las escenas) y camera
-            # shake 0.2s en las escenas con palabras de ACCIÓN (SUBTITLE_KEYWORDS
-            # sobre el texto de la subescena / la escena).
-            action = _has_action_keyword(it.scene_text) or _has_action_keyword(it.segment_text)
-            pan_dx = pan_dy = 0.0
-            if action:
-                if random.random() < PAN_RATIO:
-                    amp = random.uniform(*PAN_AMPLITUDE)
-                    pan_dx = round(random.choice((-1, 1)) * amp, 4)
-                    pan_dy = round(random.choice((0, 0, 1, -1)) * amp * 0.5, 4)
-            else:
-                if random.random() < PAN_RATIO:
-                    amp = random.uniform(*PAN_AMPLITUDE)
-                    pan_dx = round(random.choice((-1, 1)) * amp, 4)
-                    pan_dy = round(random.choice((-1, 1)) * amp * 0.5, 4)
-            if pan_dx or pan_dy or action:
-                if action:
-                    shake_amp_x = random.uniform(*SHAKE_AMPLITUDE)
-                    shake_amp_y = shake_amp_x * 0.7
-                    position_points = _shake_points(
-                        duration_us, shake_amp_x, shake_amp_y, pan_dx, pan_dy)
-                else:
-                    position_points = _pan_points(duration_us, pan_dx, pan_dy)
-            else:
+                # Para videos: cover_scale = 1.0 (el video ya tiene resolucion propia)
+                # y zoom_mult = 1.0 (sin zoom Ken Burns en videos).
+                cover_scale = 1.0
+                zoom_mult = 1.0
+                zoom_base = 1.0
                 position_points = None
-            # Boost de zoom inicial solo en escenas con shake (da overscan desde
-            # t=0 para que el temblor no destape nunca los bordes del lienzo).
-            # TAREA 2: la escala base de los keyframes es SIEMPRE la escala
-            # 'cover' INDIVIDUAL de ESTA imagen (max/min), nunca 1.0: primero se
-            # fija clip.scale=cover y los keyframes de zoom (10/15%) parten de
-            # esa cover (cover → cover*mult) para que NINGUNA imagen, sea cual
-            # sea su proporcion, quede con bordes negros.
-            zoom_base = cover_scale * (SHAKE_ZOOM_BOOST if action else 1.0)
+                refs: list[str] = []
+                enable_hsl = False
+                enable_adjust = False
 
-            # FASE 3 — HSL por canal (guía): cada segmento referencia sus
-            # materials.hsl (Naranja + Cian + Azul), mismo mecanismo que el
-            # draft real del usuario.
-            refs: list[str] = []
-            if HSL_ENABLED:
-                for channel in HSL_CHANNELS:
-                    mat = self._hsl_material(channel)
-                    hsl_materials.append(mat)
-                    refs.append(mat["id"])
+                mat = self._build_photo_material(
+                    content, abs_path, width, height, duration_us, it.image_path.stem)
+                mat["type"] = "video"
+                photo_materials.append(mat)
+                seg = copy.deepcopy(canonical.VIDEO_TRACK["segments"][0])
+                seg["id"] = new_id()
+                seg["material_id"] = mat["id"]
+                seg["render_index"] = 0
+                seg["track_render_index"] = 0
+                seg["source_timerange"] = {"start": 0, "duration": duration_us}
+                seg["target_timerange"] = {"start": start_us, "duration": duration_us}
+                seg["speed"] = speed
+                seg["clip"]["scale"] = {"x": cover_scale, "y": cover_scale}
+                seg["uniform_scale"] = {"on": True, "value": 1.0}
+                seg["common_keyframes"] = []
+                seg["enable_hsl"] = False
+                seg["enable_adjust"] = False
+                seg["extra_material_refs"] = []
+                video_segments.append(seg)
+            else:
+                # IMAGEN: comportamiento existente (cover scale + zoom + efectos)
+                width, height = _image_size(it.image_path)
 
-            # FASE 3 — Color Grading (Adjust): cada segmento referencia sus
-            # materials.effects (saturación, temperatura, tinte), mismo mecanismo
-            # que el draft real. Se añaden a los refs del segmento.
-            if ADJUST_ENABLED:
-                for channel in ADJUST_CHANNELS:
-                    mat = self._adjust_material(channel)
-                    adjust_materials.append(mat)
-                    refs.append(mat["id"])
+                # Punto 2: escala 'cover' INDIVIDUAL por imagen (cubre el lienzo sin
+                # deformar). Se analiza cada imagen con sus propias dimensiones: una
+                # vertical se amplía mucho; una 16:9 queda cubierta con escala 1.0.
+                cover_scale = _cover_scale(canvas_w, canvas_h, width, height)
+                # Punto 3: zoom aleatorio por imagen (10% o 15%) al final de la misma,
+                # calculado SIEMPRE sobre su escala base individual (cover_scale).
+                zoom_mult = random.choice(ZOOM_END_OPTIONS)
 
-            log.info(
-                "Escena %02d · %s: %dx%d → cover=%.3f · zoom=+%.0f%% · %s%s%s",
-                it.order, it.image_path.name, width, height,
-                cover_scale, (zoom_mult - 1.0) * 100,
-                "shake+pan" if action else ("pan" if position_points is not None else "fija"),
-                (f" ({pan_dx},{pan_dy})" if position_points is not None else ""),
-                " · hsl" if HSL_ENABLED else "",
-            )
+                # FASE 3 — paneo Ken Burns opcional (60% de las escenas) y camera
+                # shake 0.2s en las escenas con palabras de ACCIÓN (SUBTITLE_KEYWORDS
+                # sobre el texto de la subescena / la escena).
+                action = _has_action_keyword(it.scene_text) or _has_action_keyword(it.segment_text)
+                pan_dx = pan_dy = 0.0
+                if edit_profile.enable_camera_shake and action:
+                    if random.random() < PAN_RATIO:
+                        amp = random.uniform(*PAN_AMPLITUDE)
+                        pan_dx = round(random.choice((-1, 1)) * amp, 4)
+                        pan_dy = round(random.choice((0, 0, 1, -1)) * amp * 0.5, 4)
+                elif edit_profile.enable_paneos:
+                    if random.random() < PAN_RATIO:
+                        amp = random.uniform(*PAN_AMPLITUDE)
+                        pan_dx = round(random.choice((-1, 1)) * amp, 4)
+                        pan_dy = round(random.choice((-1, 1)) * amp * 0.5, 4)
+                if pan_dx or pan_dy or (edit_profile.enable_camera_shake and action):
+                    if edit_profile.enable_camera_shake and action:
+                        shake_amp_x = random.uniform(*SHAKE_AMPLITUDE)
+                        shake_amp_y = shake_amp_x * 0.7
+                        position_points = _shake_points(
+                            duration_us, shake_amp_x, shake_amp_y, pan_dx, pan_dy)
+                    else:
+                        position_points = _pan_points(duration_us, pan_dx, pan_dy)
+                else:
+                    position_points = None
+                # Boost de zoom inicial solo en escenas con shake (da overscan desde
+                # t=0 para que el temblor no destape nunca los bordes del lienzo).
+                zoom_base = cover_scale * (SHAKE_ZOOM_BOOST if (edit_profile.enable_camera_shake and action) else 1.0)
 
-            mat = self._build_photo_material(
-                content, abs_path, width, height, duration_us, it.image_path.stem)
-            photo_materials.append(mat)
-            video_segments.append(
-                self._build_photo_segment(
-                    content, mat["id"], start_us, duration_us, cover_scale, zoom_mult,
-                    zoom_base=zoom_base, position_points=position_points,
-                    enable_hsl=HSL_ENABLED, enable_adjust=ADJUST_ENABLED, extra_refs=refs))
+                # FASE 3 — HSL por canal (guía): cada segmento referencia sus
+                # materials.hsl (Naranja + Cian + Azul), mismo mecanismo que el
+                # draft real del usuario.
+                refs: list[str] = []
+                if edit_profile.enable_hsl:
+                    for channel in HSL_CHANNELS:
+                        mat = self._hsl_material(channel)
+                        hsl_materials.append(mat)
+                        refs.append(mat["id"])
+
+                # FASE 3 — Color Grading (Adjust): cada segmento referencia sus
+                # materials.effects (saturación, temperatura, tinte), mismo mecanismo
+                # que el draft real. Se añaden a los refs del segmento.
+                if edit_profile.enable_color_grading:
+                    for channel in ADJUST_CHANNELS:
+                        mat = self._adjust_material(channel)
+                        adjust_materials.append(mat)
+                        refs.append(mat["id"])
+
+                log.info(
+                    "Escena %02d · %s: %dx%d → cover=%.3f · zoom=+%.0f%% · %s%s%s",
+                    it.order, it.image_path.name, width, height,
+                    cover_scale, (zoom_mult - 1.0) * 100,
+                    "shake+pan" if (edit_profile.enable_camera_shake and action) else ("pan" if position_points is not None else "fija"),
+                    (f" ({pan_dx},{pan_dy})" if position_points is not None else ""),
+                    " · hsl" if edit_profile.enable_hsl else "",
+                )
+
+                mat = self._build_photo_material(
+                    content, abs_path, width, height, duration_us, it.image_path.stem)
+                photo_materials.append(mat)
+                video_segments.append(
+                    self._build_photo_segment(
+                        content, mat["id"], start_us, duration_us, cover_scale, zoom_mult,
+                        zoom_base=zoom_base, position_points=position_points,
+                        enable_hsl=edit_profile.enable_hsl,
+                        enable_adjust=edit_profile.enable_color_grading,
+                        extra_refs=refs))
 
         # Transiciones: se aplican sobre el 98% de los bordes internos entre
-        # imágenes (el 2% restante queda con corte limpio). Cada transición se
+        # imagenes (el 2% restante queda con corte limpio). Cada transición se
         # referencia desde extra_material_refs del segmento que RECIBE el corte,
         # exactamente igual que en el draft 0921; los timeranges no se tocan.
-        # FASE 3: se ANEXA el id de la transición a los refs ya presentes (HSL).
         transitions: list[dict] = []
         boundaries = len(video_segments) - 1
-        if boundaries > 0:
+        if boundaries > 0 and edit_profile.enable_transitions:
             keep = int(round(boundaries * TRANSITION_RATIO))
             skip_count = boundaries - keep
             skips: set[int] = set()
@@ -890,7 +978,7 @@ class CapCutProject:
         # trae audio, se coloca un SFX corto en cada corte interno (impacto).
         sfx_track: dict | None = None
         sfx_materials: list[dict] = []
-        if sfx_dir is not None and Path(sfx_dir).is_dir():
+        if sfx_dir is not None and Path(sfx_dir).is_dir() and edit_profile.enable_sfx:
             audio_exts = {".mp3", ".wav", ".m4a", ".aac", ".ogg", ".flac"}
             sfx_files = [p for p in sorted(Path(sfx_dir).iterdir())
                          if p.suffix.lower() in audio_exts]
@@ -926,7 +1014,8 @@ class CapCutProject:
         text_materials: list[dict] = []
         if subtitle_srt is not None and Path(subtitle_srt).is_file():
             text_track, text_materials, text_segments = (
-                build_subtitle_track(subtitle_srt, track_render_index=1)
+                build_subtitle_track(subtitle_srt, track_render_index=1,
+                                     profile=edit_profile)
             )
             log.info(
                 "Subtítulos: %d materiales · %d segmentos (track text).",
@@ -964,9 +1053,7 @@ class CapCutProject:
         audio_track["id"] = new_id()
         audio_track["segments"] = audio_segs
         # Pistas de la obra en orden: video (0), subtitulos (1 si los hay),
-        # audio (2/1), sfx (3/2). El watermark (si esta activo,
-        # config.WATERMARK_ENABLED) va al final en su propia pista, separado
-        # de la de subtitulos.
+        # audio principal (2/1), sfx, watermark.
         tracks = [video_track]
         if text_track is not None:
             tracks.append(text_track)
@@ -975,7 +1062,8 @@ class CapCutProject:
             tracks.append(sfx_track)
         if config.WATERMARK_ENABLED:
             wm_mat, wm_track = build_watermark_material_and_track(
-                config.WATERMARK_TEXT, len(tracks), target_us)
+                edit_profile.watermark_text, len(tracks), target_us,
+                profile=edit_profile)
             materials["texts"].append(wm_mat)
             tracks.append(wm_track)
         content["tracks"] = tracks
@@ -999,7 +1087,7 @@ class CapCutProject:
         # Se le pasa el id de la pista de SUBTÍTULOS para que la del WATERMARK
         # (también type="text") nunca se toque. Si la verificación final falla,
         # el módulo lanza excepción y aquí se aborta la generación.
-        if text_track is not None:
+        if text_track is not None and edit_profile.enable_imagina_esto:
             try:
                 aplicar(
                     self.new_dir,

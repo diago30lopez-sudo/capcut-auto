@@ -1,23 +1,26 @@
 """Parser del archivo .txt de escenas (formato exportado de ChatGPT).
 
-Formato esperado por bloque:
-
-    ESCENA #137
-    VOZ EN OFF: "Ahora es mas rapido, mas fuerte, pero tambien mas humano que nunca."
-    DURACION ESTIMADA: 4 segundos
-    BUSQUEDA DE IMAGEN (Google/Pinterest): "..."
-    NOTA: "..."
+Soporta multiples formatos de cabecera de escena:
+  - Estándar multi-línea:
+      ESCENA #1
+      VOZ EN OFF: "texto..."
+  - Markdown bold en una sola linea:
+      **ESCENA #1** VOZ EN OFF: "texto..."
+  - Símbolos variados alrededor de la cabecera:
+      ## ESCENA #1 ##
+      >>> ESCENA 1 <<<
+      [ESCENA #1]
+      Escena 4:
+      ESCENA 01
+  - Case-insensitive, números con #/:/-/[ ], ceros a la izquierda.
+  - Cabeceras alternativas: ESCENA, ESCENAS, VIDEO, CAPITULO, CAPITOL.
 
 Reglas:
-- Cada escena comienza por "ESCENA #<número>".
-- La frase clave es la linea VOZ EN OFF (el texto entre comillas).
-- La duracion estimada (si aparece) se usa como respaldo cuando el fuzzy
-  matching no encuentra un segmento concreto en la transcripcion.
-- Las escenas se ordenan por orden de aparicion en el archivo, NO por numero.
-
-Este modulo solo usa caracteres ASCII en el codigo fuente (los caracteres
-latinos como comillas se construyen con secuencias \\u...) para evitar
-problemas de codificacion al leer el archivo.
+- Cada escena se identifica por una cabecera que contiene "ESCENA" + número.
+- La frase clave es la línea VOZ EN OFF (texto entre comillas).
+- La duración estimada (si aparece) se usa como respaldo en el fuzzy matching.
+- Las escenas se ordenan por orden de aparición en el archivo, NO por número.
+- Un archivo es válido si tiene AL MENOS 1 escena con VOZ EN OFF.
 """
 
 from __future__ import annotations
@@ -26,32 +29,76 @@ import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
-_DQ_L = "\u201c"
-_DQ_R = "\u201d"
-_SQ_L = "\u2018"
-_SQ_R = "\u2019"
-_OPEN = '["' + _DQ_L + _SQ_L
-_CLOSE = '"]' + _DQ_R + _SQ_R
+# Caracteres permitidos alrededor de la cabecera (markdown, simbolos, etc.)
+_HEADER_SYMS = r"*\s#:\-\[\]<>//_"
 
+# Cabecera de escena: permite simbolos/markdown ANTES y DESPUES de la palabra clave.
+# NO anclamos al final ($) porque la cabecera puede ir seguida de VOZ EN OFF en
+# la misma linea (formato markdown single-line).
+_SCENE_RE = re.compile(
+    r"^\s*"
+    r"[" + _HEADER_SYMS + r"]*"       # simbolos opcionales ANTES de la palabra
+    r"(?:ESCENAS|ESCENA|VIDEO|CAPITUL[OÁ])"
+    r"\s*[" + _HEADER_SYMS + r"]*\s*"  # simbolos opcionales entre palabra y numero
+    r"(\d+)"
+    r"\s*[" + _HEADER_SYMS + r"]*",     # simbolos opcionales DESPUES del numero
+    re.IGNORECASE,
+)
+
+# VOZ EN OFF: captura texto entre comillas dobles o latinas.
+_VOICE_RE = re.compile(
+    r"VOZ\s+EN\s+OFF\s*:?\s*[\"„‟「」『』]"
+    r"(.*?)"
+    r"[\"„‟「」『』]",
+    re.IGNORECASE | re.DOTALL,
+)
+# Sin comillas: fallback
+_VOICE_NQ_RE = re.compile(
+    r"VOZ\s+EN\s+OFF\s*:?\s*(\S(?:.*?)[^\s\"])",
+    re.IGNORECASE | re.DOTALL,
+)
+
+# Campo clave:valor (DURACIÓN, BÚSQUEDA, NOTA, etc.)
 _LINE_KEY_RE = re.compile(
-    r"^(?P<key>[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+)\s*:\s*(?P<value>.*)$"
+    r"^(?P<key>[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+?)"
+    r"(?:\([^)]*\))?"
+    r"\s*:\s*"
+    r"(?P<value>.*)$",
+    re.IGNORECASE,
 )
-_SCENE_RE = re.compile(r"^\s*ESCENA\s+#\s*(\d+)\s*$", re.IGNORECASE)
-_SQ_TEXT = re.compile(
-    r"[\"" + _DQ_L + _SQ_L + r"](?P<body>.*?)[\"" + _DQ_R + _SQ_R + r"]"
-)
+
+# Comillas para extraer texto entre ellas.
+_QUOTE_START = set('"„‟「」『』\'ʻ')
+_QUOTE_END = set('"„‟「」『』\'\u2019')
+
+
+def _extract_voice_inline(line: str) -> str:
+    """Extrae VOZ EN OFF de una línea (con o sin comillas)."""
+    m = _VOICE_RE.search(line)
+    if m:
+        return m.group(1).strip()
+    m = _VOICE_NQ_RE.search(line)
+    if m:
+        return m.group(1).strip()
+    # Buscar VOZ EN OFF: en el resto de la línea después de la cabecera
+    idx = re.search(r"VOZ\s+EN\s+OFF\s*:", line, re.IGNORECASE)
+    if idx:
+        rest = line[idx.end():].strip()
+        if rest and rest[0] in _QUOTE_START:
+            rest = rest[1:]
+        if rest and rest[-1] in _QUOTE_END:
+            rest = rest[:-1]
+        return rest.strip()
+    return ""
 
 
 def _decode_quoted(value: str) -> str:
-    """Extrae el contenido entre las comillas (ascii o latinas)."""
-    m = _SQ_TEXT.search(value)
-    if m:
-        return m.group("body").strip()
+    """Extrae el contenido entre comillas (ascii o latinas)."""
     value = value.strip()
-    if value.startswith(("'", _SQ_L)):
+    if value and value[0] in _QUOTE_START:
         value = value[1:]
-        if value.endswith(("'", _SQ_R)):
-            value = value[:-1]
+    if value and value[-1] in _QUOTE_END:
+        value = value[:-1]
     return value.strip()
 
 
@@ -75,7 +122,7 @@ class Scene:
 
     @property
     def key_text(self) -> str:
-        """Texto usado para el fuzzy matching contra la transcripcion."""
+        """Texto usado para el fuzzy matching contra la transcripción."""
         return (self.voice or self.note or self.search or "").strip()
 
 
@@ -92,7 +139,7 @@ def _role(key_lower: str) -> str:
 
 
 def parse_scenes(path: str | Path) -> list[Scene]:
-    """Parsea el .txt de escenas en orden de aparicion."""
+    """Parsea el .txt de escenas en orden de aparición con formatos flexibles."""
     path = Path(path)
     if not path.is_file():
         raise FileNotFoundError(f"No se encuentra el archivo de escenas: {path}")
@@ -106,25 +153,37 @@ def parse_scenes(path: str | Path) -> list[Scene]:
         if not line:
             continue
 
+        # Check for scene header (flexible: markdown, symbols, etc.)
         m = _SCENE_RE.match(line)
         if m:
             if current is not None:
                 scenes.append(current)
             current = Scene(number=int(m.group(1)))
+            # Check for VOZ EN OFF on the same line (after the header)
+            voice_text = _extract_voice_inline(line)
+            if voice_text:
+                current.voice = voice_text
             continue
 
         if current is None:
             continue
 
+        # Check for VOZ EN OFF anywhere in the line
+        voice_text = _extract_voice_inline(line)
+        if voice_text:
+            current.voice = voice_text
+            continue
+
+        # Parse as line: "KEY: value"
         km = _LINE_KEY_RE.match(line)
         if not km:
             continue
-        role = _role(km.group("key").strip().lower())
-        value = km.group("value")
+        key = km.group("key").strip().lower()
+        value = km.group("value").strip()
 
+        role = _role(key)
         if role == "voice":
-            voice = _decode_quoted(value)
-            current.voice = voice
+            current.voice = _decode_quoted(value)
         elif role == "duration":
             current.duration_estimated = _extract_duration(value)
         elif role == "search":
@@ -135,4 +194,13 @@ def parse_scenes(path: str | Path) -> list[Scene]:
     if current is not None:
         scenes.append(current)
 
-    return scenes
+    # Validate at least one valid scene with voice
+    valid_scenes = [s for s in scenes if s.voice.strip()]
+    if not valid_scenes:
+        name = path.name if isinstance(path, Path) else "el archivo"
+        raise ValueError(
+            f"El archivo {name} no contiene ninguna escena reconocible. "
+            "Se esperaba al menos una cabecera del tipo 'ESCENA #1' seguida de 'VOZ EN OFF: ...'."
+        )
+
+    return valid_scenes

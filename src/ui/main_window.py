@@ -32,10 +32,13 @@ from tkinter import filedialog, messagebox
 import customtkinter as ctk
 
 from src.core import config
-from src.core.auto_detect import DetectionResult, detect_video_inputs, find_capcut_templates, detect_audios
+from src.core.auto_detect import (
+    DetectionResult, detect_video_inputs, find_capcut_templates, detect_audios,
+)
 from src.core.bootstrap import ensure_dependencies
 from src.core.capcut_project import CapCutProject
 from src.core.config import load_user_config, save_user_config
+from src.core.edit_types import get_edit_profile, get_edit_type_names
 from src.core.scene_parser import parse_scenes
 from src.core.timeline_builder import GenerationCancelled, build_timeline, parse_srt
 from src.core.transcriber import align_audio_to_text
@@ -59,8 +62,7 @@ NO_SRT = "— sin subtítulos (.srt) —"
 
 # Punto 1: tipos de edición disponibles; el nombre por defecto cambia según el
 # tipo seleccionado.
-EDIT_TYPES = ["Nexus Paradoja"]
-DEFAULT_PROJECT_NAME = "Nexus Paradoja video"
+EDIT_TYPES = get_edit_type_names()
 
 LOG_TAGS = {
     "INFO": "#4fc3f7",
@@ -90,6 +92,13 @@ class MainWindow(ctk.CTk):
         self._srt_name: str = ""           # nombre del .srt elegido
         self._audio_guion: Path | None = None  # audio guion seleccionado
         self._audio_otros: list[Path] = []     # otros audios detectados
+        # v1.7.0: exclusiones de escaneo
+        self._excluded_paths: list[Path] = []
+        self._exclusion_labels: list[ctk.CTkLabel] = []
+        # v1.6.0: tipo de edicion seleccionado
+        self._edit_type: str = self._user_config.get("last_edit_type", EDIT_TYPES[0]) or EDIT_TYPES[0]
+        # v1.6.0 fix: bandera para no pisar nombre cuando el usuario escribio manualmente
+        self._name_edited_by_user: bool = False
 
         self.title("CapCut Auto")
         self.configure(fg_color=BG)
@@ -99,6 +108,7 @@ class MainWindow(ctk.CTk):
         self._build_ui()
         self.after(100, self._poll_queue)
         self.after(200, self._restore_session)
+        self.after(300, self._load_exclusions_from_config)
 
     # ------------------------------------------------------------------ UI
     def _center(self, w: int, h: int) -> None:
@@ -148,7 +158,7 @@ class MainWindow(ctk.CTk):
 
         # Botones y barra de progreso en el panel izquierdo al final
         buttons_frame = ctk.CTkFrame(left_outer, fg_color=BG)
-        buttons_frame.grid(row=6, column=0, sticky="ew", padx=0, pady=(10, 4))
+        buttons_frame.grid(row=7, column=0, sticky="ew", padx=0, pady=(10, 4))
         buttons_frame.grid_columnconfigure(0, weight=1)
         buttons_frame.grid_columnconfigure(1, weight=1)
 
@@ -173,7 +183,7 @@ class MainWindow(ctk.CTk):
             left_outer, mode="indeterminate", height=8,
             progress_color=ACCENT, fg_color="#2a2a2a",
         )
-        self.progress.grid(row=7, column=0, sticky="ew", padx=0, pady=(6, 12))
+        self.progress.grid(row=8, column=0, sticky="ew", padx=0, pady=(6, 12))
         self.progress.set(0)
 
         # Panel derecho: única y exclusivamente el área de texto de logs
@@ -279,6 +289,39 @@ class MainWindow(ctk.CTk):
         self._status_footer.grid(
             row=5, column=0, columnspan=2, sticky="ew", padx=12, pady=(0, 10))
 
+        # Bloque "Excluir del escaneo"
+        ctk.CTkLabel(
+            panel, text="Excluir del escaneo:",
+            font=ctk.CTkFont(size=12, weight="bold"), text_color=TEXT,
+        ).grid(row=6, column=0, sticky="w", padx=12, pady=(4, 2))
+
+        self._add_exclusion_btn = ctk.CTkButton(
+            panel, text="Añadir exclusión... ▾", width=180, height=28,
+            corner_radius=8, fg_color="#334155", hover_color="#475569",
+            command=self._show_add_exclusion_menu,
+        )
+        self._add_exclusion_btn.grid(row=7, column=0, sticky="w", padx=12, pady=(0, 2))
+
+        self._exclusion_list_frame = ctk.CTkFrame(
+            panel, fg_color="#1a1a1a", corner_radius=6, height=80)
+        self._exclusion_list_frame.grid(
+            row=8, column=0, columnspan=2, sticky="ew", padx=12, pady=(0, 6))
+        self._exclusion_list_frame.grid_columnconfigure(0, weight=1)
+        self._exclusion_scroll = ctk.CTkScrollableFrame(
+            self._exclusion_list_frame, fg_color="#1a1a1a")
+        self._exclusion_scroll.grid(
+            row=0, column=0, sticky="nsew", padx=4, pady=4)
+        self._exclusion_scroll.grid_columnconfigure(0, weight=1)
+        self._exclusion_scroll.grid_rowconfigure(0, weight=1)
+        self._exclusion_widgets: list[ctk.CTkLabel] = []
+
+        # Placeholder inicial
+        self._exclusion_placeholder = ctk.CTkLabel(
+            self._exclusion_scroll, text="Sin exclusiones",
+            font=ctk.CTkFont(size=11), text_color=MUTED, anchor="w",
+        )
+        self._exclusion_placeholder.grid(row=0, column=0, sticky="w", padx=4, pady=2)
+
     def _build_section_subtitles(self, parent, row: int) -> None:
         panel = ctk.CTkFrame(parent, fg_color=PANEL, corner_radius=10)
         panel.grid(row=row, column=0, sticky="ew", padx=0, pady=6)
@@ -322,7 +365,7 @@ class MainWindow(ctk.CTk):
         panel.grid(row=row, column=0, sticky="ew", padx=0, pady=6)
         panel.grid_columnconfigure(1, weight=1)
 
-        self._section_title(panel, "6 · Audios del proyecto").grid(
+        self._section_title(panel, "4 · Audios del proyecto").grid(
             row=0, column=0, columnspan=2, sticky="w", padx=12, pady=(8, 4))
 
         ctk.CTkLabel(
@@ -340,26 +383,56 @@ class MainWindow(ctk.CTk):
         )
         self._audio_guion_menu.grid(row=2, column=0, columnspan=2, sticky="ew", padx=12, pady=(0, 6))
 
-        ctk.CTkLabel(
-            panel, text="Otros audios detectados:",
-            font=ctk.CTkFont(size=12), text_color=TEXT,
-        ).grid(row=3, column=0, columnspan=2, sticky="w", padx=12, pady=(0, 4))
+    def _restore_session(self) -> None:
+        drafts = self._user_config.get("capcut_drafts_dir", "")
+        if drafts:
+            self._apply_drafts_dir(Path(drafts), persist=False)
+        video = self._user_config.get("last_video_dir", "")
+        if video and Path(video).is_dir():
+            self._apply_video_dir(Path(video), persist=False)
+        srt_dir = self._user_config.get("last_srt_dir", "")
+        srt_name = self._user_config.get("last_srt_name", "")
+        if srt_dir and srt_name:
+            srt = Path(srt_dir) / srt_name
+            if srt.is_file():
+                self._apply_srt_dir(srt, persist=False)
+        self._update_ui_state()
 
-        self._audio_otros_label = ctk.CTkLabel(
-            panel, text="—", font=ctk.CTkFont(size=11),
-            text_color=MUTED, anchor="w", justify="left",
-        )
-        self._audio_otros_label.grid(row=4, column=0, columnspan=2, sticky="ew", padx=12, pady=(0, 10))
+    def _load_exclusions_from_config(self) -> None:
+        """Carga exclusiones desde config al arrancar."""
+        from src.core.auto_detect import _load_excluded_paths as _load_exc
+        raw = _load_exc()
+        valid: list[Path] = []
+        for p in raw:
+            if p.is_file() or p.is_dir():
+                valid.append(p)
+        self._excluded_paths = valid
+        self._render_exclusion_list()
+
+    @staticmethod
+    def _is_excluded_ui(path: Path, excluded: list[Path]) -> bool:
+        """Verifica si un path está excluido (versión UI)."""
+        import os
+        if not excluded:
+            return False
+        norm_path = os.path.normcase(os.path.abspath(path))
+        for exc in excluded:
+            norm_exc = os.path.normcase(os.path.abspath(exc))
+            if norm_path == norm_exc:
+                return True
+            if norm_path.startswith(norm_exc + os.sep):
+                return True
+        return False
 
     def _build_section_edit_type(self, parent, row: int) -> None:
         panel = ctk.CTkFrame(parent, fg_color=PANEL, corner_radius=10)
         panel.grid(row=row, column=0, sticky="ew", padx=0, pady=6)
         panel.grid_columnconfigure(0, weight=1)
 
-        self._section_title(panel, "4 · Tipo de edición").grid(
+        self._section_title(panel, "5 · Tipo de edición").grid(
             row=0, column=0, sticky="w", padx=12, pady=(8, 4))
 
-        self._edit_type_var = ctk.StringVar(value=EDIT_TYPES[0])
+        self._edit_type_var = ctk.StringVar(value=self._edit_type)
         self._edit_type_menu = ctk.CTkOptionMenu(
             panel, values=list(EDIT_TYPES), variable=self._edit_type_var,
             height=32, corner_radius=8,
@@ -368,12 +441,41 @@ class MainWindow(ctk.CTk):
         )
         self._edit_type_menu.grid(row=1, column=0, sticky="ew", padx=12, pady=(0, 10))
 
+    def _on_edit_type_changed(self, value: str) -> None:
+        """Callback cuando el usuario cambia el tipo de edicion."""
+        self._edit_type = value
+        self._user_config["last_edit_type"] = value
+        self._save_user_config()
+        # Siempre actualizar el nombre con el sufijo del tipo elegido.
+        # La bandera _name_edited_by_user solo protege contra escrituras
+        # directas en el Entry; al cambiar de tipo se considera que el
+        # usuario quiere el nuevo sufijo. Se resetea aqui para que el
+        # proximo cambio de tipo tambien actualice.
+        profile = get_edit_profile(value)
+        self.name_entry.delete(0, "end")
+        self.name_entry.insert(0, profile.project_name_suffix)
+        self._name_edited_by_user = False
+        log.info("Tipo de edicion cambiado a: %s", value)
+
+    def _on_name_key_release(self) -> None:
+        """Detecta cuando el usuario escribe manualmente en el campo de nombre.
+        Si el campo queda vacio, se rellena con el sufijo del tipo activo."""
+        text = self.name_entry.get().strip()
+        self._name_edited_by_user = bool(text)
+        if not text:
+            # Campo vacio: relleno con el sufijo del tipo actual
+            profile = get_edit_profile(self._edit_type)
+            self.name_entry.delete(0, "end")
+            self.name_entry.insert(0, profile.project_name_suffix)
+            self._name_edited_by_user = False
+        self._update_ui_state()
+
     def _build_section3_name(self, parent, row: int) -> None:
         panel = ctk.CTkFrame(parent, fg_color=PANEL, corner_radius=10)
         panel.grid(row=row, column=0, sticky="ew", padx=0, pady=6)
         panel.grid_columnconfigure(0, weight=1)
 
-        self._section_title(panel, "5 · Nombre del nuevo proyecto").grid(
+        self._section_title(panel, "6 · Nombre del nuevo proyecto").grid(
             row=0, column=0, sticky="w", padx=12, pady=(8, 4))
 
         self.name_entry = ctk.CTkEntry(
@@ -381,9 +483,10 @@ class MainWindow(ctk.CTk):
             corner_radius=8, fg_color="#2a2a2a", text_color=TEXT,
         )
         self.name_entry.grid(row=1, column=0, sticky="ew", padx=12, pady=(0, 10))
-        self.name_entry.bind("<KeyRelease>", lambda _e: self._update_ui_state())
+        self.name_entry.bind("<KeyRelease>", lambda _e: self._on_name_key_release())
         self.name_entry.delete(0, "end")
-        self.name_entry.insert(0, DEFAULT_PROJECT_NAME)
+        profile = get_edit_profile(self._edit_type)
+        self.name_entry.insert(0, profile.project_name_suffix)
 
     # --------------------------------------------------- persistencia / estado
     def _save_user_config(self) -> None:
@@ -393,6 +496,9 @@ class MainWindow(ctk.CTk):
         self._user_config["last_srt_dir"] = str(self._srt_dir) if self._srt_dir else ""
         self._user_config["last_srt_name"] = self._srt_name or ""
         self._user_config["last_guion_name"] = self._user_config.get("last_guion_name", "")
+        self._user_config["last_edit_type"] = self._edit_type or EDIT_TYPES[0]
+        # Persistir exclusiones
+        self._user_config["excluded_paths"] = ",".join(str(p) for p in self._excluded_paths)
         save_user_config(self._user_config)
 
     def _scan_srt_files(self, folder: Path) -> list[Path]:
@@ -436,21 +542,6 @@ class MainWindow(ctk.CTk):
         if not path:
             return
         self._apply_srt_dir(Path(path), persist=True)
-
-    def _restore_session(self) -> None:
-        drafts = self._user_config.get("capcut_drafts_dir", "")
-        if drafts:
-            self._apply_drafts_dir(Path(drafts), persist=False)
-        video = self._user_config.get("last_video_dir", "")
-        if video and Path(video).is_dir():
-            self._apply_video_dir(Path(video), persist=False)
-        srt_dir = self._user_config.get("last_srt_dir", "")
-        srt_name = self._user_config.get("last_srt_name", "")
-        if srt_dir and srt_name:
-            srt = Path(srt_dir) / srt_name
-            if srt.is_file():
-                self._apply_srt_dir(srt, persist=False)
-        self._update_ui_state()
 
     def _update_ui_state(self) -> None:
         running = self._running
@@ -573,12 +664,11 @@ class MainWindow(ctk.CTk):
             self._refresh_srt_menu()
 
     def _refresh_audio_menu(self) -> None:
-        """Rellena el dropdown de audio guion y la lista de otros audios
+        """Rellena el dropdown de audio guion y la lista de checkboxes de fondo
         basándose en la carpeta del video."""
         if not self._video_dir:
             self._audio_guion_menu.configure(values=["— sin detectar —"], state="disabled")
             self._audio_guion_var.set("— sin detectar —")
-            self._audio_otros_label.configure(text="No se detectaron audios en la carpeta")
             self._audio_guion = None
             self._audio_otros = []
             return
@@ -587,6 +677,7 @@ class MainWindow(ctk.CTk):
         all_audios = [
             p for p in self._video_dir.rglob("*")
             if p.is_file() and p.suffix.lower() in config.AUDIO_EXTENSIONS
+            and not any(self._is_excluded_ui(p, [exc]) for exc in self._excluded_paths)
         ]
         # Ordenar por nombre para consistencia
         all_audios.sort(key=lambda p: p.name.lower())
@@ -625,18 +716,11 @@ class MainWindow(ctk.CTk):
         else:
             self._audio_guion_var.set("— sin detectar —")
 
-        # Actualizar lista de otros audios
-        if self._audio_otros:
-            self._audio_otros_label.configure(text="\n".join(f"• {p.name}" for p in self._audio_otros))
-        else:
-            self._audio_otros_label.configure(text="—")
-
     def _on_audio_guion_changed(self, value: str) -> None:
         if not value or value == "— sin detectar —":
             self._audio_guion = None
             self._user_config["last_guion_name"] = ""
             self._save_user_config()
-            self._audio_otros_label.configure(text="—")
             return
         # Resolver ruta completa desde el nombre seleccionado
         audio_path = self._resolve_audio_path(value)
@@ -650,15 +734,132 @@ class MainWindow(ctk.CTk):
                 all_audios = [
                     p for p in self._video_dir.rglob("*")
                     if p.is_file() and p.suffix.lower() in config.AUDIO_EXTENSIONS
+                    and not self._is_excluded_ui(p, self._excluded_paths)
                 ]
                 all_audios.sort(key=lambda p: p.name.lower())
                 self._audio_otros = [p for p in all_audios if p != audio_path]
-                if self._audio_otros:
-                    self._audio_otros_label.configure(text="\n".join(f"• {p.name}" for p in self._audio_otros))
-                else:
-                    self._audio_otros_label.configure(text="—")
         else:
             log.warning("Audio guion no encontrado: %s", value)
+
+    # --------------------------------------------------- exclusiones
+    def _load_exclusions(self) -> None:
+        """Carga exclusiones desde config_user.json."""
+        from src.core.auto_detect import _load_excluded_paths as _load_exc
+        raw = _load_exc()
+        valid: list[Path] = []
+        for p in raw:
+            if p.is_file() or p.is_dir():
+                valid.append(p)
+            else:
+                log.info("Exclusión inexistente omitida: %s", p)
+        self._excluded_paths = valid
+        self._render_exclusion_list()
+        # Si el audio guion estaba excluido, limpiar selección
+        if self._audio_guion and self._excluded_paths:
+            import os
+            norm = os.path.normcase(os.path.abspath(self._audio_guion))
+            for exc in self._excluded_paths:
+                if norm == os.path.normcase(os.path.abspath(exc)) or \
+                   norm.startswith(os.path.normcase(os.path.abspath(exc)) + os.sep):
+                    self._audio_guion = None
+                    self._user_config["last_guion_name"] = ""
+                    self._save_user_config()
+                    self._refresh_audio_menu()
+                    break
+
+    def _render_exclusion_list(self) -> None:
+        """Renderiza la lista de exclusiones en la UI."""
+        for w in self._exclusion_widgets:
+            w.destroy()
+        self._exclusion_widgets.clear()
+        if not self._excluded_paths:
+            self._exclusion_placeholder.configure(text="Sin exclusiones")
+            self._exclusion_placeholder.grid()
+            return
+        self._exclusion_placeholder.grid_remove()
+        for i, p in enumerate(self._excluded_paths):
+            row = i
+            label = ctk.CTkLabel(
+                self._exclusion_scroll,
+                text=f"  {p.name if p.is_file() else '📁 '}{p.name}",
+                font=ctk.CTkFont(size=11), text_color=TEXT, anchor="w",
+            )
+            label.grid(row=row, column=0, sticky="w", padx=4, pady=1)
+            remove_btn = ctk.CTkButton(
+                self._exclusion_scroll, text="✕", width=24, height=24,
+                corner_radius=6, fg_color="#7f1d1d", hover_color="#991b1b",
+                font=ctk.CTkFont(size=10, weight="bold"),
+                text_color="#fca5a5",
+                command=lambda pp=p: self._remove_exclusion(pp),
+            )
+            remove_btn.grid(row=row, column=1, padx=(4, 4), pady=1)
+            self._exclusion_widgets.append(label)
+            self._exclusion_widgets.append(remove_btn)
+
+    def _show_add_exclusion_menu(self) -> None:
+        """Muestra menú contextual para añadir exclusión (archivo o carpeta)."""
+        menu = ctk.CTkToplevel(self)
+        menu.title("Añadir exclusión")
+        menu.geometry("220x100")
+        menu.resizable(False, False)
+        menu.configure(fg_color=PANEL)
+        menu.transient(self)
+        menu.grab_set()
+
+        def _add_file() -> None:
+            path = filedialog.askopenfilename(
+                initialdir=self._video_dir or Path.home(),
+                title="Seleccionar archivo para excluir",
+            )
+            if path:
+                self._add_exclusion(Path(path))
+            menu.destroy()
+
+        def _add_folder() -> None:
+            path = filedialog.askdirectory(
+                initialdir=self._video_dir or Path.home(),
+                title="Seleccionar carpeta para excluir",
+            )
+            if path:
+                self._add_exclusion(Path(path))
+            menu.destroy()
+
+        ctk.CTkButton(
+            menu, text="Seleccionar archivo…", height=34, corner_radius=8,
+            fg_color=ACCENT, hover_color=ACCENT_HOVER,
+            command=_add_file,
+        ).grid(row=0, column=0, sticky="ew", padx=16, pady=(12, 6))
+        ctk.CTkButton(
+            menu, text="Seleccionar carpeta…", height=34, corner_radius=8,
+            fg_color=ACCENT, hover_color=ACCENT_HOVER,
+            command=_add_folder,
+        ).grid(row=1, column=0, sticky="ew", padx=16, pady=(6, 12))
+        menu.grid_columnconfigure(0, weight=1)
+        menu.wait_window()
+
+    def _add_exclusion(self, path: Path) -> None:
+        """Añade una exclusión (archivo o carpeta) a la lista."""
+        abs_path = path.resolve()
+        if abs_path in self._excluded_paths:
+            return
+        self._excluded_paths.append(abs_path)
+        self._save_user_config()
+        self._render_exclusion_list()
+        log.info("[EXCLUSION] Añadido: %s", abs_path)
+        # Re-escanear si hay video_dir
+        if self._video_dir is not None:
+            self._apply_video_dir(self._video_dir, persist=False)
+
+    def _remove_exclusion(self, path: Path) -> None:
+        """Elimina una exclusión de la lista."""
+        abs_path = path.resolve()
+        if abs_path in self._excluded_paths:
+            self._excluded_paths.remove(abs_path)
+            self._save_user_config()
+            self._render_exclusion_list()
+            log.info("[EXCLUSION] Eliminado: %s", abs_path)
+            if self._video_dir is not None:
+                self._apply_video_dir(self._video_dir, persist=False)
 
     def _ask_scene_user(self, candidates: list[Path]) -> Path | None:
         dialog = ctk.CTkToplevel(self)
@@ -730,12 +931,6 @@ class MainWindow(ctk.CTk):
                      "se pedirá decisión al generar.", text_color=AMBER)
         else:
             self._status_footer.configure(text="✓ Detección correcta", text_color=GREEN)
-
-    def _on_edit_type_changed(self, value: str) -> None:
-        if value == "Nexus Paradoja":
-            self.name_entry.delete(0, "end")
-            self.name_entry.insert(0, DEFAULT_PROJECT_NAME)
-        log.info("Tipo de edición cambiado a: %s", value)
 
     def _status_label(self, parent, row, title):
         label = ctk.CTkLabel(
@@ -875,17 +1070,18 @@ class MainWindow(ctk.CTk):
                 return
             images = decision
 
-        self.cancel_event.clear()
-        self._running = True
-        self._thread_done.clear()
-        self._job_succeeded = False
-        self.generate_btn.configure(state="disabled")
-        self.cancel_btn.configure(state="normal")
-        self.progress.start()
-        self._log_widget("▶ Iniciando generación en hilo secundario...", "INFO")
+        # Determine audio path: explicit user selection > auto-detected
+        audio_path = self._audio_guion or (self._detection.audio_path if self._detection and self._detection.audio_path else None)
+        if audio_path is None:
+            messagebox.showerror(
+                "CapCut Auto",
+                "No hay audio de guion seleccionado ni detectado.\n\n"
+                "Asegúrate de:\n"
+                "1. Que exista un archivo de audio en la carpeta del video, o\n"
+                "2. Selecciona un audio en el bloque '4. Audios del proyecto'."
+            )
+            return
 
-        # Usar el audio seleccionado por el usuario como único guion
-        audio_path = self._audio_guion
         data = {
             "template": template_dir,
             "name": name,
@@ -899,6 +1095,14 @@ class MainWindow(ctk.CTk):
             if srt.is_file():
                 data["subtitle_srt"] = srt
                 log.info("Subtítulos: se generarán desde %s", srt)
+        self.cancel_event.clear()
+        self._running = True
+        self._thread_done.clear()
+        self._job_succeeded = False
+        self.generate_btn.configure(state="disabled")
+        self.cancel_btn.configure(state="normal")
+        self.progress.start()
+        self._log_widget("▶ Iniciando generación en hilo secundario...", "INFO")
         t = threading.Thread(target=self._run_job, args=(data,), daemon=True)
         t.start()
 
@@ -956,7 +1160,14 @@ class MainWindow(ctk.CTk):
             log.info("Alineación completada: %d cues (%d líneas).",
                      len(cues), len(align_lines))
 
-            total_us = max((int(round(end * 1_000_000)) for _s, end, _t in cues), default=0)
+            # Medir duracion REAL del audio ANTES de construir el timeline.
+            # Si el audio es mas largo que la suma de los cues, usar la duracion
+            # real evita que quede un hueco vacio al final del video.
+            from src.core.timeline_builder import measure_audio_duration_us
+            audio_dur_us = measure_audio_duration_us(data["audio"])
+            if audio_dur_us is None:
+                audio_dur_us = max((int(round(end * 1_000_000)) for _s, end, _t in cues), default=0)
+            total_us = audio_dur_us
             log.info("Duración total del audio: %d us (%s s).", total_us, f"{total_us / 1e6:.2f}")
 
             log.info("Paso 2/5 — Sincronizando escenas con el SRT alineado...")
@@ -971,10 +1182,12 @@ class MainWindow(ctk.CTk):
             project.dump_schema()
 
             log.info("Paso 4/5 — Generando proyecto...")
+            edit_profile = get_edit_profile(self._edit_type)
             out = project.generate(
                 data["name"], items, data["audio"], total_us,
                 cancel_event=self.cancel_event,
                 subtitle_srt=data.get("subtitle_srt"),
+                edit_profile=edit_profile,
             )
 
             log.info("Paso 5/5 — ✔ Proyecto creado en: %s", out)

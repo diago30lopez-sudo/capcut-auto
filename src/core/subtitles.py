@@ -38,6 +38,7 @@ from pathlib import Path
 
 from src.core import capcut_canonical as canonical
 from src.core import config
+from src.core.edit_types import EditProfile, NEXUS_PARADOJA
 from src.core.timeline_builder import parse_srt
 
 log = logging.getLogger("capcutauto")
@@ -136,13 +137,14 @@ FONT_CANDIDATES = (
 )
 
 
-def resolve_subtitle_font() -> dict:
+def resolve_subtitle_font(profile: EditProfile | None = None) -> dict:
     """Resuelve la fuente de los subtitulos: montserrat/bebas/impact si estan
     en el sistema; si no, la SystemFont de CapCut (mismo que el draft 0921).
     Devuelve {'path':..., 'name':..., 'title':...}."""
-    for p in FONT_CANDIDATES:
-        if p.is_file():
-            return {"path": p.as_posix(), "name": p.stem, "title": p.stem}
+    p = _get_profile(profile)
+    for cand in p.subtitle_font_candidates:
+        if cand.is_file():
+            return {"path": cand.as_posix(), "name": cand.stem, "title": cand.stem}
     for app in sorted(
         (Path.home() / "AppData" / "Local" / "CapCut" / "Apps").glob(
             "*/Resources/Font/SystemFont/en.ttf"),
@@ -234,10 +236,60 @@ def split_into_fragments(text: str) -> list[list[str]]:
     return fragments
 
 
+def _get_profile(profile: EditProfile | None) -> EditProfile:
+    """Devuelve el perfil de edicion; si es None usa Nexus Paradoja por defecto."""
+    if profile is not None:
+        return profile
+    return NEXUS_PARADOJA
+
+
+def _profile_subtitle_y(profile: EditProfile | None) -> float:
+    p = _get_profile(profile)
+    if p is NEXUS_PARADOJA:
+        return float(config.SUBTITLE_POS_Y_JSON)
+    return p.subtitle_pos_y_json
+
+
+def _profile_font_size(profile: EditProfile | None) -> float:
+    p = _get_profile(profile)
+    if p is NEXUS_PARADOJA:
+        return float(FONT_SIZE)
+    return p.subtitle_font_size
+
+
+def _profile_keyword_color(profile: EditProfile | None) -> list[float]:
+    p = _get_profile(profile)
+    if p is NEXUS_PARADOJA:
+        return list(KEYWORD_COLOR)
+    return list(p.subtitle_keyword_color)
+
+
+def _profile_keywords(profile: EditProfile | None) -> frozenset[str]:
+    p = _get_profile(profile)
+    if p is NEXUS_PARADOJA:
+        return SUBTITLE_KEYWORDS
+    return p.subtitle_keywords
+
+
+def _profile_stroke_width(profile: EditProfile | None) -> float:
+    p = _get_profile(profile)
+    if p is NEXUS_PARADOJA:
+        return float(config.SUBTITLE_STROKE_WIDTH_JSON)
+    return p.subtitle_stroke_width_json
+
+
+def _profile_italic(profile: EditProfile | None) -> bool:
+    p = _get_profile(profile)
+    if p is NEXUS_PARADOJA:
+        return STYLE_ITALIC
+    return p.watermark_italic  # DYC usa watermark_italic=False por defecto
+
+
 def build_text_content(
     text: str,
     font_path: str,
     font_size: float,
+    profile: EditProfile | None = None,
 ) -> str:
     """Construye el `content` JSON (string) con un estilo POR RUN de texto.
 
@@ -261,19 +313,23 @@ def build_text_content(
     def normalize_word(w: str) -> str:
         return w.lower().strip("¿?¡!,.;:()\"«»")
 
+    keywords = _profile_keywords(profile)
+    keyword_color = _profile_keyword_color(profile)
+    stroke_width = _profile_stroke_width(profile)
+    italic_val = _profile_italic(profile)
     styles: list[dict] = []
     color = BASE_COLOR
     for start, end, is_space in text_runs(text):
         if not is_space:
             word = text[start:end]
-            color = KEYWORD_COLOR if normalize_word(word) in SUBTITLE_KEYWORDS else BASE_COLOR
+            color = keyword_color if normalize_word(word) in keywords else BASE_COLOR
         styles.append({
             "range": [_utf16_at(text, start), _utf16_at(text, end)],
             "fill": {"content": {"solid": {"color": color}}, "alpha": 1.0},
             "font": {"id": "", "path": font_path},
             "size": font_size,
             "bold": STYLE_BOLD,
-            "italic": STYLE_ITALIC,
+            "italic": italic_val,
             "underline": False,
             "align_type": 1,          # 1 = centro horizontal
             "vertical_align": 1,      # 1 = centro vertical dentro del cuadro
@@ -281,7 +337,7 @@ def build_text_content(
             "letter_spacing": 0.0,    # sin espacio extra entre caracteres
             "strokes": [{
                 "content": {"render_type": "solid", "solid": {"color": [0.0, 0.0, 0.0]}},
-                "width": BORDER_WIDTH,
+                "width": stroke_width,
                 "mode": STROKE_MODE,
                 "enable": True,
             }],
@@ -294,9 +350,9 @@ def build_text_content(
     }, ensure_ascii=False, separators=(",", ":"))
 
 
-def build_text_material(text: str) -> dict:
+def build_text_material(text: str, profile: EditProfile | None = None) -> dict:
     """Material de texto con el estilo de la guia (trazo negro, sombra negra,
-    fuente resuelta, color blanco base + keywords amarillos).
+    fuente resuelta, color blanco base + keywords segun perfil).
 
     Fix 1: `font_size` se resuelve UNA sola vez aqui y se usa tanto en
     `material.font_size` como en `content.styles[].size`. Si los dos valores
@@ -304,12 +360,13 @@ def build_text_material(text: str) -> dict:
     el otro, y el texto queda pegado al borde de su caja.
     Fix 5: caja sin padding ni altura fija (auto) y alineacion centrada, los
     mismos valores que escribe CapCut en el draft real de referencia."""
-    font = resolve_subtitle_font()
-    font_size = float(FONT_SIZE)
+    p = _get_profile(profile)
+    font = resolve_subtitle_font(p)
+    font_size = _profile_font_size(profile)
     mat = copy.deepcopy(canonical.TEXT_MATERIAL)
     mat["id"] = _new_id()
     mat["name"] = text[:40]
-    mat["content"] = build_text_content(text, font["path"], font_size)
+    mat["content"] = build_text_content(text, font["path"], font_size, profile)
     mat["text_color"] = "#FFFFFF"
     mat["text_alpha"] = 1.0
     mat["font_path"] = font["path"]
@@ -331,11 +388,11 @@ def build_text_material(text: str) -> dict:
     mat["inner_padding"] = -1.0
     mat["typesetting"] = 0
     mat["preset_has_set_alignment"] = False
-    # Trazo negro ACTIVADO (casilla "Trazo" en la UI) con grosor 30 = 0.06.
+    # Trazo negro ACTIVADO (casilla "Trazo" en la UI) con grosor segun perfil.
     mat["border_mode"] = BORDER_MODE
     mat["border_alpha"] = BORDER_ALPHA
     mat["border_color"] = BORDER_COLOR
-    mat["border_width"] = BORDER_WIDTH
+    mat["border_width"] = _profile_stroke_width(profile)
     # Sombra negra 100% / desenfoque 20% / distancia 15.
     mat["has_shadow"] = True
     mat["shadow_alpha"] = SHADOW_ALPHA
@@ -379,7 +436,8 @@ def _popup_keyframes() -> list[dict]:
 
 
 def build_text_segment(mat_id: str, start_us: int, duration_us: int,
-                       track_render_index: int) -> dict:
+                       track_render_index: int,
+                       profile: EditProfile | None = None) -> dict:
     """Segmento de una pista de subtitulos, posicionado en centro-inferior y
     con la animacion pop-up de escala."""
     seg = copy.deepcopy(canonical.TEXT_SEGMENT)
@@ -389,7 +447,7 @@ def build_text_segment(mat_id: str, start_us: int, duration_us: int,
     seg["track_render_index"] = track_render_index
     seg["target_timerange"] = {"start": start_us, "duration": duration_us}
     seg["source_timerange"] = {"start": 0, "duration": duration_us}
-    seg["clip"]["transform"] = {"x": 0.0, "y": SUBTITLE_Y}
+    seg["clip"]["transform"] = {"x": 0.0, "y": _profile_subtitle_y(profile)}
     seg["clip"]["scale"] = {"x": 1.0, "y": 1.0}
     seg["common_keyframes"] = _popup_keyframes()
     return seg
@@ -398,6 +456,7 @@ def build_text_segment(mat_id: str, start_us: int, duration_us: int,
 def build_subtitle_track(
     srt_path: str | Path,
     track_render_index: int = 1,
+    profile: EditProfile | None = None,
 ) -> tuple[dict | None, list[dict], list[dict]]:
     """Parsea el SRT y construye (track, texts_materials, text_segments).
 
@@ -424,7 +483,7 @@ def build_subtitle_track(
         total_words = sum(len(f) for f in fragments)
         cursor_us = cue_start_us
         for i, fragment in enumerate(fragments):
-            mat = build_text_material(" ".join(fragment))
+            mat = build_text_material(" ".join(fragment), profile)
             materials.append(mat)
             if i == len(fragments) - 1:
                 # Ultimo fragmento: ocupa exactamente el resto del cue.
@@ -433,7 +492,7 @@ def build_subtitle_track(
                 frag_dur_us = max(
                     int(round(cue_dur_us * len(fragment) / total_words)), 1)
             segments.append(build_text_segment(
-                mat["id"], cursor_us, frag_dur_us, track_render_index))
+                mat["id"], cursor_us, frag_dur_us, track_render_index, profile))
             cursor_us += frag_dur_us
 
     track = copy.deepcopy(canonical.TEXT_TRACK)
@@ -469,6 +528,7 @@ def build_watermark_material_and_track(
     text: str,
     track_render_index: int,
     duration_us: int,
+    profile: EditProfile | None = None,
 ) -> tuple[dict, dict]:
     """Material de texto + pista PROPIA del watermark (marca de agua).
 
@@ -480,27 +540,28 @@ def build_watermark_material_and_track(
 
     Devuelve (material, track) listos para insertar en materials["texts"] y
     content["tracks"]."""
-    font = resolve_subtitle_font()
+    p = _get_profile(profile)
+    font = resolve_subtitle_font(p)
     mat = copy.deepcopy(canonical.TEXT_MATERIAL)
     mat["id"] = _new_id()
     mat["name"] = text[:40]
     mat["content"] = _watermark_content(text, font["path"],
-                                        config.WATERMARK_FONT_SIZE,
-                                        config.WATERMARK_BOLD,
-                                        config.WATERMARK_ITALIC)
+                                        p.watermark_font_size,
+                                        p.watermark_bold,
+                                        p.watermark_italic)
     mat["text_color"] = "#FFFFFF"
     # Opacidad: CapCut usa global_alpha como control principal (draft real:
     # text_alpha=1.0, global_alpha=0.1005 -> ~10%). UI% = global_alpha * 100.
     # Target 30% -> global_alpha = 0.30. text_alpha se deja en 1.0.
     mat["text_alpha"] = 1.0
-    mat["global_alpha"] = config.WATERMARK_ALPHA_JSON  # 0.30 para 30%
+    mat["global_alpha"] = p.watermark_alpha
     mat["font_path"] = font["path"]
     mat["font_name"] = font["name"]
     mat["font_title"] = font["title"]
-    mat["font_size"] = float(config.WATERMARK_FONT_SIZE)
+    mat["font_size"] = float(p.watermark_font_size)
     mat["text_size"] = TEXT_SIZE
     # UI "2" = JSON 0.10 (escala confirmada: letter_spacing = UI * 0.05).
-    mat["letter_spacing"] = config.WATERMARK_LETTER_SPACING_JSON
+    mat["letter_spacing"] = p.watermark_letter_spacing_json
     mat["alignment"] = 1
     mat["line_feed"] = 1
     mat["line_spacing"] = 0.02
@@ -519,11 +580,10 @@ def build_watermark_material_and_track(
     seg["source_timerange"] = {"start": 0, "duration": int(duration_us)}
     # Posicion fija del watermark: valores JSON CONFIRMADOS escritos directos
     # en clip.transform. Escala empirica v1.4.0: UI = JSON * canvas COMPLETO
-    # (1920x1080), no por la mitad. UI X=-1098 -> -1098/1920 = -0.571875;
-    # UI Y=896 -> 896/1080 = 0.8296296 (positivo = ARRIBA, negativo = ABAJO).
+    # (1920x1080), no por la mitad.
     seg["clip"]["transform"] = {
-        "x": config.WATERMARK_POS_X_JSON,
-        "y": config.WATERMARK_POS_Y_JSON,
+        "x": p.watermark_pos_x_json,
+        "y": p.watermark_pos_y_json,
     }
     seg["clip"]["scale"] = {"x": 1.0, "y": 1.0}
 
