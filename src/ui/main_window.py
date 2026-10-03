@@ -97,6 +97,11 @@ class MainWindow(ctk.CTk):
         self._exclusion_labels: list[ctk.CTkLabel] = []
         # v1.6.0: tipo de edicion seleccionado
         self._edit_type: str = self._user_config.get("last_edit_type", EDIT_TYPES[0]) or EDIT_TYPES[0]
+        # v1.7.0: carpeta de assets para Datos Y Cafe
+        self._dyc_assets_dir: Path | None = None
+        saved_dyc = self._user_config.get("dyc_assets_dir", "")
+        if saved_dyc and Path(saved_dyc).is_dir():
+            self._dyc_assets_dir = Path(saved_dyc)
         # v1.6.0 fix: bandera para no pisar nombre cuando el usuario escribio manualmente
         self._name_edited_by_user: bool = False
 
@@ -441,6 +446,22 @@ class MainWindow(ctk.CTk):
         )
         self._edit_type_menu.grid(row=1, column=0, sticky="ew", padx=12, pady=(0, 10))
 
+        # v1.7.0 — Botón de carpeta de assets (solo visible en Datos Y Cafe)
+        self._dyc_assets_btn = ctk.CTkButton(
+            panel, text="Seleccionar carpeta de assets...", width=220, height=30,
+            corner_radius=8, fg_color=ACCENT, hover_color=ACCENT_HOVER,
+            command=self._browse_dyc_assets, state="disabled",
+        )
+        self._dyc_assets_btn.grid(row=2, column=0, sticky="w", padx=12, pady=(0, 4))
+        self._dyc_assets_btn.grid_remove()
+
+        self._dyc_assets_label = ctk.CTkLabel(
+            panel, text="Sin seleccionar", font=ctk.CTkFont(size=12),
+            text_color=MUTED, anchor="w", justify="left",
+        )
+        self._dyc_assets_label.grid(row=3, column=0, sticky="ew", padx=12, pady=(0, 4))
+        self._dyc_assets_label.grid_remove()
+
     def _on_edit_type_changed(self, value: str) -> None:
         """Callback cuando el usuario cambia el tipo de edicion."""
         self._edit_type = value
@@ -456,6 +477,30 @@ class MainWindow(ctk.CTk):
         self.name_entry.insert(0, profile.project_name_suffix)
         self._name_edited_by_user = False
         log.info("Tipo de edicion cambiado a: %s", value)
+        # v1.7.0: mostrar/ocultar botón de assets según el tipo
+        is_dyc = (value == "Datos Y Cafe")
+        self._dyc_assets_btn.configure(state="normal" if is_dyc else "disabled")
+        if is_dyc:
+            self._dyc_assets_btn.grid()
+            self._dyc_assets_label.grid()
+        else:
+            self._dyc_assets_btn.grid_remove()
+            self._dyc_assets_label.grid_remove()
+
+    def _browse_dyc_assets(self) -> None:
+        """Abre dialog para seleccionar carpeta de assets de Datos Y Cafe."""
+        initial = str(self._dyc_assets_dir) if self._dyc_assets_dir else str(Path.home())
+        path = filedialog.askdirectory(initialdir=initial)
+        if not path:
+            return
+        p = Path(path)
+        if not p.is_dir():
+            messagebox.showerror("CapCut Auto", f"La carpeta '{path}' no existe.")
+            return
+        self._dyc_assets_dir = p.resolve()
+        self._dyc_assets_label.configure(text=str(self._dyc_assets_dir), text_color=TEXT)
+        self._save_user_config()
+        log.info("Carpeta de assets DYC seleccionada: %s", self._dyc_assets_dir)
 
     def _on_name_key_release(self) -> None:
         """Detecta cuando el usuario escribe manualmente en el campo de nombre.
@@ -499,6 +544,8 @@ class MainWindow(ctk.CTk):
         self._user_config["last_edit_type"] = self._edit_type or EDIT_TYPES[0]
         # Persistir exclusiones
         self._user_config["excluded_paths"] = ",".join(str(p) for p in self._excluded_paths)
+        # v1.7.0: carpeta de assets DYC
+        self._user_config["dyc_assets_dir"] = str(self._dyc_assets_dir) if self._dyc_assets_dir else ""
         save_user_config(self._user_config)
 
     def _scan_srt_files(self, folder: Path) -> list[Path]:
@@ -1062,6 +1109,16 @@ class MainWindow(ctk.CTk):
             messagebox.showerror("CapCut Auto", "El .txt de escenas no contiene ninguna escena.")
             return
 
+        # v1.7.0: validación de carpeta de assets para DYC
+        if self._edit_type == "Datos Y Cafe":
+            if self._dyc_assets_dir is None or not self._dyc_assets_dir.is_dir():
+                messagebox.showerror(
+                    "CapCut Auto",
+                    "Para 'Datos Y Cafe' es obligatorio seleccionar una carpeta de assets.\n\n"
+                    "Ve a '5 · Tipo de edición' y pulsa 'Seleccionar carpeta de assets...'."
+                )
+                return
+
         images = list(detection.image_paths)
         if len(images) != len(scenes):
             decision = self._resolve_image_mismatch(len(images), len(scenes))
@@ -1183,6 +1240,12 @@ class MainWindow(ctk.CTk):
 
             log.info("Paso 4/5 — Generando proyecto...")
             edit_profile = get_edit_profile(self._edit_type)
+            # v1.7.0: actualizar la carpeta de assets en el perfil
+            if self._edit_type == "Datos Y Cafe" and self._dyc_assets_dir is not None:
+                from src.core.edit_types import DATOS_Y_CAFE
+                # Crear un perfil copiado con la ruta de assets
+                import dataclasses
+                edit_profile = dataclasses.replace(edit_profile, dyc_assets_dir=str(self._dyc_assets_dir))
             out = project.generate(
                 data["name"], items, data["audio"], total_us,
                 cancel_event=self.cancel_event,

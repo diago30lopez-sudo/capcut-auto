@@ -1,7 +1,7 @@
 # 🎬 CapCut Auto — Nexus Paradoja
 
-**Versión actual:** v1.6.0 · v1.7.0 en desarrollo
-**Última actualización:** 2026-09-30
+**Versión actual:** v1.7.0
+**Última actualización:** 2026-10-03
 
 > ⚠️ **IMPORTANTE:** CapCut debe estar **CERRADO** durante la generación.
 
@@ -20,7 +20,7 @@
 | **v1.5.0** | Selector de audios en UI — detección recursiva, dropdown guion, lista otros | ✅ Taggeada |
 | **v1.5.1** | Hotfix: cancelación (modal + matar CrispASR) + fix audio guion (dropdown manda, nombre irrelevante) | ✅ Taggeada |
 | **v1.6.0** | Tipo de edición "Datos Y Cafe" (watermark/subtítulos distintos, sin efectos avanzados) | ✅ Taggeada |
-| **v1.7.0** | Exclusión de escaneo | ✅ Taggeada |
+| **v1.7.0** | Edición AVANZADA de "Datos Y Cafe" (zoom, paneos, shake, fade in, 20 transiciones, color grading, HSL selectivo, viñeta, glow, overlays, SFX, BGM+ducking) | ✅ En desarrollo |
 | **v2.0.0** | Nuevo tipo de edición (además de "Nexus Paradoja") — última antes del .exe | ⏳ Pendiente |
 | **v2.1.0** | Empaquetado .exe + guardar app completa en la nube | ⏳ Pendiente |
 
@@ -484,4 +484,68 @@ Nuevos tipos de edición (v2.0.0).
 |---|---|---|
 | **FEATURE** Excluir del escaneo | `src/ui/main_window.py`, `src/core/auto_detect.py`, `src/core/config.py` | Bloque UI "Excluir del escaneo" en sección 2. Botón añadir archivo/carpeta, botón [✕] para eliminar. Persistencia en `config_user.json` → `excluded_paths`. Respetado en: `_detect_audio`, `_detect_scenes_txt`, `_detect_images`, `detect_audios`. Normalización con `os.path.normcase + abspath`. |
 
-🏁 Fin del README — CapCut Auto v1.6.0 publicada.
+## 🛠️ FEATURE v1.7.0 — Edición AVANZADA de "Datos Y Cafe" (2026-10-02)
+
+| Bloque | Feature | Archivo(s) | Descripción |
+|---|---|---|---|
+| **1** | Botón carpeta assets | `src/ui/main_window.py`, `src/core/config.py` | Botón "Seleccionar carpeta de assets..." visible SOLO en DYC. Persiste en `config_user.json` → `dyc_assets_dir`. Aborta si falta la carpeta. |
+| **2** | Animación inicio (1 de 3) | `src/core/capcut_project.py` | Aleatoria entre: TV retro (7575...), Rompecabezas (7372...), Celular 3D (7522...). Se aplica a la PRIMERA imagen con sticker_animation type="in". |
+| **3** | Animación final (agujero negro) | `src/core/capcut_project.py` | resource_id 7294461821170225666, type="out", duration=0.8s (800000 µs, FIX 3). Se aplica a la ÚLTIMA IMAGEN (no pantalla final) con start=dur_segmento-800000. resource_id y path sin tocar. |
+| **4** | Pantalla final | `src/core/capcut_project.py` | Video "Pantalla final.mp4" en el TRACK PRINCIPAL (bloque 6), arranca en el FIN REAL DEL AUDIO (FIX 5 bloque 5 / FIX 3 bloque 6) con transición GLITCH desde la última imagen y color grading. Sin chroma. |
+| **5** | Suscríbete corto (CTA INTERMEDIO) | `src/core/timeline_builder.py`, `src/core/capcut_project.py` | Overlay video en el TRACK CTA (flag=2, visible=true) al 37% del video, alineado a frame (33333 µs). Chroma key negro intensity=0.3. |
+| **6** | Suscríbete largo / CTA FINAL | `src/core/timeline_builder.py`, `src/core/capcut_project.py` | Detecta "suscríbete" en SRT (normalizado sin tildes). Position = start del cue. Fallback: 90%. Chroma intensity=0.3, volume=1.0. |
+| **7** | Audio inicio + final | `src/core/capcut_project.py` | Desde caché CapCut por effect_id: inicio 7200479771514374146 (2.57s), final 6974428544046729218 (1s). Si no existe en caché, log y omite. |
+| **8** | 27 transiciones con IDs | `src/core/capcut_project.py`, `src/core/timeline_builder.py` | Pool de 27 transiciones con effect_id reales ("Elige otro" EXCLUIDA siempre, FIX 1). Orden aleatorio, sin repetir consecutivas. is_overlap=true. Referencia en segmento ANTERIOR. Subconjunto GLITCH aparte para el corte final. |
+| **9** | Color grading + HSL exactos | `src/core/capcut_project.py` | 7 materiales en materials.effects (contrast/saturation/sharpen/highlight/shadow/light_sensation/vignetting). 2 materiales HSL (Rojo type=1, Amarillo type=3). Shared por segmento. enable_adjust=true, enable_hsl=true. |
+| **10** | Zoom 100→110 | `src/core/edit_types.py` | DYC: zoom_end_min=1.00, zoom_end_max=1.10. Keyframes KFTypeScaleX/Y RELATIVOS a cover_scale. |
+| — | Aislamiento | `src/core/edit_types.py` | Nexus Paradoja SIN cambios (regresión verificada). Cada tipo usa su propio perfil aislado. |
+
+**PENDIENTES (TODO):**
+- Watermark no carga en preview: bug de CapCut/caché, diagnóstico independiente.
+- Recurso de transicion no descargado en la caché local: CapCut lo baja por resource_id al abrir el proyecto (aviso en log, no rompe el JSON).
+
+Hotfix 3: duración de .mp4 medida con parser MP4 en Python puro; ffprobe pasa a ser fallback opcional.
+
+v1.7.0 Ajustes finales DYC (bloque 2):
+- CTA INTERMEDIO desplazado al 37% (punto medio 35-40%).
+- CTA FINAL: búsqueda accent-insensitive en SRT + soporte multi-CTA con delay 1 min.
+- Subtítulos DYC: fuente configurada Bungee-Rg (fallback temporal Frick0.3-Rg, ya retirado en el bloque 5).
+- Audios inicio/final: búsqueda robusta en caché de CapCut (ruta directa con/sin extensión, glob, efecto).
+
+v1.7.0 Ajustes finales DYC (bloque 3):
+- Animación de entrada aleatoria (1 de 3) desde pool DYC_INTRO_ANIMATIONS con rutas completas.
+- Sync: bloque 5 corrigió este punto: la narración NUNCA se recorta (ver bloque 5).
+- Limpieza de tracks fantasma (segmentos duplicados) + reorden garantizado: video → overlays CTA → text → watermark → audio.
+
+v1.7.0 Ajustes finales DYC (bloque 5) — 2026-10-03:
+- FIX 1: "Elige otro" eliminada del pool; el filtro y el selector comparten la misma lista (27 entradas).
+- FIX 2: corte GLITCH aleatorio (1 de 7) entre la última imagen y "Pantalla final.mp4", mismo patrón de referencia (segmento anterior + is_overlap=true).
+- FIX 3: agujero negro a 0.8s (800000 µs); termina exactamente al final de la última imagen.
+- FIX 4: audio final "Switch on / off" arranca en el agujero negro, volumen -10dB (10 ** (-10/20)); duración real de narración intacta.
+- FIX 5: la narración NUNCA se recorta por SRT. Fin real del audio = 777760000 µs; última imagen y pantalla final terminan ahí. Se eliminó la suma acumulativa de duraciones (error de 720000 µs) y se usa `last.start_us`.
+- FIX 6: patrón de transiciones verificado contra el draft de referencia (segmentos contiguos, sin overlap artificial, `resource_id == effect_id`, referencia en el segmento ANTERIOR).
+- FIX 7: CTA en un ÚNICO track `visible=true`, situado tras el video principal, con `render_index=11000` (mayor que las imágenes) y materiales de CTA registrados en `materials.videos`.
+- FIX 8: CTA intermedio + todos los CTA finales + pantalla final en el mismo track. Orden final: video → CTA → subtítulos → watermark → audio narración → audios extra. Tracks fantasma eliminados.
+- FIX 9: subtítulos DYC con Bungee-Rg real (resource_id 7533527101870214401) en `font_path`, `font_resource_id`, `materials.texts[].fonts[]` y `content.styles[].font.{id,path}`. Retirado el fallback Frick0.3-Rg.
+
+v1.7.0 Ajustes finales DYC (bloque 6) — 2026-10-03:
+- FIX 1: "Pantalla final.mp4" va en el MISMO track principal de video, justo después de la última imagen (`start = start_última_img + dur_última_img`, duración real del archivo medida con el parser MP4). Ya no existe ningún track de video exclusivo para ella.
+- FIX 2: la transición GLITCH (1 de 7, subconjunto `DYC_GLITCH_TRANSITIONS`) se aplica REALMENTE entre la última imagen y la pantalla final: ambos clips están en el mismo track, el material va en `materials.transitions[]` y se referencia en `extra_material_refs` del segmento ANTERIOR (la última imagen), con `is_overlap=true` y sin solapar `target_timerange`.
+- FIX 3: la última imagen termina EXACTAMENTE en el fin real del audio (`sync_last_item_to_audio_end` en `timeline_builder.py`); solo se ajusta esa imagen, nunca las anteriores. Pantalla final empieza en ese mismo instante. Sin hueco entre imagen y audio.
+- FIX 4: chroma key SOLO en CTA INTERMEDIO y CTA FINAL, con `intensity_value=0.25` (`DYC_CHROMA_INTENSITY`); la pantalla final va sin chroma.
+
+Verificación (solo DYC, Nexus intacto):
+```
+python -m py_compile src/core/edit_types.py src/core/timeline_builder.py src/core/capcut_project.py src/core/subtitles.py
+python tests/edit_types_check.py
+python tests/subs_check.py
+python tests/dyc_advanced_check.py
+python tests/features_check.py
+python tests/smoke.py
+python tests/cancel_check.py
+python tests/watermark_check.py
+python tests/json_scales_check.py
+python tests/color_grading_check.py
+```
+- End-to-end VIDEO 4 (192 imágenes): 75/75 checks OK, 192 transiciones, agujero negro en 776960000 µs, última imagen + audio en 777760000 µs, CTA `['CTA INTERMEDIO', 'CTA FINAL_cta1']`.
+- Aislamiento Nexus: 18/18 checks OK (ningún artefacto DYC en el proyecto Nexus, pool de 11 intacto, 1 solo track de video).

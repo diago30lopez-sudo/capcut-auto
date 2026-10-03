@@ -88,22 +88,64 @@ def test_dyc_profile() -> None:
     check("suffix proyecto", p.project_name_suffix == "Datos Y Cafe Video #")
     check("watermark text", p.watermark_text == "DATOS Y CAFE")
     check("watermark size 15", abs(p.watermark_font_size - 15.0) < 1e-9)
-    check("watermark alpha 0.5", abs(p.watermark_alpha - 0.5) < 1e-9)
+    check("watermark alpha 0.1", abs(p.watermark_alpha - 0.1) < 1e-9)
     check("watermark X centro", abs(p.watermark_pos_x_json - 0.0) < 1e-9)
     check("watermark Y centro", abs(p.watermark_pos_y_json - 0.0) < 1e-9)
     check("watermark letter_spacing 0.10", abs(p.watermark_letter_spacing_json - 0.10) < 1e-9)
     # Estilos propios de DYC (v1.6.0): distintos a Nexus
     check("DYC subtitle Y=-775/1080", abs(p.subtitle_pos_y_json - (-775 / 1080)) < 1e-6)
-    check("DYC subtitle font_size=15", abs(p.subtitle_font_size - 15.0) < 1e-9)
-    check("DYC subtitle stroke ~3.6px (0.036)", abs(p.subtitle_stroke_width_json - 0.036) < 1e-6)
+    check("DYC subtitle font_size=11", abs(p.subtitle_font_size - 11.0) < 1e-9)
+    check("DYC subtitle stroke = 0.06", abs(p.subtitle_stroke_width_json - 0.06) < 1e-6)
     check("DYC usa fuentes gruesas", p.subtitle_font_candidates == _DYC_FONT_CANDIDATES)
-    check("transitions OFF", p.enable_transitions is False)
-    check("color grading OFF", p.enable_color_grading is False)
-    check("HSL OFF", p.enable_hsl is False)
-    check("paneos OFF", p.enable_paneos is False)
-    check("shake OFF", p.enable_camera_shake is False)
-    check("SFX OFF", p.enable_sfx is False)
+    # v1.7.0: todas las features avanzadas ACTIVADAS
+    check("transitions ON", p.enable_transitions is True)
+    check("color grading ON", p.enable_color_grading is True)
+    check("HSL ON", p.enable_hsl is True)
+    check("paneos ON", p.enable_paneos is True)
+    check("shake ON", p.enable_camera_shake is True)
+    check("SFX ON", p.enable_sfx is True)
     check("imagina OFF", p.enable_imagina_esto is False)
+    # Zoom lento DYC: 100% → 105%
+    check("zoom_end_min 1.00", abs(p.zoom_end_min - 1.00) < 1e-9)
+    check("zoom_end_max 1.10", abs(p.zoom_end_max - 1.10) < 1e-9)
+    # Paneos sutiles DYC
+    check("pan_ratio 0.5", abs(p.pan_ratio - 0.5) < 1e-9)
+    check("pan_amplitude (0.02, 0.04)", p.pan_amplitude == (0.02, 0.04))
+    # Shake DYC
+    check("shake_ratio 0.10", abs(p.shake_ratio - 0.10) < 1e-9)
+    check("shake_amplitude (0.05, 0.10)", p.shake_amplitude == (0.05, 0.10))
+    check("shake_zoom_boost 1.03", abs(p.shake_zoom_boost - 1.03) < 1e-9)
+    # Fade in 0.2s
+    check("fade_in_duration_us 200_000", p.fade_in_duration_us == 200_000)
+    # Transiciones DYC (28 con effect_ids, nombres vacíos)
+    check("transition_names 0 (usa effect_ids)", len(p.transition_names) == 0)
+    check("transition_ratio 1.0", abs(p.transition_ratio - 1.0) < 1e-9)
+    # Color grading DYC — valores None (usa materials.effects)
+    check("grading_contrast None", p.grading_contrast is None)
+    check("grading_shadows None", p.grading_shadows is None)
+    check("grading_brightness None", p.grading_brightness is None)
+    # HSL selectivo DYC — ahora en dyc_hsl_channels (hsl_channels legacy vacio)
+    check("hsl_channels vacio (legacy)", len(p.hsl_channels) == 0)
+    check("dyc_hsl_channels 2", len(p.dyc_hsl_channels) == 2)
+    check("dyc_hsl[0] Rojo type=1", p.dyc_hsl_channels[0]["hsl_color_type"] == 1)
+    check("dyc_hsl[1] Amarillo type=3", p.dyc_hsl_channels[1]["hsl_color_type"] == 3)
+    # Viñeta
+    check("vignette_intensity 0.0", abs(p.vignette_intensity - 0.0) < 1e-9)
+    # Glow en keywords
+    check("glow_keywords False", p.glow_keywords is False)
+    # Overlays
+    check("grid_overlay_enabled False", p.grid_overlay_enabled is False)
+    check("neon_text_enabled False", p.neon_text_enabled is False)
+    # Audio
+    check("bgm_volume_db -12.0", abs(p.bgm_volume_db - (-12.0)) < 1e-9)
+    check("ducking_depth_db -5.0", abs(p.ducking_depth_db - (-5.0)) < 1e-9)
+    check("ducking_active True", p.ducking_active is True)
+    # v1.7.0 — nuevos campos de assets DYC
+    check("dyc_assets_dir None (por defecto)", p.dyc_assets_dir is None)
+    check("dyc_start_animations 3 opciones", len(p.dyc_start_animations) == 3)
+    check("dyc_end_animation no nulo", p.dyc_end_animation is not None)
+    check("dyc_color_effects 7 entries", len(p.dyc_color_effects) == 7)
+    check("dyc_hsl_channels 2 entries", len(p.dyc_hsl_channels) == 2)
 
 
 def test_get_edit_profile() -> None:
@@ -185,8 +227,8 @@ def test_subtitle_profile_dyc() -> None:
 
     # Verificar fuente y stroke
     for mat in materials:
-        check("DYC: font_size=15", abs(mat["font_size"] - 15.0) < 1e-9)
-        check("DYC: border_width=0.036", abs(mat["border_width"] - 0.036) < 1e-6)
+        check("DYC: font_size=11", abs(mat["font_size"] - 11.0) < 1e-9)
+        check("DYC: border_width=0.06", abs(mat["border_width"] - 0.06) < 1e-6)
 
     # Verificar contenido: texto en MAYUSCULAS
     for mat in materials:
@@ -228,7 +270,7 @@ def test_watermark_profile_dyc() -> None:
     content = json.loads(mat["content"])
     check("DYC wm: texto DATOS Y CAFE", content["text"] == "DATOS Y CAFE")
     check("DYC wm: font_size 15", abs(mat["font_size"] - 15.0) < 1e-9)
-    check("DYC wm: global_alpha 0.5", abs(mat["global_alpha"] - 0.5) < 1e-9)
+    check("DYC wm: global_alpha 0.1", abs(mat["global_alpha"] - 0.1) < 1e-9)
     check("DYC wm: letter_spacing 0.10", abs(mat["letter_spacing"] - 0.10) < 1e-9)
 
     seg = track["segments"][0]

@@ -38,7 +38,13 @@ from pathlib import Path
 
 from src.core import capcut_canonical as canonical
 from src.core import config
-from src.core.edit_types import EditProfile, NEXUS_PARADOJA
+from src.core.edit_types import (
+    DYC_SUBTITLE_FONT,
+    DYC_SUBTITLE_FONT_PATH,
+    DYC_SUBTITLE_FONT_RESOURCE_ID,
+    EditProfile,
+    NEXUS_PARADOJA,
+)
 from src.core.timeline_builder import parse_srt
 
 log = logging.getLogger("capcutauto")
@@ -136,12 +142,85 @@ FONT_CANDIDATES = (
     Path("C:/Windows/Fonts/impact.ttf"),
 )
 
+# ---------------------------------------------------------------------------
+# v1.7.0 — Fuentes específicas por tipo de edición
+# ---------------------------------------------------------------------------
+# Watermark DYC: Staatliches-Rg (fuente de CapCut cache)
+_DYC_WATERMARK_FONT_NAME = "Staatliches-Rg"
+_DYC_WATERMARK_FONT_RESOURCE_ID = "7533526205761326353"
+_DYC_WATERMARK_FONT_HASH = "39f15441a523e1befaac4b8b9ca709dc"
+
+# Subtítulos DYC: Bungee-Rg (resource_id confirmado desde draft de referencia).
+# Los valores viven en edit_types.py (FIX 9) para tener una sola fuente de verdad.
+_DYC_SUBTITLE_FONT_HASH = "ba7ae66db1b86e6a3696c6831e3fe07e"
+_DYC_SUBTITLE_FONT_CATEGORY_ID = "favoured"
+_DYC_SUBTITLE_FONT_CATEGORY_NAME = "Favoritos"
+
+# Log de advertencia de fuente DYC: solo una vez por generación.
+_dyc_font_warned: bool = False
+
+
+def _dyc_subtitle_font_info(profile: EditProfile) -> tuple[str, str, str]:
+    """Devuelve (name, resource_id, path) para los subtítulos DYC.
+
+    Usa Bungee-Rg con el resource_id y el path reales de la caché de CapCut
+    (FIX 9). Si el perfil no trae resource_id se cae al valor confirmado en
+    edit_types.py y se avisa una sola vez."""
+    global _dyc_font_warned
+    font_name = profile.dyc_subtitle_font or DYC_SUBTITLE_FONT
+    font_rid = profile.dyc_subtitle_font_resource_id
+    if not font_rid:
+        font_rid = str(DYC_SUBTITLE_FONT_RESOURCE_ID)
+        if not _dyc_font_warned:
+            _dyc_font_warned = True
+            log.warning(
+                "%s sin resource_id en el perfil; usando el confirmado %s.",
+                font_name, font_rid,
+            )
+    return font_name, str(font_rid), DYC_SUBTITLE_FONT_PATH
+
+
+def _dyc_watermark_font_path() -> str:
+    """Ruta al font.ttf de Staatliches-Rg en la caché de CapCut del usuario."""
+    import os
+    user = os.environ.get("USERNAME", Path.home().name)
+    return (
+        f"C:/{user}/AppData/Local/CapCut/User Data/Cache/"
+        f"effect/{_DYC_WATERMARK_FONT_RESOURCE_ID}/{_DYC_WATERMARK_FONT_HASH}/font.ttf"
+    )
+
+
+def _build_font_entry(resource_id: str, font_path: str) -> dict:
+    """Construye una entrada del array `fonts[]` para un material de texto."""
+    return {
+        "id": _new_id(),
+        "resource_id": resource_id,
+        "third_resource_id": "",
+        "category_id": "preset",
+        "category_name": "Predefinidos",
+        "source_platform": 1,
+        "path": font_path,
+        "effect_id": resource_id,
+        "title": font_path.split("/")[-1].replace(".ttf", ""),
+    }
+
 
 def resolve_subtitle_font(profile: EditProfile | None = None) -> dict:
     """Resuelve la fuente de los subtitulos: montserrat/bebas/impact si estan
     en el sistema; si no, la SystemFont de CapCut (mismo que el draft 0921).
-    Devuelve {'path':..., 'name':..., 'title':...}."""
+
+    Para DYC: usa la fuente configurada en el perfil, que es
+    Bungee-Rg con resource_id y path reales de la caché de CapCut (FIX 9)."""
     p = _get_profile(profile)
+    # v1.7.0 — DYC: usar la fuente configurada en el perfil (Bungee-Rg con resource_id real)
+    if p is not NEXUS_PARADOJA and getattr(p, 'dyc_start_animations', None):
+        font_name, font_rid, font_path = _dyc_subtitle_font_info(p)
+        return {
+            "path": font_path,
+            "name": font_name,
+            "title": font_name,
+            "resource_id": font_rid,
+        }
     for cand in p.subtitle_font_candidates:
         if cand.is_file():
             return {"path": cand.as_posix(), "name": cand.stem, "title": cand.stem}
@@ -290,6 +369,7 @@ def build_text_content(
     font_path: str,
     font_size: float,
     profile: EditProfile | None = None,
+    font_id: str = "",
 ) -> str:
     """Construye el `content` JSON (string) con un estilo POR RUN de texto.
 
@@ -326,7 +406,7 @@ def build_text_content(
         styles.append({
             "range": [_utf16_at(text, start), _utf16_at(text, end)],
             "fill": {"content": {"solid": {"color": color}}, "alpha": 1.0},
-            "font": {"id": "", "path": font_path},
+            "font": {"id": font_id, "path": font_path},
             "size": font_size,
             "bold": STYLE_BOLD,
             "italic": italic_val,
@@ -363,10 +443,23 @@ def build_text_material(text: str, profile: EditProfile | None = None) -> dict:
     p = _get_profile(profile)
     font = resolve_subtitle_font(p)
     font_size = _profile_font_size(profile)
+    # v1.7.0 FIX 9 — DYC: se resuelve la fuente ANTES de construir el content
+    # para que `content.styles[].font` lleve el mismo id/path que el material.
+    dyc_font: tuple[str, str, str] | None = None
+    if p is not NEXUS_PARADOJA and getattr(p, 'dyc_start_animations', None):
+        dyc_font = _dyc_subtitle_font_info(p)
+        font = {
+            "path": dyc_font[2],
+            "name": dyc_font[0],
+            "title": dyc_font[0],
+            "resource_id": dyc_font[1],
+        }
     mat = copy.deepcopy(canonical.TEXT_MATERIAL)
     mat["id"] = _new_id()
     mat["name"] = text[:40]
-    mat["content"] = build_text_content(text, font["path"], font_size, profile)
+    mat["content"] = build_text_content(
+        text, font["path"], font_size, profile,
+        font_id=font.get("resource_id", "") or "")
     mat["text_color"] = "#FFFFFF"
     mat["text_alpha"] = 1.0
     mat["font_path"] = font["path"]
@@ -400,6 +493,24 @@ def build_text_material(text: str, profile: EditProfile | None = None) -> dict:
     mat["shadow_distance"] = SHADOW_DISTANCE
     mat["shadow_color"] = "#000000"
     mat["shadow_angle"] = -45.0
+    # v1.7.0 — DYC: Bungee-Rg con resource_id confirmado
+    if dyc_font is not None:
+        font_name, font_rid, font_path = dyc_font
+        mat["font_resource_id"] = font_rid
+        mat["fonts"] = [{
+            "id": _new_id(),
+            "resource_id": font_rid,
+            "third_resource_id": "",
+            "category_id": _DYC_SUBTITLE_FONT_CATEGORY_ID,
+            "category_name": _DYC_SUBTITLE_FONT_CATEGORY_NAME,
+            "source_platform": 1,
+            "path": font_path,
+            "effect_id": font_rid,
+            "title": font_name,
+        }] if font_rid else []
+    else:
+        mat["font_resource_id"] = ""
+        mat["fonts"] = []
     return mat
 
 
@@ -503,14 +614,15 @@ def build_subtitle_track(
 
 
 def _watermark_content(text: str, font_path: str, font_size: float,
-                       bold: bool, italic: bool) -> str:
+                       bold: bool, italic: bool,
+                       font_id: str = "") -> str:
     """Content JSON del watermark: un UNICO estilo para todo el texto, sin
     trazo ni sombra (los estilos por palabra son cosa de los subtitulos)."""
     end = _utf16_len(text)
     styles = [{
         "range": [0, end],
         "fill": {"content": {"solid": {"color": BASE_COLOR}}, "alpha": 1.0},
-        "font": {"id": "", "path": font_path},
+        "font": {"id": font_id, "path": font_path},
         "size": font_size,
         "bold": bold,
         "italic": italic,
@@ -541,23 +653,36 @@ def build_watermark_material_and_track(
     Devuelve (material, track) listos para insertar en materials["texts"] y
     content["tracks"]."""
     p = _get_profile(profile)
-    font = resolve_subtitle_font(p)
+    # v1.7.0: DYC usa Staatliches-Rg de la caché de CapCut
+    if p is not NEXUS_PARADOJA and getattr(p, 'dyc_start_animations', None):
+        font_path = _dyc_watermark_font_path()
+        font_id = _DYC_WATERMARK_FONT_RESOURCE_ID
+        font_name = _DYC_WATERMARK_FONT_NAME
+        font_title = _DYC_WATERMARK_FONT_NAME
+    else:
+        font = resolve_subtitle_font(p)
+        font_path = font["path"]
+        font_id = ""
+        font_name = font["name"]
+        font_title = font["title"]
     mat = copy.deepcopy(canonical.TEXT_MATERIAL)
     mat["id"] = _new_id()
     mat["name"] = text[:40]
-    mat["content"] = _watermark_content(text, font["path"],
+    mat["content"] = _watermark_content(text, font_path,
                                         p.watermark_font_size,
                                         p.watermark_bold,
-                                        p.watermark_italic)
+                                        p.watermark_italic,
+                                        font_id=font_id)
     mat["text_color"] = "#FFFFFF"
     # Opacidad: CapCut usa global_alpha como control principal (draft real:
     # text_alpha=1.0, global_alpha=0.1005 -> ~10%). UI% = global_alpha * 100.
     # Target 30% -> global_alpha = 0.30. text_alpha se deja en 1.0.
     mat["text_alpha"] = 1.0
     mat["global_alpha"] = p.watermark_alpha
-    mat["font_path"] = font["path"]
-    mat["font_name"] = font["name"]
-    mat["font_title"] = font["title"]
+    mat["font_path"] = font_path
+    mat["font_name"] = font_name
+    mat["font_title"] = font_title
+    mat["font_resource_id"] = font_id
     mat["font_size"] = float(p.watermark_font_size)
     mat["text_size"] = TEXT_SIZE
     # UI "2" = JSON 0.10 (escala confirmada: letter_spacing = UI * 0.05).
@@ -567,6 +692,11 @@ def build_watermark_material_and_track(
     mat["line_spacing"] = 0.02
     mat["line_max_width"] = 0.82
     mat["check_flag"] = 7
+    # fonts[]: lista de recursos tipográficos referenciados
+    if font_id:
+        mat["fonts"] = [_build_font_entry(font_id, font_path)]
+    else:
+        mat["fonts"] = []
     # Sin trazo ni sombra: se dejan los valores por defecto del canonico
     # (border_mode 0, border_color "", has_shadow False).
 

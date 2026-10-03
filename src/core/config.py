@@ -38,6 +38,8 @@ DEFAULT_USER_CONFIG = {
     "excluded_paths": "",
     # FASE v1.6.0 — tipo de edicion seleccionado por el usuario.
     "last_edit_type": "",
+    # FASE v1.7.0 — carpeta de assets para Datos Y Cafe (animaciones, audios, overlays).
+    "dyc_assets_dir": "",
 }
 
 # --- Forced alignment con CrispASR (binario + modelo espanol GGUF, Q4_K) ----

@@ -5,3 +5,17 @@ logs/
 venv/
 __pycache__/
 *.gguf
+
+*.whl
+tmp/
+*.egg-info/
+build/
+dist/
+config_user.json
+cache/
+logs/
+backups/
+.venv/
+venv/
+__pycache__/
+*.pyc

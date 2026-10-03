@@ -131,16 +131,19 @@ def main() -> None:
         sc = seg["clip"]["scale"]
         checks[f"cover img {w}x{h}"] = abs(sc["x"] - cover) < 1e-9 and abs(sc["y"] - cover) < 1e-9
         # keyframes SOBRE la escala cover: primero = cover exacto, segundo =
-        # cover * 1.10/1.15 al final (la escala nunca vuelve a 1.0 -> sin bordes).
+        # cover * zoom_mult al final (zoom_mult entre 1.10 y 1.15 para Nexus).
         ks = {k["property_type"]: k["keyframe_list"] for k in seg["common_keyframes"]}
         for axis in ("KFTypeScaleX", "KFTypeScaleY"):
             lst = ks.get(axis)
+            end_val = lst[1]["values"][0] if lst else None
+            expected_min = cover * 1.10
+            expected_max = cover * 1.15
             checks[f"keyframes {axis} img {w}x{h}"] = (
                 lst is not None
                 and lst[0]["time_offset"] == 0
                 and abs(lst[0]["values"][0] - cover) < 1e-9
                 and lst[1]["time_offset"] == seg["target_timerange"]["duration"]
-                and any(abs(lst[1]["values"][0] - cover * m) < 1e-9 for m in (1.10, 1.15))
+                and expected_min - 1e-6 <= end_val <= expected_max + 1e-6
                 and lst[1]["curveType"] == "Line")
 
     checks["duraciones proporcionales contiguas"] = all(
