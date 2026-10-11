@@ -49,6 +49,32 @@ def _new_id() -> str:
     evitar el import circular capcut_project <-> subtitles."""
     import uuid
     return uuid.uuid4().hex.upper()
+def _resolve_cloud_font_path(resource_id: str) -> str:
+    """Devuelve el path COMPLETO al font.ttf dentro de la caché
+    de CapCut para un resource_id dado, o "" si no se encuentra."""
+    if not resource_id:
+        return ""
+    base = (
+        Path.home() / "AppData" / "Local" / "CapCut"
+        / "User Data" / "Cache" / "effect" / resource_id
+    )
+    if not base.is_dir():
+        log.warning("Fuente cloud %s no encontrada en cache local.", resource_id)
+        return ""
+    hash_dirs = [
+        d for d in base.iterdir()
+        if d.is_dir() and not d.name.endswith("_tmp")
+    ]
+    if not hash_dirs:
+        log.warning("Fuente cloud %s sin subcarpeta hash.", resource_id)
+        return ""
+    ttf = hash_dirs[0] / "font.ttf"
+    if not ttf.is_file():
+        log.warning("Fuente cloud %s: no hay font.ttf.", resource_id)
+        return ""
+    return ttf.as_posix()
+
+
 
 # Palabras "fuertes" de accion/eno de la guia: se resaltan en amarillo.
 SUBTITLE_KEYWORDS = frozenset({
@@ -227,7 +253,8 @@ def resolve_subtitle_font(profile: EditProfile | None = None) -> dict:
     if getattr(p, 'subtitle_font_path', None):
         return {"path": p.subtitle_font_path, "name": p.subtitle_font_name or "", "title": p.subtitle_font_name or "", "resource_id": ""}
     if getattr(p, 'subtitle_font_resource_id', None):
-        return {"path": "", "name": p.subtitle_font_name or "", "title": p.subtitle_font_name or "", "resource_id": p.subtitle_font_resource_id}
+        rid = p.subtitle_font_resource_id
+        return {"path": _resolve_cloud_font_path(rid), "name": p.subtitle_font_name or "", "title": p.subtitle_font_name or "", "resource_id": rid}
     # v2.0.0 — DYC: usar la fuente configurada en el perfil (Bungee-Rg con resource_id real)
     if _is_dyc_profile(p) and getattr(p, 'dyc_start_animations', None):
         font_name, font_rid, font_path = _dyc_subtitle_font_info(p)
@@ -741,7 +768,7 @@ def build_watermark_material_and_track(
         font_name = p.watermark_font_name or ""
         font_title = p.watermark_font_name or ""
     elif getattr(p, 'watermark_font_resource_id', None):
-        font_path = ""
+        font_path = _resolve_cloud_font_path(p.watermark_font_resource_id)
         font_id = p.watermark_font_resource_id
         font_name = p.watermark_font_name or ""
         font_title = p.watermark_font_name or ""
