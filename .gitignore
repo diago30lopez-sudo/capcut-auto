@@ -32,3 +32,4 @@ Pillow-*.whl
 # Directorios temporales
 tmp_wheel/
 .pytest_cache/config_user.json 
+tmp_wheel/ 
