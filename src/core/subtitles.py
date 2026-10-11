@@ -211,7 +211,7 @@ def _dyc_subtitle_font_info(profile: EditProfile) -> tuple[str, str, str]:
                 "%s sin resource_id en el perfil; usando el fallback %s.",
                 font_name, font_rid,
             )
-    return font_name, str(font_rid), _DYC_SUBTITLE_FONT_PATH_FALLBACK
+    return font_name, str(font_rid), _resolve_cloud_font_path(str(font_rid))
 
 
 def _dyc_watermark_font_path() -> str:
