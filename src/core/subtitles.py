@@ -38,13 +38,7 @@ from pathlib import Path
 
 from src.core import capcut_canonical as canonical
 from src.core import config
-from src.core.edit_types import (
-    DYC_SUBTITLE_FONT,
-    DYC_SUBTITLE_FONT_PATH,
-    DYC_SUBTITLE_FONT_RESOURCE_ID,
-    EditProfile,
-    NEXUS_PARADOJA,
-)
+from src.core.profile_schema import EditProfile
 from src.core.timeline_builder import parse_srt
 
 log = logging.getLogger("capcutauto")
@@ -151,7 +145,10 @@ _DYC_WATERMARK_FONT_RESOURCE_ID = "7533526205761326353"
 _DYC_WATERMARK_FONT_HASH = "39f15441a523e1befaac4b8b9ca709dc"
 
 # Subtítulos DYC: Bungee-Rg (resource_id confirmado desde draft de referencia).
-# Los valores viven en edit_types.py (FIX 9) para tener una sola fuente de verdad.
+# Valores de fallback hardcodeados; los valores canónicos vienen del perfil.
+_DYC_SUBTITLE_FONT_FALLBACK = "Bungee-Rg"
+_DYC_SUBTITLE_FONT_RESOURCE_ID_FALLBACK = "7533527101870214401"
+_DYC_SUBTITLE_FONT_PATH_FALLBACK = ""
 _DYC_SUBTITLE_FONT_HASH = "ba7ae66db1b86e6a3696c6831e3fe07e"
 _DYC_SUBTITLE_FONT_CATEGORY_ID = "favoured"
 _DYC_SUBTITLE_FONT_CATEGORY_NAME = "Favoritos"
@@ -160,24 +157,35 @@ _DYC_SUBTITLE_FONT_CATEGORY_NAME = "Favoritos"
 _dyc_font_warned: bool = False
 
 
+def _is_dyc_profile(profile: EditProfile | None) -> bool:
+    """Devuelve True si el perfil es Datos Y Cafe (o equivale DYC)."""
+    if profile is None:
+        return False
+    # v2.0.0: priorizar profile_id, con fallback al nombre
+    pid = getattr(profile, 'profile_id', None)
+    if pid is not None:
+        return str(pid).lower() == 'datos_y_cafe'
+    return getattr(profile, 'name', '') == 'Datos Y Cafe'
+
+
 def _dyc_subtitle_font_info(profile: EditProfile) -> tuple[str, str, str]:
     """Devuelve (name, resource_id, path) para los subtítulos DYC.
 
     Usa Bungee-Rg con el resource_id y el path reales de la caché de CapCut
-    (FIX 9). Si el perfil no trae resource_id se cae al valor confirmado en
-    edit_types.py y se avisa una sola vez."""
+    (FIX 9). Si el perfil no trae resource_id se cae al valor de fallback
+    hardcodeado y se avisa una sola vez."""
     global _dyc_font_warned
-    font_name = profile.dyc_subtitle_font or DYC_SUBTITLE_FONT
+    font_name = profile.dyc_subtitle_font or _DYC_SUBTITLE_FONT_FALLBACK
     font_rid = profile.dyc_subtitle_font_resource_id
     if not font_rid:
-        font_rid = str(DYC_SUBTITLE_FONT_RESOURCE_ID)
+        font_rid = _DYC_SUBTITLE_FONT_RESOURCE_ID_FALLBACK
         if not _dyc_font_warned:
             _dyc_font_warned = True
             log.warning(
-                "%s sin resource_id en el perfil; usando el confirmado %s.",
+                "%s sin resource_id en el perfil; usando el fallback %s.",
                 font_name, font_rid,
             )
-    return font_name, str(font_rid), DYC_SUBTITLE_FONT_PATH
+    return font_name, str(font_rid), _DYC_SUBTITLE_FONT_PATH_FALLBACK
 
 
 def _dyc_watermark_font_path() -> str:
@@ -210,10 +218,18 @@ def resolve_subtitle_font(profile: EditProfile | None = None) -> dict:
     en el sistema; si no, la SystemFont de CapCut (mismo que el draft 0921).
 
     Para DYC: usa la fuente configurada en el perfil, que es
-    Bungee-Rg con resource_id y path reales de la caché de CapCut (FIX 9)."""
+    Bungee-Rg con resource_id y path reales de la caché de CapCut (FIX 9).
+
+    v2.0.0: Priorizar los campos subtitle_font_path / subtitle_font_resource_id
+    del perfil; si existen, se usan directamente."""
     p = _get_profile(profile)
-    # v1.7.0 — DYC: usar la fuente configurada en el perfil (Bungee-Rg con resource_id real)
-    if p is not NEXUS_PARADOJA and getattr(p, 'dyc_start_animations', None):
+    # v2.0.0: fuente explicita en el JSON del perfil
+    if getattr(p, 'subtitle_font_path', None):
+        return {"path": p.subtitle_font_path, "name": p.subtitle_font_name or "", "title": p.subtitle_font_name or "", "resource_id": ""}
+    if getattr(p, 'subtitle_font_resource_id', None):
+        return {"path": "", "name": p.subtitle_font_name or "", "title": p.subtitle_font_name or "", "resource_id": p.subtitle_font_resource_id}
+    # v2.0.0 — DYC: usar la fuente configurada en el perfil (Bungee-Rg con resource_id real)
+    if _is_dyc_profile(p) and getattr(p, 'dyc_start_animations', None):
         font_name, font_rid, font_path = _dyc_subtitle_font_info(p)
         return {
             "path": font_path,
@@ -316,50 +332,115 @@ def split_into_fragments(text: str) -> list[list[str]]:
 
 
 def _get_profile(profile: EditProfile | None) -> EditProfile:
-    """Devuelve el perfil de edicion; si es None usa Nexus Paradoja por defecto."""
+    """Devuelve el perfil de edicion; si es None usa un perfil por defecto."""
     if profile is not None:
         return profile
-    return NEXUS_PARADOJA
+    # Perfil por defecto: Nexus Paradoja (profile_id="nexus_paradoja")
+    return EditProfile(
+        name="Nexus Paradoja",
+        profile_id="nexus_paradoja",
+        watermark_text="NEXUS PARADOJA",
+        watermark_font_size=8.0,
+        watermark_alpha=0.15,
+        watermark_pos_x_json=-1098 / 1920,
+        watermark_pos_y_json=896 / 1080,
+        watermark_bold=True,
+        watermark_italic=True,
+        watermark_letter_spacing_json=0.10,
+        subtitle_font_candidates=(),
+        subtitle_font_size=12.0,
+        subtitle_color=[1.0, 1.0, 1.0],
+        subtitle_keyword_color=[1.0, 0.8431373, 0.0],
+        subtitle_stroke_width_json=0.06,
+        subtitle_pos_y_json=-900 / 1080,
+        subtitle_popup=True,
+        subtitle_uppercase=True,
+        subtitle_max_words_per_line=5,
+        subtitle_keywords=frozenset({
+            "ataque", "ataca", "golpe", "explos", "bomba", "peligro", "muerte",
+            "poder", "poderosa", "invencible", "imposible", "traicion", "secreto",
+            "revel", "final", "nunca", "siempre", "guerra", "venganza", "heroe",
+            "villano", "salvar", "sacrificio", "memoria", "renacer", "renace",
+        }),
+        enable_transitions=True,
+        enable_color_grading=True,
+        enable_hsl=True,
+        enable_paneos=True,
+        enable_camera_shake=True,
+        enable_sfx=True,
+        enable_imagina_esto=True,
+        zoom_end_min=1.10,
+        zoom_end_max=1.15,
+        pan_ratio=0.6,
+        pan_amplitude=(0.04, 0.08),
+        shake_ratio=1.0,
+        shake_amplitude=(0.010, 0.020),
+        shake_zoom_boost=1.06,
+        fade_in_duration_us=0,
+        transition_names=(),
+        transition_ratio=0.98,
+        grading_contrast=None,
+        grading_shadows=None,
+        grading_brightness=None,
+        hsl_channels=[],
+        vignette_intensity=0.215,
+        glow_keywords=False,
+        grid_overlay_enabled=False,
+        grid_overlay_keywords=(),
+        neon_text_enabled=False,
+        sfx_dir=None,
+        bgm_dir=None,
+        bgm_volume_db=-20.0,
+        ducking_depth_db=-8.0,
+        ducking_active=False,
+        dyc_assets_dir=None,
+        dyc_start_animations=(),
+        dyc_end_animation=None,
+        dyc_color_effects=(),
+        dyc_hsl_channels=(),
+        dyc_subtitle_font="Montserrat",
+        dyc_subtitle_font_resource_id=None,
+    )
 
 
 def _profile_subtitle_y(profile: EditProfile | None) -> float:
     p = _get_profile(profile)
-    if p is NEXUS_PARADOJA:
+    if not _is_dyc_profile(p):
         return float(config.SUBTITLE_POS_Y_JSON)
     return p.subtitle_pos_y_json
 
 
 def _profile_font_size(profile: EditProfile | None) -> float:
     p = _get_profile(profile)
-    if p is NEXUS_PARADOJA:
+    if not _is_dyc_profile(p):
         return float(FONT_SIZE)
     return p.subtitle_font_size
 
 
 def _profile_keyword_color(profile: EditProfile | None) -> list[float]:
     p = _get_profile(profile)
-    if p is NEXUS_PARADOJA:
+    if not _is_dyc_profile(p):
         return list(KEYWORD_COLOR)
     return list(p.subtitle_keyword_color)
 
 
 def _profile_keywords(profile: EditProfile | None) -> frozenset[str]:
     p = _get_profile(profile)
-    if p is NEXUS_PARADOJA:
+    if not _is_dyc_profile(p):
         return SUBTITLE_KEYWORDS
     return p.subtitle_keywords
 
 
 def _profile_stroke_width(profile: EditProfile | None) -> float:
     p = _get_profile(profile)
-    if p is NEXUS_PARADOJA:
+    if not _is_dyc_profile(p):
         return float(config.SUBTITLE_STROKE_WIDTH_JSON)
     return p.subtitle_stroke_width_json
 
 
 def _profile_italic(profile: EditProfile | None) -> bool:
     p = _get_profile(profile)
-    if p is NEXUS_PARADOJA:
+    if not _is_dyc_profile(p):
         return STYLE_ITALIC
     return p.watermark_italic  # DYC usa watermark_italic=False por defecto
 
@@ -446,7 +527,7 @@ def build_text_material(text: str, profile: EditProfile | None = None) -> dict:
     # v1.7.0 FIX 9 — DYC: se resuelve la fuente ANTES de construir el content
     # para que `content.styles[].font` lleve el mismo id/path que el material.
     dyc_font: tuple[str, str, str] | None = None
-    if p is not NEXUS_PARADOJA and getattr(p, 'dyc_start_animations', None):
+    if _is_dyc_profile(p) and getattr(p, 'dyc_start_animations', None):
         dyc_font = _dyc_subtitle_font_info(p)
         font = {
             "path": dyc_font[2],
@@ -653,8 +734,19 @@ def build_watermark_material_and_track(
     Devuelve (material, track) listos para insertar en materials["texts"] y
     content["tracks"]."""
     p = _get_profile(profile)
+    # v2.0.0: usar los campos explicitos del perfil para la fuente del watermark
+    if getattr(p, 'watermark_font_path', None):
+        font_path = p.watermark_font_path
+        font_id = ""
+        font_name = p.watermark_font_name or ""
+        font_title = p.watermark_font_name or ""
+    elif getattr(p, 'watermark_font_resource_id', None):
+        font_path = ""
+        font_id = p.watermark_font_resource_id
+        font_name = p.watermark_font_name or ""
+        font_title = p.watermark_font_name or ""
     # v1.7.0: DYC usa Staatliches-Rg de la caché de CapCut
-    if p is not NEXUS_PARADOJA and getattr(p, 'dyc_start_animations', None):
+    elif _is_dyc_profile(p) and getattr(p, 'dyc_start_animations', None):
         font_path = _dyc_watermark_font_path()
         font_id = _DYC_WATERMARK_FONT_RESOURCE_ID
         font_name = _DYC_WATERMARK_FONT_NAME

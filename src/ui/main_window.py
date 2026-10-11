@@ -1,36 +1,12 @@
-"""Ventana principal de CapCut Auto con CustomTkinter.
-
-3 secciones + subtítulos + cancelacion + persistencia:
-
-1. Carpeta CapCut Drafts: se guarda en config_user.json y rellena el combo de
-   plantillas detectadas (subcarpetas con draft_content.json + draft_meta_info.json).
-2. Carpeta del video: escaneo inteligente (src.core.auto_detect) y resumen
-   con estado ✓/✗ de audio, escenas e imagenes.
-3. Subtítulos (.srt): selector que escanea la carpeta del video en busca de
-   archivos .srt; cada cue se divide en fragmentos de 2-5 palabras con timing
-   proporcional (TAREA 2) durante la generacion.
-4. Nombre del nuevo proyecto.
-
-Al terminar la generacion con exito se muestra un cartel verde modal
-(#28a745) con "COMPLETADO" y boton "✕" para cerrarlo; se abre con after()
-para no bloquear el main thread.
-
-Todo el procesamiento corre en un threading.Thread; los logs llegan por una
-cola (QueueHandler) y la UI los consume con after(). El boton Cancelar setea
-un threading.Event compartido con el hilo de trabajo.
-"""
-
+"""Ventana principal de CapCut Auto con CustomTkinter.UI con 7 campos + barra de perfiles arriba. Todo el procesamientocorre en un threading.Thread; los logs llegan por una cola (QueueHandler)y la UI los consume con after(). El botón Cancelar setea unthreading.Event compartido con el hilo de trabajo."""
 from __future__ import annotations
-
 import logging
 import queue
 import threading
 import traceback
 from pathlib import Path
 from tkinter import filedialog, messagebox
-
 import customtkinter as ctk
-
 from src.core import config
 from src.core.auto_detect import (
     DetectionResult, detect_video_inputs, find_capcut_templates, detect_audios,
@@ -38,14 +14,12 @@ from src.core.auto_detect import (
 from src.core.bootstrap import ensure_dependencies
 from src.core.capcut_project import CapCutProject
 from src.core.config import load_user_config, save_user_config
-from src.core.edit_types import get_edit_profile, get_edit_type_names
+from src.core.profile_loader import load_profiles, get_profile, get_profile_names
 from src.core.scene_parser import parse_scenes
 from src.core.timeline_builder import GenerationCancelled, build_timeline, parse_srt
-from src.core.transcriber import align_audio_to_text
+from src.core.transcriber import transcribe_audio_free, align_audio_to_text
 from src.utils.logger import drain_queue, setup_logging
-
 log = logging.getLogger("capcutauto")
-
 ACCENT = "#2563eb"
 ACCENT_HOVER = "#1d4ed8"
 BG = "#121212"
@@ -55,15 +29,10 @@ MUTED = "#9ca3af"
 GREEN = "#4ade80"
 RED = "#ff6b6b"
 AMBER = "#ffd54f"
-SUCCESS = "#28a745"  # cartel de completado (TAREA 1)
-
+SUCCESS = "#28a745"
 NO_TEMPLATES = "— sin plantillas —"
 NO_SRT = "— sin subtítulos (.srt) —"
-
-# Punto 1: tipos de edición disponibles; el nombre por defecto cambia según el
-# tipo seleccionado.
-EDIT_TYPES = get_edit_type_names()
-
+EDIT_TYPES = []
 LOG_TAGS = {
     "INFO": "#4fc3f7",
     "WARNING": "#ffd54f",
@@ -71,8 +40,6 @@ LOG_TAGS = {
     "CRITICAL": "#ff3b3b",
     "OK": "#4ade80",
 }
-
-
 class MainWindow(ctk.CTk):
     def __init__(self, log_queue: queue.Queue):
         super().__init__(fg_color=BG)
@@ -82,40 +49,38 @@ class MainWindow(ctk.CTk):
         self._running = False
         self._job_succeeded = False
         self._success_modal: ctk.CTkToplevel | None = None
-
         self._user_config = load_user_config()
         self._drafts_dir: Path | None = None
         self._template_name: str = ""
         self._video_dir: Path | None = None
         self._detection: DetectionResult | None = None
-        self._srt_dir: Path | None = None  # carpeta donde esta el .srt elegido
-        self._srt_name: str = ""           # nombre del .srt elegido
-        self._audio_guion: Path | None = None  # audio guion seleccionado
-        self._audio_otros: list[Path] = []     # otros audios detectados
-        # v1.7.0: exclusiones de escaneo
+        self._srt_dir: Path | None = None
+        self._srt_name: str = ""
+        self._audio_guion: Path | None = None
+        self._audio_otros: list[Path] = []
         self._excluded_paths: list[Path] = []
         self._exclusion_labels: list[ctk.CTkLabel] = []
-        # v1.6.0: tipo de edicion seleccionado
-        self._edit_type: str = self._user_config.get("last_edit_type", EDIT_TYPES[0]) or EDIT_TYPES[0]
-        # v1.7.0: carpeta de assets para Datos Y Cafe
+        self._profiles: dict[str, dict] = {}
+        self._profile_id: str = self._user_config.get("last_profile_name", "") or ""
+        self._profile_name: str = ""
+        self._profiles_dir: Path = Path(config.profiles_dir())
+        saved_pd = self._user_config.get("profiles_dir", "")
+        if saved_pd and Path(saved_pd).is_dir():
+            self._profiles_dir = Path(saved_pd)
+        self._assets_frame: ctk.CTkFrame | None = None
         self._dyc_assets_dir: Path | None = None
         saved_dyc = self._user_config.get("dyc_assets_dir", "")
         if saved_dyc and Path(saved_dyc).is_dir():
             self._dyc_assets_dir = Path(saved_dyc)
-        # v1.6.0 fix: bandera para no pisar nombre cuando el usuario escribio manualmente
-        self._name_edited_by_user: bool = False
-
+        self._name_edited_by_user: dict[str, bool] = {}
         self.title("CapCut Auto")
         self.configure(fg_color=BG)
         self._center(920, 780)
         ctk.set_appearance_mode("dark")
-
         self._build_ui()
         self.after(100, self._poll_queue)
         self.after(200, self._restore_session)
         self.after(300, self._load_exclusions_from_config)
-
-    # ------------------------------------------------------------------ UI
     def _center(self, w: int, h: int) -> None:
         self.geometry(f"{w}x{h}")
         self.update_idletasks()
@@ -123,15 +88,12 @@ class MainWindow(ctk.CTk):
         y = (self.winfo_screenheight() - h) // 2
         self.geometry(f"{w}x{h}+{x}+{y}")
         self.minsize(880, 680)
-
     def _build_ui(self) -> None:
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(2, weight=1)
-
         header = ctk.CTkFrame(self, fg_color=BG)
         header.grid(row=0, column=0, sticky="ew", padx=24, pady=(16, 2))
-        header.grid_columnconfigure(0, weight=1)
-
+        header.grid_columnconfigure(1, weight=1)
         ctk.CTkLabel(
             header, text="CapCut Auto",
             font=ctk.CTkFont(size=24, weight="bold"), text_color=TEXT,
@@ -141,32 +103,40 @@ class MainWindow(ctk.CTk):
             text="Genera un proyecto de CapCut con imágenes sincronizadas al audio",
             font=ctk.CTkFont(size=12), text_color=MUTED,
         ).grid(row=1, column=0, sticky="w", pady=(0, 4))
-
-        # Split pane (dos columnas) usando CTkPanedWindow o CTkFrame con dos columnas
+        self._profiles_dir_label = ctk.CTkLabel(
+            header, text=str(self._profiles_dir),
+            font=ctk.CTkFont(size=11), text_color=MUTED, anchor="e",
+        )
+        self._profiles_dir_label.grid(row=0, column=1, sticky="ew", padx=(16, 0), pady=(8, 0))
+        ctk.CTkButton(
+            header, text="📁", width=36, height=28, corner_radius=6,
+            fg_color="#334155", hover_color="#475569",
+            command=self._browse_profiles_dir,
+        ).grid(row=0, column=2, sticky="e", padx=(4, 0), pady=(8, 0))
+        ctk.CTkButton(
+            header, text="🔄", width=36, height=28, corner_radius=6,
+            fg_color="#334155", hover_color="#475569",
+            command=self._reload_profiles,
+        ).grid(row=0, column=3, sticky="e", padx=(4, 0), pady=(8, 0))
         splitter = ctk.CTkFrame(self, fg_color=BG)
         splitter.grid(row=2, column=0, sticky="nsew", padx=24, pady=(2, 16))
         splitter.grid_columnconfigure(0, weight=3)
         splitter.grid_columnconfigure(1, weight=4)
         splitter.grid_rowconfigure(0, weight=1)
-
-        # Panel izquierdo con Scrollbar general para todos los controles
         left_outer = ctk.CTkScrollableFrame(splitter, fg_color=BG, corner_radius=0)
         left_outer.grid(row=0, column=0, sticky="nsew", padx=(0, 8), pady=0)
         left_outer.grid_columnconfigure(0, weight=1)
-
         self._build_section1_drafts(left_outer, row=0)
         self._build_section2_video(left_outer, row=1)
-        self._build_section_subtitles(left_outer, row=2)
-        self._build_section_audio(left_outer, row=3)
-        self._build_section_edit_type(left_outer, row=4)
-        self._build_section3_name(left_outer, row=5)
-
-        # Botones y barra de progreso en el panel izquierdo al final
+        self._build_section3_profile(left_outer, row=2)
+        self._build_section_subtitles(left_outer, row=3)
+        self._build_section5_assets(left_outer, row=4)
+        self._build_section_audio(left_outer, row=5)
+        self._build_section7_name(left_outer, row=6)
         buttons_frame = ctk.CTkFrame(left_outer, fg_color=BG)
-        buttons_frame.grid(row=7, column=0, sticky="ew", padx=0, pady=(10, 4))
+        buttons_frame.grid(row=8, column=0, sticky="ew", padx=0, pady=(10, 4))
         buttons_frame.grid_columnconfigure(0, weight=1)
         buttons_frame.grid_columnconfigure(1, weight=1)
-
         self.generate_btn = ctk.CTkButton(
             buttons_frame, text="Generar proyecto", height=42, corner_radius=10,
             font=ctk.CTkFont(size=15, weight="bold"),
@@ -174,7 +144,6 @@ class MainWindow(ctk.CTk):
             command=self._on_generate, state="disabled",
         )
         self.generate_btn.grid(row=0, column=0, sticky="ew", padx=(0, 6))
-
         self.cancel_btn = ctk.CTkButton(
             buttons_frame, text="Cancelar", height=42, corner_radius=10,
             font=ctk.CTkFont(size=15, weight="bold"),
@@ -182,21 +151,16 @@ class MainWindow(ctk.CTk):
             command=self._on_cancel, state="disabled",
         )
         self.cancel_btn.grid(row=0, column=1, sticky="ew", padx=(6, 0))
-
-        # Barra de progreso (indeterminada, sin label de porcentaje)
         self.progress = ctk.CTkProgressBar(
             left_outer, mode="indeterminate", height=8,
             progress_color=ACCENT, fg_color="#2a2a2a",
         )
-        self.progress.grid(row=8, column=0, sticky="ew", padx=0, pady=(6, 12))
+        self.progress.grid(row=9, column=0, sticky="ew", padx=0, pady=(6, 12))
         self.progress.set(0)
-
-        # Panel derecho: única y exclusivamente el área de texto de logs
         right_panel = ctk.CTkFrame(splitter, fg_color=PANEL, corner_radius=10)
         right_panel.grid(row=0, column=1, sticky="nsew", padx=(8, 0), pady=0)
         right_panel.grid_columnconfigure(0, weight=1)
         right_panel.grid_rowconfigure(0, weight=1)
-
         self.log_box = ctk.CTkTextbox(
             right_panel, fg_color="#101010", text_color=TEXT,
             font=ctk.CTkFont(family="Consolas", size=12), wrap="word",
@@ -205,54 +169,43 @@ class MainWindow(ctk.CTk):
         self.log_box.configure(state="disabled")
         for tag, color in LOG_TAGS.items():
             self.log_box.tag_config(tag, foreground=color)
-
     def _section_title(self, parent, text: str) -> ctk.CTkLabel:
         return ctk.CTkLabel(
             parent, text=text, font=ctk.CTkFont(size=13, weight="bold"),
             text_color=TEXT,
         )
-
     def _resolve_audio_path(self, display_name: str) -> Path | None:
-        """Resolve a display name from the audio dropdown to an absolute Path.
-        Returns None if the name is empty, placeholder, or no matching file."""
         if not display_name or display_name == "— sin detectar —":
             return None
         if not self._video_dir:
             return None
         val_lower = display_name.lower()
-        # First try exact match (case-insensitive) on name
         for p in self._video_dir.rglob("*"):
             if p.is_file() and p.suffix.lower() in config.AUDIO_EXTENSIONS:
                 if p.name.lower() == val_lower or p.stem.lower() == Path(display_name).stem.lower():
                     return p.resolve()
         return None
-
     def _build_section1_drafts(self, parent, row: int) -> None:
         panel = ctk.CTkFrame(parent, fg_color=PANEL, corner_radius=10)
         panel.grid(row=row, column=0, sticky="ew", padx=0, pady=6)
         panel.grid_columnconfigure(1, weight=1)
-
-        self._section_title(panel, "1 · Carpeta CapCut Drafts").grid(
+        self._section_title(panel, "1 · Draft / Plantilla").grid(
             row=0, column=0, columnspan=3, sticky="w", padx=12, pady=(8, 4))
-
         ctk.CTkButton(
             panel, text="Seleccionar carpeta…", width=150, height=30,
             corner_radius=8, fg_color=ACCENT, hover_color=ACCENT_HOVER,
             command=self._browse_drafts,
         ).grid(row=1, column=0, sticky="w", padx=12, pady=(0, 4))
-
         self._drafts_path_label = ctk.CTkLabel(
             panel, text="Sin seleccionar", font=ctk.CTkFont(size=12),
             text_color=MUTED, anchor="w", justify="left",
         )
         self._drafts_path_label.grid(row=1, column=1, sticky="ew", padx=8, pady=(0, 4))
-
         ctk.CTkButton(
             panel, text="Cambiar…", width=80, height=26, corner_radius=8,
             fg_color="#334155", hover_color="#475569",
             command=self._browse_drafts,
         ).grid(row=1, column=2, sticky="e", padx=12, pady=(0, 4))
-
         self._template_var = ctk.StringVar(value=NO_TEMPLATES)
         self._template_menu = ctk.CTkOptionMenu(
             panel, values=[NO_TEMPLATES], variable=self._template_var,
@@ -263,27 +216,22 @@ class MainWindow(ctk.CTk):
         )
         self._template_menu.grid(
             row=2, column=0, columnspan=3, sticky="ew", padx=12, pady=(0, 10))
-
     def _build_section2_video(self, parent, row: int) -> None:
         panel = ctk.CTkFrame(parent, fg_color=PANEL, corner_radius=10)
         panel.grid(row=row, column=0, sticky="ew", padx=0, pady=6)
         panel.grid_columnconfigure(1, weight=1)
-
-        self._section_title(panel, "2 · Carpeta del video").grid(
+        self._section_title(panel, "2 · Carpeta del Video").grid(
             row=0, column=0, columnspan=2, sticky="w", padx=12, pady=(8, 4))
-
         ctk.CTkButton(
             panel, text="Seleccionar carpeta…", width=150, height=30,
             corner_radius=8, fg_color=ACCENT, hover_color=ACCENT_HOVER,
             command=self._browse_video,
         ).grid(row=1, column=0, sticky="w", padx=12, pady=(0, 6))
-
         self._video_path_label = ctk.CTkLabel(
             panel, text="Sin seleccionar", font=ctk.CTkFont(size=12),
             text_color=MUTED, anchor="w", justify="left",
         )
         self._video_path_label.grid(row=1, column=1, sticky="ew", padx=8, pady=(0, 6))
-
         self._audio_status = self._status_label(panel, 2, "Audio")
         self._scene_status = self._status_label(panel, 3, "Escenas")
         self._img_status = self._status_label(panel, 4, "Imágenes")
@@ -293,20 +241,16 @@ class MainWindow(ctk.CTk):
         )
         self._status_footer.grid(
             row=5, column=0, columnspan=2, sticky="ew", padx=12, pady=(0, 10))
-
-        # Bloque "Excluir del escaneo"
         ctk.CTkLabel(
             panel, text="Excluir del escaneo:",
             font=ctk.CTkFont(size=12, weight="bold"), text_color=TEXT,
         ).grid(row=6, column=0, sticky="w", padx=12, pady=(4, 2))
-
         self._add_exclusion_btn = ctk.CTkButton(
             panel, text="Añadir exclusión... ▾", width=180, height=28,
             corner_radius=8, fg_color="#334155", hover_color="#475569",
             command=self._show_add_exclusion_menu,
         )
         self._add_exclusion_btn.grid(row=7, column=0, sticky="w", padx=12, pady=(0, 2))
-
         self._exclusion_list_frame = ctk.CTkFrame(
             panel, fg_color="#1a1a1a", corner_radius=6, height=80)
         self._exclusion_list_frame.grid(
@@ -319,35 +263,28 @@ class MainWindow(ctk.CTk):
         self._exclusion_scroll.grid_columnconfigure(0, weight=1)
         self._exclusion_scroll.grid_rowconfigure(0, weight=1)
         self._exclusion_widgets: list[ctk.CTkLabel] = []
-
-        # Placeholder inicial
         self._exclusion_placeholder = ctk.CTkLabel(
             self._exclusion_scroll, text="Sin exclusiones",
             font=ctk.CTkFont(size=11), text_color=MUTED, anchor="w",
         )
         self._exclusion_placeholder.grid(row=0, column=0, sticky="w", padx=4, pady=2)
-
     def _build_section_subtitles(self, parent, row: int) -> None:
         panel = ctk.CTkFrame(parent, fg_color=PANEL, corner_radius=10)
         panel.grid(row=row, column=0, sticky="ew", padx=0, pady=6)
         panel.grid_columnconfigure(1, weight=1)
-
-        self._section_title(panel, "3 · Subtítulos (.srt)").grid(
+        self._section_title(panel, "4 · Subtítulos (.srt)").grid(
             row=0, column=0, columnspan=3, sticky="w", padx=12, pady=(8, 4))
-
         ctk.CTkButton(
             panel, text="Buscar .srt…", width=150, height=30,
             corner_radius=8, fg_color=ACCENT, hover_color=ACCENT_HOVER,
             command=self._browse_srt,
         ).grid(row=1, column=0, sticky="w", padx=12, pady=(0, 4))
-
         self._srt_path_label = ctk.CTkLabel(
             panel, text=NO_SRT, font=ctk.CTkFont(size=12),
             text_color=MUTED, anchor="w", justify="left",
         )
         self._srt_path_label.grid(row=1, column=1, sticky="ew", padx=8, pady=(0, 4))
         self._srt_path_label.bind("<Button-1>", lambda _e: self._browse_srt())
-
         self._srt_var = ctk.StringVar(value=NO_SRT)
         self._srt_menu = ctk.CTkOptionMenu(
             panel, values=[NO_SRT], variable=self._srt_var,
@@ -357,27 +294,22 @@ class MainWindow(ctk.CTk):
             command=self._on_srt_changed,
         )
         self._srt_menu.grid(row=2, column=0, columnspan=3, sticky="ew", padx=12, pady=(0, 4))
-
         self._srt_footer = ctk.CTkLabel(
             panel, text="Los subtítulos se dividen en fragmentos de 2-5 palabras.",
             font=ctk.CTkFont(size=11), text_color=MUTED,
             anchor="w", justify="left",
         )
         self._srt_footer.grid(row=3, column=0, columnspan=3, sticky="ew", padx=12, pady=(0, 10))
-
     def _build_section_audio(self, parent, row: int) -> None:
         panel = ctk.CTkFrame(parent, fg_color=PANEL, corner_radius=10)
         panel.grid(row=row, column=0, sticky="ew", padx=0, pady=6)
         panel.grid_columnconfigure(1, weight=1)
-
-        self._section_title(panel, "4 · Audios del proyecto").grid(
+        self._section_title(panel, "6 · Audio del proyecto").grid(
             row=0, column=0, columnspan=2, sticky="w", padx=12, pady=(8, 4))
-
         ctk.CTkLabel(
             panel, text="Audio guion (narración principal):",
             font=ctk.CTkFont(size=12), text_color=TEXT,
         ).grid(row=1, column=0, columnspan=2, sticky="w", padx=12, pady=(0, 4))
-
         self._audio_guion_var = ctk.StringVar(value="— sin detectar —")
         self._audio_guion_menu = ctk.CTkOptionMenu(
             panel, values=["— sin detectar —"], variable=self._audio_guion_var,
@@ -387,7 +319,6 @@ class MainWindow(ctk.CTk):
             command=self._on_audio_guion_changed,
         )
         self._audio_guion_menu.grid(row=2, column=0, columnspan=2, sticky="ew", padx=12, pady=(0, 6))
-
     def _restore_session(self) -> None:
         drafts = self._user_config.get("capcut_drafts_dir", "")
         if drafts:
@@ -401,10 +332,11 @@ class MainWindow(ctk.CTk):
             srt = Path(srt_dir) / srt_name
             if srt.is_file():
                 self._apply_srt_dir(srt, persist=False)
+        self._profiles_dir = Path(self._user_config.get("profiles_dir", str(config.profiles_dir())))
+        self._profiles_dir_label.configure(text=str(self._profiles_dir), text_color=TEXT)
+        self._load_profiles_ui()
         self._update_ui_state()
-
     def _load_exclusions_from_config(self) -> None:
-        """Carga exclusiones desde config al arrancar."""
         from src.core.auto_detect import _load_excluded_paths as _load_exc
         raw = _load_exc()
         valid: list[Path] = []
@@ -413,10 +345,8 @@ class MainWindow(ctk.CTk):
                 valid.append(p)
         self._excluded_paths = valid
         self._render_exclusion_list()
-
     @staticmethod
     def _is_excluded_ui(path: Path, excluded: list[Path]) -> bool:
-        """Verifica si un path está excluido (versión UI)."""
         import os
         if not excluded:
             return False
@@ -428,67 +358,119 @@ class MainWindow(ctk.CTk):
             if norm_path.startswith(norm_exc + os.sep):
                 return True
         return False
-
-    def _build_section_edit_type(self, parent, row: int) -> None:
+    def _build_section3_profile(self, parent, row: int) -> None:
         panel = ctk.CTkFrame(parent, fg_color=PANEL, corner_radius=10)
         panel.grid(row=row, column=0, sticky="ew", padx=0, pady=6)
         panel.grid_columnconfigure(0, weight=1)
-
-        self._section_title(panel, "5 · Tipo de edición").grid(
+        self._section_title(panel, "3 · Perfil de edición").grid(
             row=0, column=0, sticky="w", padx=12, pady=(8, 4))
-
-        self._edit_type_var = ctk.StringVar(value=self._edit_type)
-        self._edit_type_menu = ctk.CTkOptionMenu(
-            panel, values=list(EDIT_TYPES), variable=self._edit_type_var,
+        self._profile_var = ctk.StringVar(value="")
+        self._profile_menu = ctk.CTkOptionMenu(
+            panel, values=[], variable=self._profile_var,
             height=32, corner_radius=8,
             fg_color="#2a2a2a", button_color=ACCENT, button_hover_color=ACCENT_HOVER,
-            command=self._on_edit_type_changed,
+            command=self._on_profile_changed,
         )
-        self._edit_type_menu.grid(row=1, column=0, sticky="ew", padx=12, pady=(0, 10))
+        self._profile_menu.grid(row=1, column=0, sticky="ew", padx=12, pady=(0, 10))
+        self._load_profiles_ui()
+    def _load_profiles_ui(self) -> None:
+        from src.core.profile_loader import load_profiles, get_profile_names
+        try:
+            self._profiles = load_profiles(self._profiles_dir)
+        except Exception as exc:
+            log.warning("Error cargando perfiles: %s", exc)
+            self._profiles = {}
+        names = get_profile_names(self._profiles)
+        if not names:
+            log.warning("No se encontraron perfiles en %s. Añade archivos .json o cambia la carpeta.", self._profiles_dir)
+        self._profile_menu.configure(values=names, state="normal" if names else "disabled")
+        saved_id = self._user_config.get("last_profile_name", "")
+        selected_name = ""
+        for pid, data in self._profiles.items():
+            meta = data.get("meta", {})
+            if meta.get("id") == saved_id or pid == saved_id:
+                selected_name = meta.get("name", pid)
+                break
+        if selected_name and selected_name in names:
+            self._profile_var.set(selected_name)
+            self._profile_id = saved_id
+            self._profile_name = selected_name
+        else:
+            default_name = "Nexus Paradoja"
+            if default_name in names:
+                self._profile_var.set(default_name)
+                for pid, data in self._profiles.items():
+                    if data.get("meta", {}).get("name") == default_name:
+                        self._profile_id = pid
+                        self._profile_name = default_name
+                        break
+            elif names:
+                self._profile_var.set(names[0])
+                self._profile_id = next(iter(self._profiles.keys()))
+                self._profile_name = names[0]
+        self._update_assets_visibility()
+    def _reload_profiles(self) -> None:
+        self._load_profiles_ui()
+        log.info("Perfiles recargados desde %s", self._profiles_dir)
+    def _browse_profiles_dir(self) -> None:
+        initial = str(self._profiles_dir)
+        path = filedialog.askdirectory(initialdir=initial)
+        if not path:
+            return
+        p = Path(path)
+        if not p.is_dir():
+            messagebox.showerror("CapCut Auto", f"La carpeta '{path}' no existe.")
+            return
+        self._profiles_dir = p.resolve()
+        self._profiles_dir_label.configure(text=str(self._profiles_dir), text_color=TEXT)
+        self._user_config["profiles_dir"] = str(self._profiles_dir)
+        self._save_user_config()
+        self._load_profiles_ui()
+        log.info("Carpeta de perfiles cambiada a: %s", self._profiles_dir)
+    def _update_assets_visibility(self) -> None:
+        pass
+    def _on_profile_changed(self, value: str) -> None:
+        for pid, data in self._profiles.items():
+            meta = data.get("meta", {})
+            if meta.get("name") == value or pid == value:
+                self._profile_id = pid
+                self._profile_name = value
+                break
+        self._user_config["last_profile_name"] = self._profile_id
+        self._save_user_config()
+        log.info("Perfil cambiado a: %s (%s)", value, self._profile_id)
+        self._name_edited_by_user[self._profile_id] = False
+        self._update_project_name_suffix()
+        self._update_assets_visibility()
 
-        # v1.7.0 — Botón de carpeta de assets (solo visible en Datos Y Cafe)
-        self._dyc_assets_btn = ctk.CTkButton(
-            panel, text="Seleccionar carpeta de assets...", width=220, height=30,
+    def _update_project_name_suffix(self) -> None:
+        if self._profile_id in self._profiles:
+            pdata = self._profiles[self._profile_id]
+            default_name = pdata.get("meta", {}).get("default_project_name", "")
+            if not default_name:
+                default_name = pdata.get("project_name_suffix", "")
+            if default_name:
+                current = self.name_entry.get().strip()
+                if not self._name_edited_by_user.get(self._profile_id, False):
+                    self.name_entry.delete(0, "end")
+                    self.name_entry.insert(0, default_name)
+    def _build_section5_assets(self, parent, row: int) -> None:
+        self._assets_frame = ctk.CTkFrame(parent, fg_color=PANEL, corner_radius=10)
+        self._assets_frame.grid(row=row, column=0, sticky="ew", padx=0, pady=6)
+        self._assets_frame.grid_columnconfigure(1, weight=1)
+        self._section_title(self._assets_frame, "5 · Carpeta de assets").grid(
+            row=0, column=0, columnspan=2, sticky="w", padx=12, pady=(8, 4))
+        ctk.CTkButton(
+            self._assets_frame, text="Seleccionar carpeta…", width=180, height=30,
             corner_radius=8, fg_color=ACCENT, hover_color=ACCENT_HOVER,
-            command=self._browse_dyc_assets, state="disabled",
-        )
-        self._dyc_assets_btn.grid(row=2, column=0, sticky="w", padx=12, pady=(0, 4))
-        self._dyc_assets_btn.grid_remove()
-
-        self._dyc_assets_label = ctk.CTkLabel(
-            panel, text="Sin seleccionar", font=ctk.CTkFont(size=12),
+            command=self._browse_assets_dir,
+        ).grid(row=1, column=0, sticky="w", padx=12, pady=(0, 4))
+        self._assets_dir_label = ctk.CTkLabel(
+            self._assets_frame, text="Sin seleccionar", font=ctk.CTkFont(size=12),
             text_color=MUTED, anchor="w", justify="left",
         )
-        self._dyc_assets_label.grid(row=3, column=0, sticky="ew", padx=12, pady=(0, 4))
-        self._dyc_assets_label.grid_remove()
-
-    def _on_edit_type_changed(self, value: str) -> None:
-        """Callback cuando el usuario cambia el tipo de edicion."""
-        self._edit_type = value
-        self._user_config["last_edit_type"] = value
-        self._save_user_config()
-        # Siempre actualizar el nombre con el sufijo del tipo elegido.
-        # La bandera _name_edited_by_user solo protege contra escrituras
-        # directas en el Entry; al cambiar de tipo se considera que el
-        # usuario quiere el nuevo sufijo. Se resetea aqui para que el
-        # proximo cambio de tipo tambien actualice.
-        profile = get_edit_profile(value)
-        self.name_entry.delete(0, "end")
-        self.name_entry.insert(0, profile.project_name_suffix)
-        self._name_edited_by_user = False
-        log.info("Tipo de edicion cambiado a: %s", value)
-        # v1.7.0: mostrar/ocultar botón de assets según el tipo
-        is_dyc = (value == "Datos Y Cafe")
-        self._dyc_assets_btn.configure(state="normal" if is_dyc else "disabled")
-        if is_dyc:
-            self._dyc_assets_btn.grid()
-            self._dyc_assets_label.grid()
-        else:
-            self._dyc_assets_btn.grid_remove()
-            self._dyc_assets_label.grid_remove()
-
-    def _browse_dyc_assets(self) -> None:
-        """Abre dialog para seleccionar carpeta de assets de Datos Y Cafe."""
+        self._assets_dir_label.grid(row=1, column=1, sticky="ew", padx=8, pady=(0, 4))
+    def _browse_assets_dir(self) -> None:
         initial = str(self._dyc_assets_dir) if self._dyc_assets_dir else str(Path.home())
         path = filedialog.askdirectory(initialdir=initial)
         if not path:
@@ -498,31 +480,29 @@ class MainWindow(ctk.CTk):
             messagebox.showerror("CapCut Auto", f"La carpeta '{path}' no existe.")
             return
         self._dyc_assets_dir = p.resolve()
-        self._dyc_assets_label.configure(text=str(self._dyc_assets_dir), text_color=TEXT)
+        self._assets_dir_label.configure(text=str(self._dyc_assets_dir), text_color=TEXT)
         self._save_user_config()
-        log.info("Carpeta de assets DYC seleccionada: %s", self._dyc_assets_dir)
-
+        log.info("Carpeta de assets seleccionada: %s", self._dyc_assets_dir)
     def _on_name_key_release(self) -> None:
-        """Detecta cuando el usuario escribe manualmente en el campo de nombre.
-        Si el campo queda vacio, se rellena con el sufijo del tipo activo."""
         text = self.name_entry.get().strip()
-        self._name_edited_by_user = bool(text)
+        self._name_edited_by_user[self._profile_id] = bool(text)
         if not text:
-            # Campo vacio: relleno con el sufijo del tipo actual
-            profile = get_edit_profile(self._edit_type)
-            self.name_entry.delete(0, "end")
-            self.name_entry.insert(0, profile.project_name_suffix)
-            self._name_edited_by_user = False
+            if self._profile_id in self._profiles:
+                pdata = self._profiles[self._profile_id]
+                default_name = pdata.get("meta", {}).get("default_project_name", "")
+                if not default_name:
+                    default_name = pdata.get("project_name_suffix", "")
+                if default_name:
+                    self.name_entry.delete(0, "end")
+                    self.name_entry.insert(0, default_name)
+                self._name_edited_by_user[self._profile_id] = False
         self._update_ui_state()
-
-    def _build_section3_name(self, parent, row: int) -> None:
+    def _build_section7_name(self, parent, row: int) -> None:
         panel = ctk.CTkFrame(parent, fg_color=PANEL, corner_radius=10)
         panel.grid(row=row, column=0, sticky="ew", padx=0, pady=6)
         panel.grid_columnconfigure(0, weight=1)
-
-        self._section_title(panel, "6 · Nombre del nuevo proyecto").grid(
+        self._section_title(panel, "7 · Nombre del proyecto").grid(
             row=0, column=0, sticky="w", padx=12, pady=(8, 4))
-
         self.name_entry = ctk.CTkEntry(
             panel, placeholder_text="ej. mi_video_diapositivas", height=34,
             corner_radius=8, fg_color="#2a2a2a", text_color=TEXT,
@@ -530,10 +510,13 @@ class MainWindow(ctk.CTk):
         self.name_entry.grid(row=1, column=0, sticky="ew", padx=12, pady=(0, 10))
         self.name_entry.bind("<KeyRelease>", lambda _e: self._on_name_key_release())
         self.name_entry.delete(0, "end")
-        profile = get_edit_profile(self._edit_type)
-        self.name_entry.insert(0, profile.project_name_suffix)
-
-    # --------------------------------------------------- persistencia / estado
+        if self._profile_id in self._profiles:
+            pdata = self._profiles[self._profile_id]
+            default_name = pdata.get("meta", {}).get("default_project_name", "")
+            if not default_name:
+                default_name = pdata.get("project_name_suffix", "")
+            if default_name:
+                self.name_entry.insert(0, default_name)
     def _save_user_config(self) -> None:
         self._user_config["capcut_drafts_dir"] = str(self._drafts_dir) if self._drafts_dir else ""
         self._user_config["last_template_name"] = self._template_name or ""
@@ -541,16 +524,14 @@ class MainWindow(ctk.CTk):
         self._user_config["last_srt_dir"] = str(self._srt_dir) if self._srt_dir else ""
         self._user_config["last_srt_name"] = self._srt_name or ""
         self._user_config["last_guion_name"] = self._user_config.get("last_guion_name", "")
-        self._user_config["last_edit_type"] = self._edit_type or EDIT_TYPES[0]
-        # Persistir exclusiones
+        self._user_config["last_profile_name"] = self._profile_id or ""
+        self._user_config.pop("last_edit_type", None)
         self._user_config["excluded_paths"] = ",".join(str(p) for p in self._excluded_paths)
-        # v1.7.0: carpeta de assets DYC
+        self._user_config["profiles_dir"] = str(self._profiles_dir)
         self._user_config["dyc_assets_dir"] = str(self._dyc_assets_dir) if self._dyc_assets_dir else ""
         save_user_config(self._user_config)
 
     def _scan_srt_files(self, folder: Path) -> list[Path]:
-        """Busca archivos .srt en la carpeta del video (y un nivel hacia abajo
-        del caché donde la alineación los guarda). Devuelve ordenados."""
         found: set[Path] = set()
         if folder is not None and folder.is_dir():
             found.update(folder.rglob("*.srt"))
@@ -558,10 +539,7 @@ class MainWindow(ctk.CTk):
         if cache.is_dir():
             found.update(cache.glob("alineacion_*.srt"))
         return sorted(found, key=lambda p: p.name.lower())
-
     def _apply_srt_dir(self, srt: Path | None, persist: bool) -> None:
-        """Guarda la seleccion de .srt elegida por el usuario (o None si elige
-        el placeholder). Actualiza label, combo y estado."""
         if srt is None:
             self._srt_dir = None
             self._srt_name = ""
@@ -579,7 +557,6 @@ class MainWindow(ctk.CTk):
             self._save_user_config()
         log.info("Subtítulos: %s", srt)
         self._update_ui_state()
-
     def _browse_srt(self) -> None:
         start = Path(self._video_dir) if self._video_dir else Path.home()
         path = filedialog.askopenfilename(
@@ -589,7 +566,6 @@ class MainWindow(ctk.CTk):
         if not path:
             return
         self._apply_srt_dir(Path(path), persist=True)
-
     def _update_ui_state(self) -> None:
         running = self._running
         detection = self._detection
@@ -604,15 +580,12 @@ class MainWindow(ctk.CTk):
         )
         self.generate_btn.configure(state="normal" if ok else "disabled")
         self.cancel_btn.configure(state="disabled" if not running else "normal")
-
-    # ---------------------------------------------- seccion 1 (drafts folder)
     def _browse_drafts(self) -> None:
         initial = str(self._drafts_dir) if self._drafts_dir else str(Path.home())
         path = filedialog.askdirectory(initialdir=initial)
         if not path:
             return
         self._apply_drafts_dir(Path(path), persist=True)
-
     def _apply_drafts_dir(self, drafts_dir: Path, persist: bool) -> None:
         templates = find_capcut_templates(drafts_dir)
         if not templates:
@@ -625,13 +598,10 @@ class MainWindow(ctk.CTk):
             )
             log.warning("La carpeta elegida no tiene plantillas válidas: %s", drafts_dir)
             return
-
         self._drafts_dir = drafts_dir
         self._drafts_path_label.configure(text=str(drafts_dir), text_color=TEXT)
-
         names = [t.name for t in templates]
         self._template_menu.configure(values=names, state="normal")
-
         saved = self._user_config.get("last_template_name") or ""
         selected = names[0]
         if len(names) == 1:
@@ -641,12 +611,10 @@ class MainWindow(ctk.CTk):
         self._template_var.set(selected)
         self._template_name = selected
         self._template_menu.configure(variable=self._template_var)
-
         if persist:
             self._save_user_config()
         log.info("Plantillas detectadas en drafts: %s", ", ".join(names))
         self._update_ui_state()
-
     def _on_template_changed(self, value: str) -> None:
         if value == NO_TEMPLATES:
             return
@@ -654,39 +622,28 @@ class MainWindow(ctk.CTk):
         self._save_user_config()
         log.info("Plantilla seleccionada: %s", value)
         self._update_ui_state()
-
-    # ---------------------------------------------- seccion 2 (video folder)
     def _browse_video(self) -> None:
         initial = str(self._video_dir) if self._video_dir else str(Path.home())
         path = filedialog.askdirectory(initialdir=initial)
         if not path:
             return
         self._apply_video_dir(Path(path), persist=True)
-
     def _apply_video_dir(self, video_dir: Path, persist: bool) -> None:
         self._video_dir = video_dir
         self._video_path_label.configure(text=str(video_dir), text_color=TEXT)
-
         self._detection = detect_video_inputs(video_dir, ask_scene=self._ask_scene_user)
         self._refresh_video_status()
         for warning in self._detection.warnings:
             log.info("Detección · %s", warning)
-
         self._refresh_srt_menu()
         self._refresh_audio_menu()
-
         if persist:
             self._save_user_config()
         self._update_ui_state()
-
     def _refresh_srt_menu(self) -> None:
-        """Rellena el combo de .srt con lo encontrado en la carpeta del video
-        (más los SRT de alineación del caché). Preserva la selección previa si
-        el archivo sigue existiendo."""
         srt_files = self._scan_srt_files(self._video_dir)
         values = [NO_SRT] + [str(p) for p in srt_files]
         self._srt_menu.configure(values=values, state="normal" if values else "disabled")
-
         current = self._srt_name
         if current and self._srt_dir is not None:
             candidate = self._srt_dir / current
@@ -698,7 +655,6 @@ class MainWindow(ctk.CTk):
         self._srt_name = ""
         self._srt_var.set(NO_SRT)
         self._srt_path_label.configure(text=NO_SRT, text_color=MUTED)
-
     def _on_srt_changed(self, value: str) -> None:
         if value == NO_SRT or not value:
             self._apply_srt_dir(None, persist=False)
@@ -709,34 +665,24 @@ class MainWindow(ctk.CTk):
         else:
             log.warning("El .srt elegido ya no existe: %s", value)
             self._refresh_srt_menu()
-
     def _refresh_audio_menu(self) -> None:
-        """Rellena el dropdown de audio guion y la lista de checkboxes de fondo
-        basándose en la carpeta del video."""
         if not self._video_dir:
             self._audio_guion_menu.configure(values=["— sin detectar —"], state="disabled")
             self._audio_guion_var.set("— sin detectar —")
             self._audio_guion = None
             self._audio_otros = []
             return
-
-        # Obtener todos los archivos de audio (para escenas/imágenes usamos detección previa)
         all_audios = [
             p for p in self._video_dir.rglob("*")
             if p.is_file() and p.suffix.lower() in config.AUDIO_EXTENSIONS
             and not any(self._is_excluded_ui(p, [exc]) for exc in self._excluded_paths)
         ]
-        # Ordenar por nombre para consistencia
         all_audios.sort(key=lambda p: p.name.lower())
-
-        # Determinar nombre seleccionado (de configuración o primero disponible)
         saved_name = self._user_config.get("last_guion_name", "")
         if saved_name:
             selected_name = saved_name
         else:
             selected_name = all_audios[0].name if all_audios else "— sin detectar —"
-
-        # Resolver la ruta completa del nombre seleccionado
         selected_path = self._resolve_audio_path(selected_name) if selected_name != "— sin detectar —" else None
         if selected_path is not None:
             self._audio_guion = selected_path
@@ -744,39 +690,32 @@ class MainWindow(ctk.CTk):
         else:
             self._audio_guion = None
             self._audio_otros = all_audios[:]
-
-        # Preparar valores del dropdown
         if all_audios:
             dropdown_values = [p.name for p in all_audios]
         else:
             dropdown_values = ["— sin detectar —"]
-
         self._audio_guion_menu.configure(
             values=dropdown_values,
             state="normal" if dropdown_values != ["— sin detectar —"] else "disabled",
         )
-        # Establecer variable según lo resuelto
         if self._audio_guion is not None:
             self._audio_guion_var.set(self._audio_guion.name)
         elif all_audios:
             self._audio_guion_var.set(all_audios[0].name)
         else:
             self._audio_guion_var.set("— sin detectar —")
-
     def _on_audio_guion_changed(self, value: str) -> None:
         if not value or value == "— sin detectar —":
             self._audio_guion = None
             self._user_config["last_guion_name"] = ""
             self._save_user_config()
             return
-        # Resolver ruta completa desde el nombre seleccionado
         audio_path = self._resolve_audio_path(value)
         if audio_path is not None:
             self._audio_guion = audio_path
             self._user_config["last_guion_name"] = audio_path.name
             self._save_user_config()
             log.info("Audio guion seleccionado: %s", audio_path.name)
-            # Actualizar lista de otros audios
             if self._video_dir:
                 all_audios = [
                     p for p in self._video_dir.rglob("*")
@@ -788,9 +727,7 @@ class MainWindow(ctk.CTk):
         else:
             log.warning("Audio guion no encontrado: %s", value)
 
-    # --------------------------------------------------- exclusiones
     def _load_exclusions(self) -> None:
-        """Carga exclusiones desde config_user.json."""
         from src.core.auto_detect import _load_excluded_paths as _load_exc
         raw = _load_exc()
         valid: list[Path] = []
@@ -801,7 +738,6 @@ class MainWindow(ctk.CTk):
                 log.info("Exclusión inexistente omitida: %s", p)
         self._excluded_paths = valid
         self._render_exclusion_list()
-        # Si el audio guion estaba excluido, limpiar selección
         if self._audio_guion and self._excluded_paths:
             import os
             norm = os.path.normcase(os.path.abspath(self._audio_guion))
@@ -813,9 +749,7 @@ class MainWindow(ctk.CTk):
                     self._save_user_config()
                     self._refresh_audio_menu()
                     break
-
     def _render_exclusion_list(self) -> None:
-        """Renderiza la lista de exclusiones en la UI."""
         for w in self._exclusion_widgets:
             w.destroy()
         self._exclusion_widgets.clear()
@@ -842,9 +776,7 @@ class MainWindow(ctk.CTk):
             remove_btn.grid(row=row, column=1, padx=(4, 4), pady=1)
             self._exclusion_widgets.append(label)
             self._exclusion_widgets.append(remove_btn)
-
     def _show_add_exclusion_menu(self) -> None:
-        """Muestra menú contextual para añadir exclusión (archivo o carpeta)."""
         menu = ctk.CTkToplevel(self)
         menu.title("Añadir exclusión")
         menu.geometry("220x100")
@@ -852,7 +784,6 @@ class MainWindow(ctk.CTk):
         menu.configure(fg_color=PANEL)
         menu.transient(self)
         menu.grab_set()
-
         def _add_file() -> None:
             path = filedialog.askopenfilename(
                 initialdir=self._video_dir or Path.home(),
@@ -861,7 +792,6 @@ class MainWindow(ctk.CTk):
             if path:
                 self._add_exclusion(Path(path))
             menu.destroy()
-
         def _add_folder() -> None:
             path = filedialog.askdirectory(
                 initialdir=self._video_dir or Path.home(),
@@ -870,7 +800,6 @@ class MainWindow(ctk.CTk):
             if path:
                 self._add_exclusion(Path(path))
             menu.destroy()
-
         ctk.CTkButton(
             menu, text="Seleccionar archivo…", height=34, corner_radius=8,
             fg_color=ACCENT, hover_color=ACCENT_HOVER,
@@ -883,9 +812,7 @@ class MainWindow(ctk.CTk):
         ).grid(row=1, column=0, sticky="ew", padx=16, pady=(6, 12))
         menu.grid_columnconfigure(0, weight=1)
         menu.wait_window()
-
     def _add_exclusion(self, path: Path) -> None:
-        """Añade una exclusión (archivo o carpeta) a la lista."""
         abs_path = path.resolve()
         if abs_path in self._excluded_paths:
             return
@@ -893,12 +820,9 @@ class MainWindow(ctk.CTk):
         self._save_user_config()
         self._render_exclusion_list()
         log.info("[EXCLUSION] Añadido: %s", abs_path)
-        # Re-escanear si hay video_dir
         if self._video_dir is not None:
             self._apply_video_dir(self._video_dir, persist=False)
-
     def _remove_exclusion(self, path: Path) -> None:
-        """Elimina una exclusión de la lista."""
         abs_path = path.resolve()
         if abs_path in self._excluded_paths:
             self._excluded_paths.remove(abs_path)
@@ -907,7 +831,6 @@ class MainWindow(ctk.CTk):
             log.info("[EXCLUSION] Eliminado: %s", abs_path)
             if self._video_dir is not None:
                 self._apply_video_dir(self._video_dir, persist=False)
-
     def _ask_scene_user(self, candidates: list[Path]) -> Path | None:
         dialog = ctk.CTkToplevel(self)
         dialog.title("Elegir archivo de escenas")
@@ -928,11 +851,9 @@ class MainWindow(ctk.CTk):
         )
         menu.grid(row=1, column=0, sticky="ew", padx=16, pady=4)
         result: dict[str, Path | None] = {"path": None}
-
         def _confirm() -> None:
             result["path"] = next(p for p in candidates if p.name == var.get())
             dialog.destroy()
-
         ctk.CTkButton(
             dialog, text="Usar este archivo", height=32, corner_radius=8,
             fg_color=ACCENT, hover_color=ACCENT_HOVER, command=_confirm,
@@ -948,12 +869,10 @@ class MainWindow(ctk.CTk):
             self._paint_status(self._img_status, False, "No se encontró")
             self._status_footer.configure(text="")
             return
-
         if d.audio_path is not None:
             self._paint_status(self._audio_status, True, d.audio_path.name)
         else:
             self._paint_status(self._audio_status, False, "No se encontró archivo de audio")
-
         if d.scene_txt_path is not None:
             self._paint_status(
                 self._scene_status, True,
@@ -961,7 +880,6 @@ class MainWindow(ctk.CTk):
             )
         else:
             self._paint_status(self._scene_status, False, "No se encontró .txt de escenas")
-
         if d.images_dir is not None:
             shown = d.images_dir.name
             if d.images_dir == self._video_dir:
@@ -971,15 +889,14 @@ class MainWindow(ctk.CTk):
             self._paint_status(self._img_status, True, f"{shown} ({len(d.image_paths)} archivos)")
         else:
             self._paint_status(self._img_status, False, "No se encontró carpeta de imágenes")
-
         if d.image_scene_mismatch:
             self._status_footer.configure(
                 text=f"⚠ {len(d.image_paths)} imágenes vs {d.scene_count} escenas; "
                      "se pedirá decisión al generar.", text_color=AMBER)
         else:
             self._status_footer.configure(text="✓ Detección correcta", text_color=GREEN)
-
-    def _status_label(self, parent, row, title):
+    @staticmethod
+    def _status_label(parent, row, title):
         label = ctk.CTkLabel(
             parent, text="", font=ctk.CTkFont(size=12), text_color=MUTED,
             anchor="w", justify="left",
@@ -987,22 +904,18 @@ class MainWindow(ctk.CTk):
         label._status_title = title
         label.grid(row=row, column=0, columnspan=2, sticky="w", padx=12, pady=(0, 2))
         return label
-
     @staticmethod
     def _paint_status(label: ctk.CTkLabel, ok: bool, text: str) -> None:
         color = GREEN if ok else RED
         prefix = "✓" if ok else "✗"
-        title = label._status_title  # type: ignore[attr-defined]
+        title = label._status_title
         label.configure(text=f"{prefix} {title}: {text}", text_color=color)
-
-    # ------------------------------------------------------------- logs / hilo
     def _log_widget(self, line: str, level: str) -> None:
         self.log_box.configure(state="normal")
         tag = level if level in LOG_TAGS else "INFO"
         self.log_box.insert("end", line + "\n", (tag,))
         self.log_box.configure(state="disabled")
         self.log_box.see("end")
-
     def _poll_queue(self) -> None:
         for line in drain_queue(self.log_queue):
             level = "INFO"
@@ -1011,7 +924,6 @@ class MainWindow(ctk.CTk):
             elif "ERROR" in line or "Traceback" in line:
                 level = "ERROR"
             self._log_widget(line, level)
-
         if self._running and self._thread_done.is_set():
             was_cancelled = self.cancel_event.is_set()
             succeeded = self._job_succeeded
@@ -1023,19 +935,12 @@ class MainWindow(ctk.CTk):
                 self._log_widget("⏹ Generación cancelada. Revisa los logs de arriba.", "WARNING")
             elif succeeded:
                 self._log_widget("✔ Proceso terminado. Revisa los logs de arriba.", "OK")
-                # TAREA 1: cartel verde "COMPLETADO" no bloqueante, se abre con
-                # after() para no congelar el main thread (sin grab_set).
                 self.after(150, self._show_success_modal)
             else:
                 self._log_widget("✘ La generación falló. Revisa los logs de arriba.", "ERROR")
             self._update_ui_state()
-
         self.after(100, self._poll_queue)
-
     def _show_success_modal(self) -> None:
-        """Cartel verde modal de éxito: #28a745, 'COMPLETADO' grande y botón '✕'
-        arriba a la derecha. Se crea con after() y sin grab_set() para que no
-        bloquee la ventana principal."""
         if self._success_modal is not None and self._success_modal.winfo_exists():
             self._success_modal.lift()
             return
@@ -1047,19 +952,15 @@ class MainWindow(ctk.CTk):
         modal.configure(fg_color=SUCCESS)
         modal.transient(self)
         modal.after(100, modal.lift)
-
-        # Botón "✕" arriba a la derecha (cierra sin bloquear nada).
         ctk.CTkButton(
             modal, text="✕", width=36, height=36, corner_radius=8,
             font=ctk.CTkFont(size=16, weight="bold"),
             fg_color="#1e7e34", hover_color="#186a2b", text_color="#ffffff",
             command=modal.destroy,
         ).place(relx=1.0, x=-12, y=12, anchor="ne")
-
         modal.grid_rowconfigure(0, weight=1)
         modal.grid_rowconfigure(1, weight=1)
         modal.grid_columnconfigure(0, weight=1)
-
         ctk.CTkLabel(
             modal, text="COMPLETADO", font=ctk.CTkFont(size=34, weight="bold"),
             text_color="#ffffff",
@@ -1069,7 +970,6 @@ class MainWindow(ctk.CTk):
             font=ctk.CTkFont(size=14, weight="bold"), text_color="#eafff0",
         ).grid(row=1, column=0, sticky="n", pady=(6, 0))
         self._center_modal(modal)
-
     @staticmethod
     def _center_modal(modal: ctk.CTkToplevel) -> None:
         try:
@@ -1078,10 +978,9 @@ class MainWindow(ctk.CTk):
             x = (modal.winfo_screenwidth() - w) // 2
             y = (modal.winfo_screenheight() - h) // 2
             modal.geometry(f"{w}x{h}+{x}+{y}")
-        except Exception:  # noqa: BLE001
+        except Exception:
             pass
 
-    # ------------------------------------------------------------- generacion
     def _on_generate(self) -> None:
         if self._running:
             return
@@ -1093,32 +992,26 @@ class MainWindow(ctk.CTk):
         if not name:
             messagebox.showwarning("CapCut Auto", "Debes escribir un nombre para el proyecto.")
             return
-
         template_dir = self._drafts_dir / self._template_name
         if not ((template_dir / config.DRAFT_CONTENT_FILE).is_file()
                 and (template_dir / config.DRAFT_META_FILE).is_file()):
             messagebox.showerror("CapCut Auto", "La plantilla seleccionada no es válida.")
             return
-
         try:
             scenes = parse_scenes(detection.scene_txt_path)
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             messagebox.showerror("CapCut Auto", f"Error al parsear escenas: {exc}")
             return
         if not scenes:
             messagebox.showerror("CapCut Auto", "El .txt de escenas no contiene ninguna escena.")
             return
-
-        # v1.7.0: validación de carpeta de assets para DYC
-        if self._edit_type == "Datos Y Cafe":
-            if self._dyc_assets_dir is None or not self._dyc_assets_dir.is_dir():
-                messagebox.showerror(
-                    "CapCut Auto",
-                    "Para 'Datos Y Cafe' es obligatorio seleccionar una carpeta de assets.\n\n"
-                    "Ve a '5 · Tipo de edición' y pulsa 'Seleccionar carpeta de assets...'."
+        if self._dyc_assets_dir is not None:
+            meta = self._profiles.get(self._profile_id, {}).get("meta", {})
+            if not meta.get("requires_assets", False):
+                log.info(
+                    "Carpeta de assets seleccionada pero el perfil '%s' no la requiere; se ignora.",
+                    self._profile_name,
                 )
-                return
-
         images = list(detection.image_paths)
         if len(images) != len(scenes):
             decision = self._resolve_image_mismatch(len(images), len(scenes))
@@ -1126,8 +1019,6 @@ class MainWindow(ctk.CTk):
                 log.info("Generación abortada por el usuario (desajuste imágenes/escenas).")
                 return
             images = decision
-
-        # Determine audio path: explicit user selection > auto-detected
         audio_path = self._audio_guion or (self._detection.audio_path if self._detection and self._detection.audio_path else None)
         if audio_path is None:
             messagebox.showerror(
@@ -1135,10 +1026,9 @@ class MainWindow(ctk.CTk):
                 "No hay audio de guion seleccionado ni detectado.\n\n"
                 "Asegúrate de:\n"
                 "1. Que exista un archivo de audio en la carpeta del video, o\n"
-                "2. Selecciona un audio en el bloque '4. Audios del proyecto'."
+                "2. Selecciona un audio en el bloque '6. Audio del proyecto'."
             )
             return
-
         data = {
             "template": template_dir,
             "name": name,
@@ -1151,7 +1041,9 @@ class MainWindow(ctk.CTk):
             srt = self._srt_dir / self._srt_name
             if srt.is_file():
                 data["subtitle_srt"] = srt
-                log.info("Subtítulos: se generarán desde %s", srt)
+                log.info("Subtítulos: se usarán los subtítulos del usuario: %s", srt)
+        else:
+            log.info("Subtítulos: ningún SRT seleccionado; se usará transcripción interna.")
         self.cancel_event.clear()
         self._running = True
         self._thread_done.clear()
@@ -1162,7 +1054,6 @@ class MainWindow(ctk.CTk):
         self._log_widget("▶ Iniciando generación en hilo secundario...", "INFO")
         t = threading.Thread(target=self._run_job, args=(data,), daemon=True)
         t.start()
-
     def _resolve_image_mismatch(self, n_images: int, n_scenes: int) -> list[Path] | None:
         d = self._detection
         assert d is not None
@@ -1198,67 +1089,72 @@ class MainWindow(ctk.CTk):
             log.info("Escenas   : %s", data["scenes_txt"])
             log.info("Imágenes  : %d archivos", len(data["images"]))
             log.info("Nombre    : %s", data["name"])
-
             if self.cancel_event.is_set():
                 log.info("Generación cancelada por el usuario.")
                 return
-
             scenes = parse_scenes(data["scenes_txt"])
-            align_lines = [s.key_text for s in scenes if s.key_text.strip()]
-
-            log.info("Paso 1/5 — Preparando alineación (CrispASR + modelo español)...")
-            srt_path = config.CACHE_DIR / f"alineacion_{Path(data['audio']).stem}.srt"
-            aligned = align_audio_to_text(
-                data["audio"], align_lines, srt_path, cancel_event=self.cancel_event)
+            if data.get("subtitle_srt") and Path(data["subtitle_srt"]).is_file():
+                log.info("Paso 1/5 — Usando SRT del usuario: %s", data["subtitle_srt"])
+                aligned = Path(data["subtitle_srt"])
+            else:
+                align_lines = [s.key_text for s in scenes if s.key_text.strip()]
+                if align_lines:
+                    log.info("Paso 1/5 — Alineación con guion (%d líneas) via CrispASR...", len(align_lines))
+                    srt_path = config.CACHE_DIR / f"alineacion_{Path(data['audio']).stem}.srt"
+                    aligned = align_audio_to_text(
+                        data["audio"], align_lines, srt_path,
+                        cancel_event=self.cancel_event,
+                    )
+                else:
+                    log.info("Paso 1/5 — Transcripción libre (sin guion disponible)...")
+                    srt_path = config.CACHE_DIR / f"alineacion_{Path(data['audio']).stem}.srt"
+                    aligned = transcribe_audio_free(
+                        data["audio"], srt_path,
+                        cancel_event=self.cancel_event,
+                    )
             if self.cancel_event.is_set():
                 log.info("Generación cancelada por el usuario.")
                 return
             cues = parse_srt(aligned)
-            log.info("Alineación completada: %d cues (%d líneas).",
-                     len(cues), len(align_lines))
-
-            # Medir duracion REAL del audio ANTES de construir el timeline.
-            # Si el audio es mas largo que la suma de los cues, usar la duracion
-            # real evita que quede un hueco vacio al final del video.
+            log.info("Alineación completada: %d cues (%d escenas).",
+                     len(cues), len(scenes))
             from src.core.timeline_builder import measure_audio_duration_us
             audio_dur_us = measure_audio_duration_us(data["audio"])
             if audio_dur_us is None:
                 audio_dur_us = max((int(round(end * 1_000_000)) for _s, end, _t in cues), default=0)
             total_us = audio_dur_us
             log.info("Duración total del audio: %d us (%s s).", total_us, f"{total_us / 1e6:.2f}")
-
-            log.info("Paso 2/5 — Sincronizando escenas con el SRT alineado...")
+            log.info("Paso 2/5 — Sincronizando escenas con el SRT transcrito...")
+            from src.core.profile_loader import build_edit_profile
+            profile_data = self._profiles.get(self._profile_id, {})
+            edit_profile = build_edit_profile(profile_data)
+            if self._dyc_assets_dir is not None:
+                import dataclasses
+                edit_profile = dataclasses.replace(edit_profile, dyc_assets_dir=str(self._dyc_assets_dir))
+            match_threshold = getattr(edit_profile, 'match_threshold', 75.0)
             items, _seg_total_us = build_timeline(
-                scenes, aligned, data["images"], cancel_event=self.cancel_event)
+                scenes, aligned, data["images"], cancel_event=self.cancel_event,
+                match_threshold=match_threshold,
+            )
             ok_items = sum(1 for it in items if it.is_synced)
             log.info("Escenas sincronizadas: %d/%d.", ok_items, len(items))
-
             log.info("Paso 3/5 — Preparando proyecto CapCut (clone + edit)...")
             project = CapCutProject(data["template"])
             project.backup_originals()
             project.dump_schema()
-
             log.info("Paso 4/5 — Generando proyecto...")
-            edit_profile = get_edit_profile(self._edit_type)
-            # v1.7.0: actualizar la carpeta de assets en el perfil
-            if self._edit_type == "Datos Y Cafe" and self._dyc_assets_dir is not None:
-                from src.core.edit_types import DATOS_Y_CAFE
-                # Crear un perfil copiado con la ruta de assets
-                import dataclasses
-                edit_profile = dataclasses.replace(edit_profile, dyc_assets_dir=str(self._dyc_assets_dir))
             out = project.generate(
                 data["name"], items, data["audio"], total_us,
                 cancel_event=self.cancel_event,
-                subtitle_srt=data.get("subtitle_srt"),
+                subtitle_srt=data.get("subtitle_srt") or aligned,
                 edit_profile=edit_profile,
             )
-
             log.info("Paso 5/5 — ✔ Proyecto creado en: %s", out)
             log.info("IMPORTANTE: cierra la app antes de abrir CapCut.")
             self._job_succeeded = True
         except GenerationCancelled:
             log.info("Generación cancelada por el usuario.")
-        except Exception:  # noqa: BLE001
+        except Exception:
             if self.cancel_event.is_set():
                 log.info("Generación cancelada por el usuario.")
             else:
@@ -1266,7 +1162,6 @@ class MainWindow(ctk.CTk):
                 log.error(traceback.format_exc())
         finally:
             self._thread_done.set()
-
     def _on_cancel(self) -> None:
         if not self._running:
             return
@@ -1276,11 +1171,11 @@ class MainWindow(ctk.CTk):
 
 
 def _bootstrap_dependencies() -> None:
-    """Hilo de fondo: comprueba y descarga (si falta) CrispASR + modelo espanol
+    """Hilo de fondo: comprueba y descarga (si falta) CrispASR + modelo español
     en el primer uso. No debe lanzar excepciones al hilo (log unicamente)."""
     try:
         ensure_dependencies()
-    except Exception:  # noqa: BLE001 - hilo de fondo: nunca crashear la app
+    except Exception:
         log.error("No se pudieron comprobar/descargar las dependencias en el arranque:")
         log.error(traceback.format_exc())
 
@@ -1291,8 +1186,6 @@ def launch() -> None:
     setup_logging(log_queue, config.APP_LOG_FILE)
     log.info("CapCut Auto iniciado.")
     log.info("Los proyectos se generarán en la carpeta de la plantilla elegida.")
-    # Primer uso: comprobar/descargar dependencias en hilo aparte (no bloquea
-    # la UI; si ya estan en disco no hace nada).
     threading.Thread(
         target=_bootstrap_dependencies, daemon=True,
         name="bootstrap-deps",

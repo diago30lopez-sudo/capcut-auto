@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 
 ROOT_DIR = Path(__file__).resolve().parent.parent.parent
+REPO_ROOT = ROOT_DIR
 
 CACHE_DIR = ROOT_DIR / "cache"
 LOGS_DIR = ROOT_DIR / "logs"
@@ -262,3 +263,12 @@ def save_user_config(user_config: dict) -> None:
         logging.getLogger("capcutauto").warning(
             "No se pudo guardar %s (%s).", USER_CONFIG_FILE, exc,
         )
+
+
+def profiles_dir() -> Path:
+    """Carpeta donde viven los perfiles JSON."""
+    user = load_user_config()
+    p = user.get("profiles_dir", "")
+    if p and Path(p).is_dir():
+        return Path(p)
+    return REPO_ROOT / "profiles"

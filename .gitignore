@@ -19,3 +19,16 @@ backups/
 venv/
 __pycache__/
 *.pyc
+# Scripts temporales de reconstrucción
+_write_*.py
+_fix_*.py
+fix_*.py
+_replace_*.py
+_tmp_*.py
+# Documentación de auditoría
+RESPUESTAS_AUDITORIA.md
+# Wheel guardado para reinstalación
+Pillow-*.whl
+# Directorios temporales
+tmp_wheel/
+.pytest_cache/config_user.json 

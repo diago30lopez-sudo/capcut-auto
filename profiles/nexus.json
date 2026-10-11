@@ -1,0 +1,137 @@
+{
+  "schema_version": "2.0.0",
+  "meta": {
+    "id": "nexus_paradoja",
+    "name": "Nexus Paradoja",
+    "requires_assets": true,
+    "requires_srt": false,
+    "default_project_name": "Nexus Paradoja video"
+  },
+  "project_name_suffix": "Nexus Paradoja video",
+  "watermark": {
+    "enabled": true,
+    "text": "NEXUS PARADOJA",
+    "font_size": 8.0,
+    "font_path": "C:/Windows/Fonts/impact.ttf",
+    "font_resource_id": "",
+    "opacity": 0.15,
+    "position_x": -0.571875,
+    "position_y": 0.8296296296296296,
+    "letter_spacing": 0.1,
+    "bold": true,
+    "italic": true,
+    "font_name": "impact"
+  },
+  "subtitulos": {
+    "enabled": true,
+    "font_path": "C:/Windows/Fonts/impact.ttf",
+    "font_resource_id": "",
+    "font_size": 12.0,
+    "keyword_color": [1.0, 0.8431373, 0.0],
+    "stroke_width": 0.06,
+    "position_y": -0.8333333,
+    "keywords": ["ataque","ataca","golpe","explos","bomba","peligro","muerte","poder","poderosa","invencible","imposible","traicion","secreto","revel","final","nunca","siempre","guerra","venganza","heroe","villano","salvar","sacrificio","memoria","renacer","renace"],
+    "popup": true,
+    "uppercase": true,
+    "max_words_per_line": 5,
+    "font_name": "impact"
+  },
+  "zoom": {
+    "initial": 1.0,
+    "final_min": 1.1,
+    "final_max": 1.15,
+    "mode": "random"
+  },
+  "transiciones": {
+    "pool": [],
+    "cap_rule": "neighbor_half",
+    "min_duration_us": 100000,
+    "frame_grid": 33333,
+    "ratio": 0.98
+  },
+  "animaciones": {
+    "inicio": [],
+    "final": []
+  },
+  "color_grading": {
+    "contrast": null,
+    "saturation": null,
+    "sharpen": null,
+    "highlight": null,
+    "shadow": null,
+    "light_sensation": null,
+    "vignetting": 0.215
+  },
+  "hsl": {
+    "entries": [
+      {"hsl_color_type": 2, "saturation": 0.15, "lightness": 0.05, "custom_color": "#FFA227"},
+      {"hsl_color_type": 5, "saturation": -0.15, "lightness": -0.1, "custom_color": "#00E5FF"},
+      {"hsl_color_type": 6, "saturation": -0.15, "lightness": -0.1, "custom_color": "#2D6BFF"}
+    ]
+  },
+  "paneos": {
+    "ratio": 0.6,
+    "amplitude": [0.04, 0.08]
+  },
+  "shake": {
+    "ratio": 1.0,
+    "amplitude": [0.01, 0.02],
+    "zoom_boost": 1.06
+  },
+  "fade_in": {
+    "duration_us": 0
+  },
+  "imagina_esto": {
+    "enabled": true,
+    "keywords": ["imagina esto","imagine this","imagina que","imaginante esto","supon que","supongamos que","visualiza por un segundo","ponerte en esta situación","cierra los ojos e imagina","y si te dijera que","en este nuevo escenario","ahora todo es diferente porque","pero esta vez la historia da un giro","despierta en un mundo donde","sin embargo hay una variable que nadie vio venir","piensa en las consecuencias de","no es solo teoría mira lo que sucede cuando","aquí es donde todo se rompe","siente la diferencia entre","esto no es un sueño es la nueva realidad"]
+  },
+  "transiciones_glitch": [],
+  "glow": {
+    "enabled": false
+  },
+  "overlays": {
+    "grid_enabled": false,
+    "grid_keywords": [],
+    "neon_enabled": false
+  },
+  "audio": {
+    "gain_db": 6.0,
+    "bgm_volume_db": -20.0,
+    "ducking_depth_db": -8.0,
+    "ducking_active": false,
+    "threads": 0
+  },
+  "pipeline": {
+    "chunking": {
+      "chunk_seconds": 60,
+      "strategy": "proportional"
+    }
+  },
+  "cta": {
+    "enabled": true,
+    "intermedio": {
+      "position_pct": 0.37
+    },
+    "final": {
+      "fallback_ratio": 0.9,
+      "patterns": ["suscribete","suscribirse","suscribete al canal","subscribete","subscribirse","suscribete si quieres"]
+    }
+  },
+  "assets": {
+    "folder": "D:/YOUTUBE AUTOMATIZADO/1.historias hipoteticas/recursos_edicion Nexus Paradoja/",
+    "files": {
+      "suscribete_corto": "subscribe.mp4",
+      "suscribete_largo": "subscribe.mp4",
+      "pantalla_final": null
+    }
+  },
+  "chroma": {
+    "enabled": true,
+    "color": "#00FF00",
+    "intensity": 0.20,
+    "shadow": 0.0,
+    "edge_smooth": 0.0,
+    "spill": 0.0
+  },
+  "dyc": {}
+}

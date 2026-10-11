@@ -1,0 +1,185 @@
+{
+  "schema_version": "2.0.0",
+  "meta": {
+    "id": "datos_y_cafe",
+    "name": "Datos Y Cafe",
+    "requires_assets": true,
+    "requires_srt": true,
+    "default_project_name": "Datos Y Cafe video"
+  },
+  "project_name_suffix": "Datos Y Cafe Video #",
+  "watermark": {
+    "enabled": true,
+    "text": "DATOS Y CAFE",
+    "font_size": 15.0,
+    "font_path": "",
+    "font_resource_id": "7533526205761326353",
+    "opacity": 0.1,
+    "position_x": 0.0,
+    "position_y": 0.0,
+    "letter_spacing": 0.1,
+    "bold": true,
+    "italic": false,
+    "font_name": "Staatliches-Rg"
+  },
+  "subtitulos": {
+    "enabled": true,
+    "font_path": "",
+    "font_resource_id": "7533527101870214401",
+    "font_size": 11.0,
+    "keyword_color": [1.0, 0.8313725, 0.0],
+    "stroke_width": 0.06,
+    "position_y": -0.7175926,
+    "keywords": ["ataque","ataca","golpe","explos","bomba","peligro","muerte","poder","poderosa","invencible","imposible","traicion","secreto","revel","final","nunca","siempre","guerra","venganza","heroe","villano","salvar","sacrificio","memoria","renacer","renace"],
+    "popup": true,
+    "uppercase": true,
+    "max_words_per_line": 5,
+    "font_name": "Bungee-Rg"
+  },
+  "zoom": {
+    "initial": 1.0,
+    "final_min": 1.0,
+    "final_max": 1.1,
+    "mode": "random"
+  },
+  "transiciones": {
+    "pool": [],
+    "cap_rule": "neighbor_half",
+    "min_duration_us": 100000,
+    "frame_grid": 33333,
+    "ratio": 1.0
+  },
+  "animaciones": {
+    "inicio": [],
+    "final": []
+  },
+  "color_grading": {
+    "contrast": null,
+    "saturation": null,
+    "sharpen": null,
+    "highlight": null,
+    "shadow": null,
+    "light_sensation": null,
+    "vignetting": 0.0
+  },
+  "hsl": {
+    "entries": []
+  },
+  "paneos": {
+    "ratio": 0.5,
+    "amplitude": [0.02, 0.04]
+  },
+  "shake": {
+    "ratio": 0.1,
+    "amplitude": [0.05, 0.1],
+    "zoom_boost": 1.03
+  },
+  "fade_in": {
+    "duration_us": 200000
+  },
+  "imagina_esto": {
+    "enabled": false,
+    "keywords": []
+  },
+  "glow": {
+    "enabled": false
+  },
+  "overlays": {
+    "grid_enabled": false,
+    "grid_keywords": [],
+    "neon_enabled": false
+  },
+  "audio": {
+    "gain_db": 6.0,
+    "bgm_volume_db": -12.0,
+    "ducking_depth_db": -5.0,
+    "ducking_active": true,
+    "threads": 0
+  },
+  "pipeline": {
+    "chunking": {
+      "chunk_seconds": 60,
+      "strategy": "proportional"
+    }
+  },
+  "cta": {
+    "enabled": true,
+    "intermedio": {
+      "position_pct": 0.37
+    },
+    "final": {
+      "fallback_ratio": 0.9,
+      "patterns": ["suscribete","suscribirse","suscribete al canal","subscribete","subscribirse","suscribete si quieres"]
+    }
+  },
+  "assets": {
+    "folder": "",
+    "files": {}
+  },
+  "chroma": {
+    "enabled": true,
+    "color": "#000000",
+    "intensity": 0.25,
+    "shadow": 0.0,
+    "edge_smooth": 0.0,
+    "spill": 0.0
+  },
+  "dyc": {
+    "subtitle_font": "Bungee-Rg",
+    "subtitle_font_resource_id": "7533527101870214401",
+    "start_animations": [
+      {
+        "resource_id": "7575810888108756277",
+        "name": "TV retro",
+        "duration_us": 2000000,
+        "hash": "b3efebc966906cd02d0ad134ba81a47b",
+        "path": "{USER_HOME}/AppData/Local/CapCut/User Data/Cache/effect/7575810888108756277/b3efebc966906cd02d0ad134ba81a47b"
+      },
+      {
+        "resource_id": "7372119524465709569",
+        "name": "Rompecabezas",
+        "duration_us": 2533333,
+        "hash": "4b721a1559eb3451d6cc358468537c49",
+        "path": "{USER_HOME}/AppData/Local/CapCut/User Data/Cache/effect/7372119524465709569/4b721a1559eb3451d6cc358468537c49"
+      },
+      {
+        "resource_id": "7522434265225628981",
+        "name": "Celular en 3D",
+        "duration_us": 2000000,
+        "hash": "d20828aeebb4ec698dee4563c80968f2",
+        "path": "{USER_HOME}/AppData/Local/CapCut/User Data/Cache/effect/7522434265225628981/d20828aeebb4ec698dee4563c80968f2"
+      }
+    ],
+    "end_animation": {
+      "resource_id": "7294461821170225666",
+      "name": "Agujero negro",
+      "duration_us": 733333,
+      "hash": "18f0daae1bf0b7bb2fbdec2d4a3dbdcd",
+      "path": "{USER_HOME}/AppData/Local/CapCut/User Data/Cache/effect/7294461821170225666/18f0daae1bf0b7bb2fbdec2d4a3dbdcd"
+    },
+    "color_effects": [
+      { "type": "contrast", "value": 0.2, "version": "v3" },
+      { "type": "saturation", "value": 0.1914285714285715, "version": "v1" },
+      { "type": "sharpen", "value": 0.4047619047619048, "version": "v1" },
+      { "type": "highlight", "value": 0.0, "version": "v3" },
+      { "type": "shadow", "value": -0.2952380952380952, "version": "v3" },
+      { "type": "light_sensation", "value": 0.0, "version": "" },
+      { "type": "vignetting", "value": 0.3047619047619048, "version": "v1" }
+    ],
+    "hsl_channels": [
+      { "hsl_color_type": 1, "hue": 0.0, "saturation": 15.0, "lightness": 10.0, "custom_color": "#FFE64444" },
+      { "hsl_color_type": 3, "hue": 0.0, "saturation": 15.0, "lightness": 10.0, "custom_color": "#FFF2F224" }
+    ],
+    "glitch_transitions": [
+      ["7595248214505164037", "Error distópico", 1466666, true],
+      ["6724239785205961228", "Error de color", 466666, true],
+      ["7651580719034125589", "Cortes de señal", 1000000, true],
+      ["6725771847444468236", "Falla", 466666, true],
+      ["7674809212127481095", "Glitch lateral", 1000000, true],
+      ["7612632016265284871", "Fallo de blanco y negro", 2000000, true],
+      ["7514119481837227325", "Píxeles deformados", 2000000, true]
+    ],
+    "excluded_transition_names": ["Elige otro"],
+    "chroma_intensity": 0.25
+  }
+}

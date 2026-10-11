@@ -162,3 +162,41 @@ def align_audio_to_text(
     log.info("Alineacion completada -> %s (%d cues).",
              output_srt_path, output_srt_path.read_text(encoding="utf-8", errors="replace").count("-->"))
     return output_srt_path
+
+
+def transcribe_audio_free(
+    audio_path: str | Path,
+    output_srt_path: str | Path,
+    cancel_event=None,
+) -> Path:
+    """Transcribe el audio sin texto de referencia (transcripcion libre).
+    Usa CrispASR en modo transcripcion libre con salida SRT."""
+    audio_path = Path(audio_path)
+    output_srt_path = Path(output_srt_path)
+    if not audio_path.is_file():
+        raise FileNotFoundError(f"No se encuentra el archivo de audio: {audio_path}")
+    output_srt_path.parent.mkdir(parents=True, exist_ok=True)
+    ensure_dependencies(cancel_event)
+    if cancel_event is not None and cancel_event.is_set():
+        raise GenerationCancelled("Generacion cancelada por el usuario.")
+    cmd = [
+        str(config.CRISPASR_EXE),
+        "-f", str(audio_path),
+        "-osrt",
+        "-of", str(output_srt_path),
+        "-l", "es",
+    ]
+    log.info("Transcribiendo audio libre (%s)...", audio_path.name)
+    proc = subprocess.run(
+        cmd, capture_output=True, text=True,
+        encoding="utf-8", errors="replace",
+    )
+    if cancel_event is not None and cancel_event.is_set():
+        raise GenerationCancelled("Generacion cancelada por el usuario.")
+    if proc.returncode != 0:
+        err = (proc.stderr or proc.stdout or "").strip()
+        raise RuntimeError(f"CrispASR fallo (rc={proc.returncode}): {err[-1500:]}")
+    if not output_srt_path.is_file():
+        raise RuntimeError("CrispASR termino pero no genero el SRT.")
+    log.info("Transcripcion libre completada -> %s", output_srt_path)
+    return output_srt_path
