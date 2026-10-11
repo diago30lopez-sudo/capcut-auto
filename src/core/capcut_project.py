@@ -150,33 +150,33 @@ TRANSITION_RATIO = 0.98
 # is_overlap=true para todas (requerido para que se vean en preview).
 # ---------------------------------------------------------------------------
 _DYC_TRANSITIONS = (
-    ("7563293278083403013", "Parpadeo espeluznante",           2000000, True),
-    ("7549111468348673341", "Parpadeo invertido",              2000000, True),
-    ("7569892679333530898", "Eco de parpadeo",                 2000000, True),
-    ("7656729516693310741", "Corte de escena",                  466666,  True),
-    ("7514119481837227325", "Píxeles deformados",              2000000, True),
-    ("7627056546643545365", "Choque invertido en blanco y negro", 1066666, True),
-    ("7595248214505164037", "Error distópico",                 1466666, True),
-    ("6724239785205961228", "Error de color",                   466666,  True),
-    ("7651580719034125589", "Cortes de señal",                 1000000, True),
-    ("6725771847444468236", "Falla",                            466666,  True),
-    ("7674809212127481095", "Glitch lateral",                  1000000, True),
-    ("7612632016265284871", "Fallo de blanco y negro",          2000000, True),
-    ("7488157742956350737", "Deslizamiento con zoom",           1000000, True),
-    ("7666004747580673301", "Zoom falso",                      2000000, True),
-    ("7612088207236189458", "Zoom hiperdistorsionado",          1066666, True),
-    ("7612555794336288016", "Neón estroboscópico",             2000000, True),
-    ("7687933150131080466", "Estrobo láser",                   2000000, True),
-    ("7245192723077009921", "Estroboscopio II",                 400000,  True),
-    ("7248940490211463681", "Estroboscopio en blanco y negro",  600000,  True),
-    ("7622957889271024901", "Secuencia en blanco y negro",     2000000, True),
-    ("7618337228942707973", "Apertura con rasgado",            1933333, True),
-    ("7617043237525523730", "Rasgado grunge",                  2000000, True),
-    ("6886275127743353346", "Humo oscuro",                      466666,  True),
-    ("7563262619713326389", "Sorpresa de sangre",              1266666, True),
-    ("7607661645040553234", "Barrido ardiente",                1533333, True),
-    ("7682968334454852865", "Escaneo de haz",                  2000000, True),
-    ("7584014501696081153", "Pulso fragmentado",               2000000, True),
+    ("7563293278083403013", "Parpadeo espeluznante", "6022207b553e453ee29e1198230a88d2", 2000000, True, "0"),
+    ("7549111468348673341", "Parpadeo invertido", "e33edfa1954055d67513de731f16c90b", 2000000, True, "0"),
+    ("7569892679333530898", "Eco de parpadeo", "1c8bd85d14d78e30b501dcb7e086d521", 2000000, True, "0"),
+    ("7656729516693310741", "Corte de escena", "9672a4902b0cd82c286b6e3fbee5ac3d", 466666, True, "0"),
+    ("7514119481837227325", "P��xeles deformados", "d0962a8a6f6202b12c36337a9759c437", 2000000, True, "0"),
+    ("7627056546643545365", "Choque invertido en blanco y negro", "cf28d6f85ecde9c4b10a07de6464a8e1", 1066666, True, "0"),
+    ("7595248214505164037", "Error dist��pico", "06bdac125def9626d7abcc85a9bc6ed8", 1466666, True, "0"),
+    ("6724239785205961228", "Error de color", "9de90519d59e432b81c38423aa0393d7", 466666, True, "0"),
+    ("7651580719034125589", "Cortes de se��al", "8aba829362cc0b50d6be180cf818a965", 1000000, True, "0"),
+    ("6725771847444468236", "Falla", "7bec08ae5dae8806e3ba0c66622d0fd3", 466666, True, "0"),
+    ("7674809212127481095", "Glitch lateral", "5444332e5b21b4df28e7db2e3cfd047f", 466666, True, "0"),
+    ("7612632016265284871", "Fallo de blanco y negro", "a72c1af9bf37cd15c335f21502948259", 2000000, True, "0"),
+    ("7488157742956350737", "Deslizamiento con zoom", "b9c75e5e406051bcfda6a1048fbb2677", 2000000, True, "0"),
+    ("7666004747580673301", "Zoom falso", "d401bc8e47c4d7a0b68f27c38d7329f7", 2000000, True, "0"),
+    ("7612088207236189458", "Zoom hiperdistorsionado", "92e1a39302ac084ad526effd078e241a", 1066666, True, "0"),
+    ("7612555794336288016", "Ne��n estrobosc��pico", "14a3228c86715219027ea1e1eb28d7ce", 2000000, True, "0"),
+    ("7687933150131080466", "Estrobo lǭser", "0a4e6da6fd736d1fee15378dc1f7ce8c", 2000000, True, "0"),
+    ("7245192723077009921", "Estroboscopio II", "0d95b71df07de567e9c059d816acc984", 400000, True, "0"),
+    ("7248940490211463681", "Estroboscopio en blanco y negro", "3922babba632da7545c9b507dff666a1", 600000, True, "0"),
+    ("7622957889271024901", "Secuencia en blanco y negro", "add7b9ebd892b7e3501f195ca3a284ec", 2000000, True, "0"),
+    ("7618337228942707973", "Apertura con rasgado", "8aa68a9a2947d348ec59a9f8fe2eebc6", 1933333, True, "0"),
+    ("7617043237525523730", "Rasgado grunge", "ec317498de46f7fd935a9d6e6384b3b0", 2000000, True, "0"),
+    ("6886275127743353346", "Humo oscuro", "fa02f80c28a9671a206c2ccf17b41c58", 466666, True, "0"),
+    ("7563262619713326389", "Sorpresa de sangre", "5880c573fcf18f4cb33335aa98d78cb1", 1266666, True, "0"),
+    ("7607661645040553234", "Barrido ardiente", "ee6a34243b5eead8c3835d3f22ca8206", 1533333, True, "0"),
+    ("7682968334454852865", "Escaneo de haz", "7c7a43c47c51b9470ca89f5bff1d54a0", 2000000, True, "0"),
+    ("7584014501696081153", "Pulso fragmentado", "412d0b9ee98f2758f3185e9a2baf6c27", 2000000, True, "0"),
 )
 
 # ---------------------------------------------------------------------------
@@ -1489,7 +1489,7 @@ class CapCutProject:
                         continue
                     if not _are_contiguous(video_segments[b], video_segments[b + 1]):
                         continue
-                    effect_id, name, duration_us, is_overlap = pick_dyc_transition(
+                    effect_id, name, hash_dir, duration_us, is_overlap, third_id = pick_dyc_transition(
                         dyc_pool, last_id)
                     last_id = effect_id
                     cache = Path.home() / "AppData" / "Local" / "CapCut" / "User Data" / "Cache" / "effect"
@@ -1507,7 +1507,7 @@ class CapCutProject:
                         "resource_id": effect_id,
                         "third_resource_id": "0",
                         "source_platform": 1,
-                        "path": (cache / effect_id).as_posix(),
+                        "path": (cache / effect_id / hash_dir).as_posix() if hash_dir else (cache / effect_id).as_posix(),
                         "duration": duration_us,
                         "is_overlap": is_overlap,
                         "platform": "all",
@@ -1790,7 +1790,7 @@ class CapCutProject:
                             "name": g_name,
                             "effect_id": g_effect_id,
                             "resource_id": g_effect_id,
-                            "third_resource_id": "0",
+                        "third_resource_id": third_id,
                             "source_platform": 1,
                             "path": (Path.home() / "AppData" / "Local" / "CapCut" /
                                      "User Data" / "Cache" / "effect" / g_effect_id).as_posix(),
