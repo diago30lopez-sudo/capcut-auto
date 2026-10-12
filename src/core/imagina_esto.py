@@ -600,6 +600,7 @@ def aplicar(
     project_dir: str | Path,
     track_text_id: str | None = None,
     timeline_id: str | None = None,
+    content: dict | None = None,
 ) -> dict | None:
     """FASE B + C + D sobre el `draft_content.json` YA escrito.
 
@@ -614,7 +615,8 @@ def aplicar(
                  CONTENT_JSON, raiz)
         return None
 
-    content = json.loads(destino.read_text(encoding="utf-8"))
+    if content is None:
+        content = json.loads(destino.read_text(encoding="utf-8"))
     bloques_ = bloques(content, track_text_id)
     if not bloques_:
         log.info("[imagina-esto] sin bloques de subt??tulo; se omite el post-proceso.")

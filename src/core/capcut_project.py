@@ -2196,14 +2196,20 @@ class CapCutProject:
                 f"El vídeo no termina alineado con el audio: video={_final_video_end} us, "
                 f"audio={target_us} us (delta={_final_video_end - target_us} us). Abortando."
             )
+        log.info("[trace] pre-write | segmentos=%d materiales=%d",
+                 len(video_segments), len(materials.get("videos", [])))
         self._write_draft_content(self.new_dir, content)
+        log.info("[trace] post-write OK")
         if text_track is not None and edit_profile.enable_imagina_esto:
+            log.info("[trace] pre-imagina-esto")
             try:
                 aplicar(
                     self.new_dir,
                     track_text_id=text_track["id"],
                     timeline_id=self._timeline_id(content),
+                    content=content,
                 )
+                log.info("[trace] post-imagina-esto OK")
             except ImaginaEstoError:
                 shutil.rmtree(self.new_dir, ignore_errors=True)
                 raise
@@ -2250,13 +2256,14 @@ class CapCutProject:
 
     def _write_draft_content(self, project_dir: Path, content: dict) -> None:
         """Escribe draft_content.json en la raiz y en Timelines/<id>/ (si existe)."""
-        text = json.dumps(content, ensure_ascii=False, indent=2)
-        (project_dir / CONTENT_JSON).write_text(text, encoding="utf-8")
+        text = json.dumps(content, ensure_ascii=False, separators=(",", ":"))
+        dest = project_dir / CONTENT_JSON
+        dest.write_text(text, encoding="utf-8")
         timeline_id = self._timeline_id(content)
         if timeline_id:
             tdir = project_dir / "Timelines" / timeline_id
             if tdir.is_dir():
-                (tdir / CONTENT_JSON).write_text(text, encoding="utf-8")
+                shutil.copy2(dest, tdir / CONTENT_JSON)
                 log.info("draft_content.json escrito también en %s", tdir)
         log.info("draft_content.json generado con %d pistas de foto + 1 de audio.",
                  len(content.get("tracks") or []))

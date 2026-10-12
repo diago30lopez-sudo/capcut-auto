@@ -1,0 +1,31 @@
+﻿398:     preview de CapCut puede ignorar `visible: false`."""
+399:     seg["visible"] = False
+400:     seg.setdefault("clip", {})["alpha"] = 0.0
+401:     seg.setdefault("common_keyframes", []).append(_alpha_keyframe(0.0, 0))
+402: 
+403: 
+404: def rango(seg: dict) -> tuple[int, int]:
+405:     """`(start, end)` del `target_timerange` de un segmento."""
+406:     r = seg.get("target_timerange") or {}
+407:     start = int(r.get("start") or 0)
+408:     return start, start + int(r.get("duration") or 0)
+409: 
+410: 
+411: def _copia(seg: dict, target: tuple[int, int], source: tuple[int, int],
+412:            kfs: list[dict]) -> dict:
+413:     nuevo = copy.deepcopy(seg)
+414:     nuevo["id"] = _new_id()
+415:     nuevo["target_timerange"] = {"start": target[0], "duration": target[1] - target[0]}
+416:     nuevo["source_timerange"] = {"start": source[0], "duration": source[1] - source[0]}
+417:     nuevo["common_keyframes"] = kfs
+418:     return nuevo
+419: 
+420: 
+421: def dividir_segmento(seg: dict, ini: int, fin: int) -> list[dict]:
+422:     """Parte `seg` en [antes] [durante(oculto)] [despu??s] dentro de [ini, fin).
+423: 
+424:     Los sub-segmentos son CONTIGUOS (el `start` del siguiente es el `end` del
+425:     anterior), conservan el `material_id` y el resto de campos del padre (zoom,
+426:     HSL, color grading y transiciones de `extra_material_refs`), y el
+427:     `source_timerange` de cada uno avanza dentro del material."""
+428:     s, e = rango(seg)

@@ -1,0 +1,37 @@
+﻿820:     def _build_photo_segment(self, content: dict, mat_id: str, start_us: int,
+821:                               duration_us: int, cover_scale: float = 1.0,
+822:                               zoom_mult: float = 1.0, zoom_base: float = 1.0,
+823:                               position_points: list | None = None,
+824:                               enable_hsl: bool = True,
+825:                               enable_adjust: bool = True,
+826:                               extra_refs: list | None = None,
+827:                               fade_in_duration_us: int = 0,
+828:                               profile: EditProfile | None = None,
+829:                               dyc_effect_refs: list | None = None) -> dict:
+830:         seg = copy.deepcopy(canonical.PHOTO_SEGMENT)
+831:         seg["id"] = new_id()
+832:         seg["material_id"] = mat_id
+833:         seg["render_index"] = 0
+834:         seg["track_render_index"] = 0
+835:         seg["source_timerange"] = {"start": 0, "duration": duration_us}
+836:         seg["target_timerange"] = {"start": start_us, "duration": duration_us}
+837:         seg["clip"]["scale"] = {"x": cover_scale, "y": cover_scale}
+838:         seg["uniform_scale"] = {"on": True, "value": 1.0}
+839:         kfs = _zoom_keyframes(duration_us, zoom_mult, base=zoom_base)
+840:         kfs.extend(_color_keyframes(duration_us, profile))
+841:         kfs.extend(_position_entries(position_points))
+842:         kfs.extend(_fade_in_keyframes(duration_us, fade_in_duration_us))
+843:         seg["common_keyframes"] = kfs
+844:         seg["enable_hsl"] = bool(enable_hsl)
+845:         seg["enable_adjust"] = bool(enable_adjust)
+846:         all_refs = list(dyc_effect_refs or []) + list(extra_refs or [])
+847:         seg["extra_material_refs"] = all_refs
+848:         return seg
+849:     def _build_transition_material_from_name(self, name: str) -> dict:
+850:         """Crea un material de transicion a partir SOLO del nombre (para DYC,
+851:         donde los effect_id no se conocen aun)."""
+852:         cache = Path.home() / "AppData" / "Local" / "CapCut" / "User Data" / "Cache" / "effect"
+853:         return {
+854:             "id": new_id(),
+855:             "type": "transition",
+856:             "name": name,

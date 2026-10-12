@@ -1,0 +1,31 @@
+﻿2187:                 if _src:
+2188:                     _src["duration"] += _drift_c
+2189:         _final_video_end = (
+2190:             int(video_segments[-1].get("target_timerange", {}).get("duration") or 0)
+2191:             + int(video_segments[-1].get("target_timerange", {}).get("start") or 0)
+2192:         )
+2193:         log.info("Final video end: %d us / Audio: %d us", _final_video_end, target_us)
+2194:         if abs(_final_video_end - target_us) > _ONE_FRAME_US * 2:
+2195:             raise RuntimeError(
+2196:                 f"El vÃ­deo no termina alineado con el audio: video={_final_video_end} us, "
+2197:                 f"audio={target_us} us (delta={_final_video_end - target_us} us). Abortando."
+2198:             )
+2199:         self._write_draft_content(self.new_dir, content)
+2200:         if text_track is not None and edit_profile.enable_imagina_esto:
+2201:             try:
+2202:                 aplicar(
+2203:                     self.new_dir,
+2204:                     track_text_id=text_track["id"],
+2205:                     timeline_id=self._timeline_id(content),
+2206:                 )
+2207:             except ImaginaEstoError:
+2208:                 shutil.rmtree(self.new_dir, ignore_errors=True)
+2209:                 raise
+2210:         self._check_cancelled()
+2211:         meta = copy.deepcopy(self.meta)
+2212:         now_ms = _now_ms()
+2213:         meta["draft_id"] = str(uuid.uuid4())
+2214:         meta["draft_name"] = project_name
+2215:         meta["draft_fold_path"] = self.new_dir.as_posix()
+2216:         meta["draft_root_path"] = base.as_posix()
+2217:         meta["tm_draft_create"] = now_ms
