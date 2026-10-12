@@ -33,3 +33,9 @@ Pillow-*.whl
 tmp_wheel/
 .pytest_cache/config_user.json 
 tmp_wheel/ 
+*.manifest
+*.bak
+.pytest_cache/
+
+# PyInstaller bundle
+plans/

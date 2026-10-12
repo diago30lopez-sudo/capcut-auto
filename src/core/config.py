@@ -3,21 +3,30 @@
 import json
 import logging
 import os
+import sys
 from pathlib import Path
 
-ROOT_DIR = Path(__file__).resolve().parent.parent.parent
-REPO_ROOT = ROOT_DIR
+if getattr(sys, 'frozen', False):
+    EXE_DIR    = Path(sys.executable).parent      # escribibles (persistente)
+    BUNDLE_DIR = Path(getattr(sys, '_MEIPASS', EXE_DIR))   # lectura (bundle)
+else:
+    _src_root  = Path(__file__).resolve()
+    EXE_DIR    = _src_root.parent.parent.parent   # = REPO_ROOT
+    BUNDLE_DIR = EXE_DIR
 
-CACHE_DIR = ROOT_DIR / "cache"
-LOGS_DIR = ROOT_DIR / "logs"
-BACKUPS_DIR = ROOT_DIR / "backups"
-BIN_DIR = ROOT_DIR / "bin"
-MODELS_DIR = ROOT_DIR / "models"
+ROOT_DIR = EXE_DIR
+REPO_ROOT = BUNDLE_DIR
+
+CACHE_DIR = EXE_DIR / "cache"
+LOGS_DIR = EXE_DIR / "logs"
+BACKUPS_DIR = EXE_DIR / "backups"
+BIN_DIR = BUNDLE_DIR / "bin"
+MODELS_DIR = BUNDLE_DIR / "models"
 SCHEMA_FILE = LOGS_DIR / "schema_plantilla.json"
 SCHEMA_FULL_FILE = LOGS_DIR / "schema_plantilla_full.json"
 APP_LOG_FILE = LOGS_DIR / "app.log"
 
-USER_CONFIG_FILE = ROOT_DIR / "config_user.json"
+USER_CONFIG_FILE = EXE_DIR / "config_user.json"
 
 DRAFT_CONTENT_FILE = "draft_content.json"
 DRAFT_META_FILE = "draft_meta_info.json"
@@ -271,4 +280,4 @@ def profiles_dir() -> Path:
     p = user.get("profiles_dir", "")
     if p and Path(p).is_dir():
         return Path(p)
-    return REPO_ROOT / "profiles"
+    return BUNDLE_DIR / "profiles"

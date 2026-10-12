@@ -1,551 +1,544 @@
-# 🎬 CapCut Auto — Nexus Paradoja
+# 🎬 CapCut Auto
 
-**Versión actual:** v1.7.0
-**Última actualización:** 2026-10-03
+Motor genérico de perfiles JSON para generar drafts de CapCut Desktop automáticamente.
+
+**Versión actual:** v2.0.3  
+**Última actualización:** 2026-10-12  
+**Tag GitHub:** [v2.0.3](https://github.com/diago30lopez-sudo/capcut-auto/releases/tag/v2.0.3)
 
 > ⚠️ **IMPORTANTE:** CapCut debe estar **CERRADO** durante la generación.
 
 ---
 
-## 📌 Estado del proyecto
+## Índice
 
-| Fase | Descripción | Estado |
-|---|---|---|
-| **v1.0.0** | Alineación CrispASR + sincronización escenas | ✅ Taggeada |
-| **v1.1.0** | UI 2 paneles, subtítulos, modal verde | ✅ Taggeada |
-| **v1.2.0** | Camera shake, HSL, paneos, SFX | ✅ Taggeada |
-| **v1.2.1** | Limpieza de tracking (backups/cache/logs/models fuera) | ✅ Taggeada |
-| **v1.3.0** | Watermark, auto-descarga, fixes de escalas, color grading, subtítulos, pop-up | ✅ Taggeada |
-| **v1.4.0** | "Imagina esto" — centrado de subtítulos con keyword + ocultamiento de vídeo | ✅ Taggeada |
-| **v1.5.0** | Selector de audios en UI — detección recursiva, dropdown guion, lista otros | ✅ Taggeada |
-| **v1.5.1** | Hotfix: cancelación (modal + matar CrispASR) + fix audio guion (dropdown manda, nombre irrelevante) | ✅ Taggeada |
-| **v1.6.0** | Tipo de edición "Datos Y Cafe" (watermark/subtítulos distintos, sin efectos avanzados) | ✅ Taggeada |
-| **v1.7.0** | Edición AVANZADA de "Datos Y Cafe" (zoom, paneos, shake, fade in, 20 transiciones, color grading, HSL selectivo, viñeta, glow, overlays, SFX, BGM+ducking) | ✅ En desarrollo |
-| **v2.0.0** | Nuevo tipo de edición (además de "Nexus Paradoja") — última antes del .exe | ⏳ Pendiente |
-| **v2.1.0** | Empaquetado .exe + guardar app completa en la nube | ⏳ Pendiente |
-
-> **Nota:** v1.9.0 (tv_control + flash + reset) queda **descartado**. Si se retoma, será dentro de otra versión.
+- [Qué es](#qué-es)
+- [Stack tecnológico](#stack-tecnológico)
+- [Arquitectura](#arquitectura)
+- [Instalación](#instalación)
+- [Uso](#uso)
+- [Perfiles JSON](#perfiles-json)
+- [Compilación y distribución](#compilación-y-distribución)
+- [Historial de versiones](#historial-de-versiones)
+- [Bugs conocidos y resueltos](#bugs-conocidos-y-resueltos)
+- [Roadmap](#roadmap)
+- [Método de trabajo](#método-de-trabajo)
+- [Glosario](#glosario)
+- [Preguntas abiertas](#preguntas-abiertas)
 
 ---
 
-## 📐 Escalas JSON ↔ CapCut UI
+## Qué es
 
-Aplica a canvas **1920×1080** (half_w = 960, half_h = 540).
+**CapCut Auto** genera borradores nativos de CapCut Desktop sin intervención manual. A partir de tres insumos —un audio de narración, un guion de escenas en texto (`escenas.txt`) y una carpeta de recursos visuales— produce un proyecto completamente editable en CapCut.
 
-| Propiedad UI | Campo JSON | Fórmula (UI → JSON) | Ejemplo |
-|---|---|---|---|
-| Grosor trazo | `strokes[0].width` | `UI / 500` | 30 → `0.06` |
-| Opacidad (%) | `global_alpha` | `UI / 100` | 15 → `0.15` |
-| Letter spacing | `letter_spacing` | `UI × 0.05` | 0 → `0.0` |
-| Posición X | `transform.x` | `UI_X / 1920` | -1098 → `-0.571875` |
-| Posición Y | `transform.y` | `UI_Y / 1080` | -900 → `-0.8333333` |
-| Saturación (UI) | `KFTypeSaturation.values` | `UI / 50` | -50 → `-1.0` |
-| Brillo (UI) | `KFTypeBrightness.values` | `UI / 50` | -50 → `-1.0` |
-| Contraste (UI) | `KFTypeContrast.values` | `UI / 50` | -50 → `-1.0` |
-| Negros (UI) | `KFTypeBlack.values` | `UI / 50` | -50 → `-1.0` |
+### ¿Qué hace?
 
-### Valores vigentes
+1. **Alinea voz e imágenes** con precisión de microsegundo usando CrispASR (forced alignment).
+2. **Genera subtítulos** con fuentes personalizadas, colores de resalte por palabra clave y trazos de contorno.
+3. **Compon multicapa**: video base, transiciones nativas, pistas CTA con chroma key, pantallas finales y marcas de agua continuas.
+4. **Mezcla audio dinámicamente**: música de fondo con ducking automático respecto a la voz.
+5. **Aplica estilos editoriales** distintos según el perfil JSON seleccionado.
 
-| Elemento | UI | JSON |
-|---|---|---|
-| Trazo subtítulos | 30 | `0.06` |
-| Opacidad watermark | 15% | `0.15` |
-| Letter spacing watermark | 2 | `0.10` |
-| Letter spacing subtítulos | 0 | `0.0` |
-| Posición X watermark | -1098 | `-0.571875` |
-| Posición Y watermark | 896 | `0.8296` |
-| Posición Y subtítulos | -900 | `-0.8333333` |
-| Mayúsculas subtítulos | Sí | ver `docs` |
+### Canales
+
+El proyecto soporta dos canales con identidades visuales completamente aisladas:
+
+- **Nexus Paradoja**: edición cinematográfica con transiciones, color grading HSL, paneos, camera shake, SFX, imagina-esto y watermark tenue.
+- **Datos Y Café (DYC)**: edición de ritmo dinámico sin efectos cinematográficos, con fuentes gruesas, CTA con chroma, animaciones de entrada/salida y zoom automático.
+
+### Filosofía v2.0.x
+
+Desde v2.0.0, nada está hardcodeado en el código Python. Cada aspecto visual y funcional se define en archivos JSON bajo `profiles/`. Para añadir un tercer canal basta crear un nuevo perfil JSON sin tocar una sola línea de código.
 
 ---
 
-## 🚀 Instalación
+## Stack tecnológico
 
-```powershell
-python -m venv .venv
-& .venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-python src\main.py
-o directamente run.bat.
+| Componente | Tecnología | Detalle |
+|---|---|---|
+| **Lenguaje** | Python 3.14 x64 | Compatible con 3.12+ |
+| **UI** | CustomTkinter 6.0.0 + Tkinter | Temas oscuros, widgets modernos |
+| **Imágenes** | Pillow >= 10.0.0 | Procesamiento de imágenes y videos |
+| **ASR / Alineación** | CrispASR v0.8.35 | Binario C++ x86_64 CPU + OpenBLAS |
+| **Modelo acústico** | FastConformer Hybrid CTC Large | GGUF Q4_K (~66 MB), español |
+| **Coincidencia difusa** | RapidFuzz | Parsing flexible de escenas y subtítulos |
+| **Parser multimedia** | Parser MP4 nativo Python + ffprobe | Duraciones precisas en µs |
+| **Empaquetado** | PyInstaller 6.22.3 | onedir, sin consola |
 
-🖥️ La nueva interfaz
-La ventana tiene 6 secciones + botones Generar proyecto y Cancelar:
+### Descartado
 
-Carpeta CapCut Drafts
+| Tecnología | Motivo del descarte |
+|---|---|
+| **faster-whisper** | Requiere GPU; el flujo usa CrispASR que corre en CPU |
+| **ffmpeg** | ffprobe solo como fallback; el parser MP4 nativo es suficiente |
+| **Modelo small de CrispASR** | Insuficiente para español; se usa el modelo large Q4_K |
+| **Música de fondo automática** | Descartado del roadmap — el usuario aporta sus propios audios |
+| **Detección de inglés** | Fuera de alcance del proyecto actual |
 
-Botón Seleccionar carpeta… (y un pequeño Cambiar… junto a la ruta).
+---
 
-Debajo, un desplegable con las plantillas detectadas: subcarpetas que
-contienen a la vez draft_content.json y draft_meta_info.json.
+## Arquitectura
 
-Si solo hay una plantilla se autoselecciona; si hay varias, se conserva la
-última elegida. Si la carpeta no tiene plantillas válidas se muestra un
-error y no se guarda.
+### Árbol de carpetas
 
-La ruta se guarda en config_user.json y se recupera al reabrir la app.
-
-Carpeta del video
-
-Botón Seleccionar carpeta…. Al elegirla se ejecuta el escaneo
-inteligente y se muestran 3 resúmenes con ✓/✗:
-
-text
-✓ Audio   : guion.wav
-✓ Escenas : escenas.txt (144 escenas)
-✓ Imágenes: .\escenas 2 (144 archivos)
-Si algo no se detecta, su etiqueta sale en rojo con ✗ No se encontró … y el botón Generar proyecto se deshabilita.
-
-Subtítulos (.srt)
-
-Botón Buscar .srt… que escanea la carpeta del video y el caché de
-alineación.
-
-Desplegable con todos los .srt encontrados; el último elegido se restaura
-al reabrir la app.
-
-Los subtítulos se dividen en fragmentos de 2-5 palabras con timing
-proporcional durante la generación.
-
-Audios del proyecto (v1.5.0 + v1.5.1)
-
-Al seleccionar la carpeta del video, se escanean recursivamente todos
-los archivos de audio (.wav, .mp3, .m4a, .aac, .flac, .ogg).
-
-Audio guion (narración principal) — desplegable con todos los audios
-encontrados. La clasificación es solo una sugerencia inicial:
-
-Si existe un archivo con "guion" en el nombre (case-insensitive, sin
-tildes) → se autoselecciona.
-
-Si no existe → el primer .wav encontrado se propone como guion.
-
-El audio que EL USUARIO seleccione en el dropdown es el ÚNICO que se usa
-como guion (pista principal de audio en CapCut). El nombre no importa.
-Los demás quedan como audios detectados (podrían usarse como SFX).
-
-La elección se guarda en config_user.json como last_guion_name y se
-restaura al reabrir. Comparación case-insensitive (fix v1.5.1).
-
-Otros audios detectados — lista visual de los archivos restantes.
-
-Si no hay audios, el dropdown aparece deshabilitado con el mensaje
-"No se detectaron audios en la carpeta".
-
-Nombre del nuevo proyecto — campo de texto.
-
-Los botones Generar (verde) y Cancelar (rojo) están deshabilitados salvo
-que correspondan; debajo está la barra de progreso (indeterminada) y el
-área de logs (read-only con scroll).
-
-💾 Configuración persistida (config_user.json)
-Se crea en la raíz del proyecto (D:\capcut-auto\config_user.json) con:
-
-json
-{
-"capcut_drafts_dir": "D:\\...\\CapCut Drafts",
-  "last_template_name": "1.PLANTILLA",
-  "last_video_dir": "D:\\...\\VIDEO_1",
-  "last_srt_dir": "D:\\...\\VIDEO_1",
-  "last_srt_name": "guion.srt",
-  "last_guion_name": "guion.MP3"
-}
-Se guarda tras cada cambio de carpeta, plantilla o audio y se carga al
-arrancar.
-
-🔍 Detección inteligente (src/core/auto_detect.py)
-Función detect_video_inputs(root) -> DetectionResult, 100 % sin UI: recibe
-una ruta y devuelve un dataclass con audio_path, scene_txt_path,
-images_dir, image_paths, scene_count y warnings. Toda decisión queda
-registrada en warnings.
-
-Audio: usa recursividad sobre extensiones .wav/.mp3/.m4a/.aac/.flac/.ogg
-excluyendo nombres con musica/music/bgm/background. Puntúa:
-+3 si el nombre sugiere guion/voz (guion|voz|voice|narration|locucion|narra)
-y +1 por MB (cap a +10).
-
-Importante (v1.5.1): el resultado de detect_video_inputs para el audio
-es solo una sugerencia inicial para el dropdown. El pipeline NO usa
-este valor. El audio del guion es SIEMPRE el que el usuario selecciona en el
-dropdown (pasado explícitamente a project.generate()).
-
-detect_audios(root) -> dict (v1.5.0) para el selector de UI.
-Escanea recursivamente todos los audios y devuelve:
-
-python
-{"guion": Path | None, "otros": [Path, ...]}
-Escenas (.txt): lista los .txt recursivos, valida las primeras 200
-líneas (al menos 2 ESCENA # y 1 VOZ EN OFF:). Puntúa: +5 si el nombre
-sugiere escena|scene|guion|script y +1 por cada 10 escenas.
-
-Imágenes: extensiones .jpg/.jpeg/.png/.webp. Orden natural
-(2.jpg < 10.jpg vía natural_sort_key).
-
-Validación cruzada: si len(image_paths) != scene_count se añade un
-warning; al generar, la UI pide decisión.
-
-📝 Formato del archivo de escenas
-Por bloque (cada escena empieza con ESCENA #<n>):
-
-text
-ESCENA #137
-VOZ EN OFF: "Ahora es más rápido, más fuerte, pero también más humano que nunca."
-DURACIÓN ESTIMADA: 4 segundos
-BÚSQUEDA DE IMAGEN (Google/Pinterest): "universo futurista humano"
-NOTA: "rojo y azul"
-Reglas: las escenas se ordenan por orden de aparición, el texto clave es la
-línea VOZ EN OFF, y DURACIÓN ESTIMADA / BÚSQUEDA / NOTA son auxiliares.
-
-🛑 Cancelación
-Un threading.Event (cancel_event) compartido entre la UI y el hilo de
-trabajo.
-
-Diálogo modal al pulsar Cancelar: "¿Seguro que quieres cancelar la
-generación?" con botones Sí/No. Si Sí → cancel_event.set().
-
-La app NO se cierra. El botón Generar vuelve a estar habilitado.
-
-Se comprueba en: bucle de copiado de imágenes, bucle de construcción del
-timeline, subtítulos, capcut_project, imagina_esto y antes de
-escribir el draft_content.json final.
-
-Fix v1.5.1: matar el subprocess de CrispASR (Popen.terminate() /
-kill()) al cancelar durante la alineación.
-
-Si se cancela tras clonar, la carpeta a medias se elimina
-(shutil.rmtree(new_dir, ignore_errors=True)).
-
-La plantilla original nunca se modifica.
-
-📁 Estructura del proyecto
-text
+```
 capcut-auto/
 ├── src/
-│   ├── main.py                     # arranca la UI
+│   ├── main.py                          # Punto de entrada: bootstrap + UI
 │   ├── ui/
-│   │   └── main_window.py          # ventana CustomTkinter (6 secciones)
+│   │   └── main_window.py               # Ventana CustomTkinter (6 secciones)
 │   ├── core/
-│   │   ├── config.py               # rutas + URLs + constantes (chroma, roles)
-│   │   ├── auto_detect.py          # detección inteligente
-│   │   ├── scene_parser.py         # .txt de escenas
-│   │   ├── transcriber.py          # descarga CrispASR/modelo + align
-│   │   ├── bootstrap.py            # ensure_dependencies()
-│   │   ├── timeline_builder.py     # timeline escena <-> cue del SRT
-│   │   ├── capcut_project.py       # clonado/edición + overlays + chroma
-│   │   ├── capcut_canonical.py     # helpers estructura CapCut
-│   │   ├── imagina_esto.py         # post-proceso "IMAGINA ESTO"
-│   │   └── subtitles.py            # motor de subtítulos
+│   │   ├── config.py                    # Rutas EXE_DIR/BUNDLE_DIR + constantes
+│   │   ├── auto_detect.py               # Detección heurística de inputs
+│   │   ├── scene_parser.py              # Parsing de escenas.txt (NO TOCAR)
+│   │   ├── transcriber.py               # CrispASR + alineación (NO TOCAR)
+│   │   ├── bootstrap.py                 # ensure_dependencies()
+│   │   ├── timeline_builder.py          # Escena ↔ cue SRT (NO TOCAR chunking)
+│   │   ├── capcut_project.py            # Clonado, edición + overlays (NO TOCAR)
+│   │   ├── capcut_canonical.py          # Helpers estructura CapCut
+│   │   ├── imagina_esto.py              # Post-proceso "IMAGINA ESTO"
+│   │   ├── subtitles.py                 # Motor de subtítulos (NO TOCAR)
+│   │   ├── profile_schema.py            # Dataclasses + validación de perfiles
+│   │   ├── profile_loader.py            # Carga dinámica de profiles/*.json
+│   │   └── pipeline.py                  # Orquestación del pipeline
 │   └── utils/
-│       └── logger.py
-├── cache/               # guion temporal + SRT de alineación
-├── bin/                 # crispasr.exe (descargado en la 1ª ejecución)
-├── models/              # modelo español GGUF (descargado en la 1ª ejecución)
-├── logs/                # app.log + schema_plantilla.json
-├── backups/             # copias de seguridad de la plantilla
-├── config_user.json     # configuración persistida (se crea al usar la app)
-├── build.spec           # empaquetado PyInstaller (onedir, sin models/)
-├── tests/
-│   ├── smoke.py                 # pipeline completo sin UI
-│   ├── auto_detect_check.py     # checks de detección + cancelación
-│   ├── session_restore_check.py # restauración de config al reabrir la UI
-│   ├── transcriber_import_check.py  # anti-typo CRISPASR + imports
-│   ├── bootstrap_check.py       # descarga bin/modelo simulada
-│   ├── subs_check.py            # subtítulos: fragmentación, estilo, trazo
-│   ├── subtitle_layout_check.py # subtítulos: layout interno
-│   ├── watermark_check.py       # marca de agua "NEXUS PARADOJA"
-│   ├── color_grading_check.py   # color grading HSL por canal
-│   ├── json_scales_check.py     # valores JSON EXACTOS
-│   ├── imagina_esto_check.py    # post-proceso "IMAGINA ESTO"
-│   ├── cancel_check.py          # cancelación con threading.Event
-│   ├── fase2_e2e.py             # descarga real + alineación (autorizado)
-│   ├── fase1_check.py           # checks base
-│   ├── features_check.py        # features avanzadas
-│   ├── ui_boot.py               # arranque UI
-│   ├── ui_tarea1.py             # tarea UI 1
-│   └── build_helpers.py         # plantilla/audio sintéticos
-├── docs/
-│   └── capcut_json_scales.md    # escalas JSON ↔ CapCut UI
-└── README.md
-✅ Verificación
-powershell
-& .venv\Scripts\python.exe -X utf8 tests\auto_detect_check.py
-& .venv\Scripts\python.exe -X utf8 tests\smoke.py
-& .venv\Scripts\python.exe -X utf8 tests\ui_boot.py
-& .venv\Scripts\python.exe -X utf8 tests\session_restore_check.py
-& .venv\Scripts\python.exe -X utf8 tests\transcriber_import_check.py
-& .venv\Scripts\python.exe -X utf8 tests\subs_check.py
-& .venv\Scripts\python.exe -X utf8 tests\watermark_check.py
-& .venv\Scripts\python.exe -X utf8 tests\json_scales_check.py
-& .venv\Scripts\python.exe -X utf8 tests\fase2_e2e.py
-& .venv\Scripts\python.exe -X utf8 tests\subtitle_layout_check.py
-& .venv\Scripts\python.exe -X utf8 tests\cancel_check.py
-& .venv\Scripts\python.exe -X utf8 tests\imagina_esto_check.py
-🔧 FIX v1.5.0 — Restauración "Imagina esto" + Audio seleccionado
-Fix 1 — Restauración completa de "Imagina esto" (v1.4.0)
-El post-proceso se había perdido en v1.5.0. Se restauró:
+│       └── logger.py                    # Logging cola → UI + archivo
+├── profiles/
+│   ├── nexus.json                       # Perfil Nexus Paradoja
+│   └── dyc.json                         # Perfil Datos Y Café
+├── bin/                                 # crispasr.exe (descargado en 1ª ejecución)
+├── models/                              # Modelo GGUF (descargado en 1ª ejecución)
+├── logs/                                # app.log + schemas
+├── cache/                               # Guiones temporales + SRT de alineación
+├── backups/                             # Copias de seguridad de plantillas
+├── config_user.json                     # Configuración persistida del usuario
+├── build.spec                           # Especificación PyInstaller
+├── requirements.txt                     # Dependencias de desarrollo
+├── run.bat                              # Launcher rápido
+├── tests/                               # Suite de pruebas
+└── plans/reportes/                      # Reportes de diagnóstico y planificación
+```
 
-Módulo restaurado: src/core/imagina_esto.py.
+### Módulos NO TOCAR
 
-Llamada restaurada en capcut_project.py tras _write_draft_content.
+Los siguientes módulos contienen lógica crítica que no debe modificarse fuera de su ámbito de trabajo:
+- `src/core/transcriber.py` — manejo de subprocess CrispASR
+- `src/core/scene_parser.py` — parsing de escenas.txt
+- `src/core/subtitles.py` — motor de generación de subtítulos
+- `src/core/timeline_builder.py` — construcción del timeline (chunking)
+- `src/core/capcut_project.py` — ensamblado del draft (sync, transiciones, color grading, HSL)
 
-Config restaurada: IMAGINA_ESTO_KEYWORDS + IMAGINA_ESTO_CENTER_X/Y.
+### Pipeline de 5 pasos
 
-Log obligatorio [IMAGINA-ESTO] RESUMEN.
+1. **Bootstrap** → Verifica que `crispasr.exe` y el modelo GGUF existen; si no, los descarga.
+2. **Detección** → Escanea la carpeta del video buscando audio, escenas e imágenes.
+3. **Alineación** → Ejecuta CrispASR para obtener el SRT word-level.
+4. **Construcción** → Genera el draft clonando la plantilla y aplicando el perfil seleccionado.
+5. **Post-proceso** → Aplica reglas especiales (imagina-esto, CTA, chroma, etc.).
 
-Fix 2 — Audio seleccionado en el pipeline
-En main_window.py, al generar el proyecto se pasa self._audio_guion (el
-del dropdown) al dict de project.generate().
-
-El audio seleccionado se guarda en config_user.json como last_guion_name.
-
-Lo que NO cambia: imágenes, transiciones, color grading, HSL, paneos,
-camera shake, SFX, watermark, subtítulos, maintrack_adsorb=false.
-
-🔥 HOTFIX v1.5.1 — Cancelación + fix audio guion
-Bloque 1 — Cancelación (verificado ✅)
-Diálogo modal de confirmación.
-
-Bandera threading.Event (_cancel_event).
-
-Checks en timeline_builder, subtitles, capcut_project, imagina_esto,
-transcriber.
-
-Matar subprocess de CrispASR al cancelar.
-
-Cut limpio en bordes de "IMAGINA ESTO".
-
-Bloque 2 — Fix audio guion (verificado ✅)
-FIX A: _refresh_audio_menu usa comparación case-insensitive.
-p.name.lower() == selected.lower(). Ahora el audio seleccionado en el
-dropdown siempre se usa como pista principal.
-
-FIX B: _on_audio_guion_changed también con comparación case-insensitive.
-Ambos paths unificados.
-
-Regla: el audio seleccionado en el dropdown manda. El nombre no importa.
-Los demás quedan reservados. La auto-detección solo preselecciona el valor
-inicial, no sobrescribe la elección del usuario.
-
-Verificación obligatoria en CapCut
-Generar con "IMAGINA ESTO" → fondo negro puro, subtítulo centrado.
-
-Cambiar dropdown a otro audio → generar → audio en pista principal = el
-seleccionado.
-
-Cancelar durante alineación → crispasr.exe muere → reiniciar sin error
-"Ya existe".
-
-Bordes alrededor de "IMAGINA ESTO" → cortes limpios (sin transición).
-
-Tests (todos verdes)
-text
-cancel_check.py:      8/8   OK
-auto_detect_check.py: 37/37 OK
-smoke.py:             OK
-subs_check.py:        OK
-watermark_check.py:   OK
-json_scales_check.py: OK
-color_grading_check:  OK
-subtitle_layout:      OK
-session_restore:      OK
-bootstrap_check:      OK
-transcriber_import:   OK
-ui_boot:              OK
-features_check:       OK
-fase1_check:          OK
-imagina_esto_check:   OK
-scene_parser_check:   8/8   OK
-🎨 v1.7.0 — Ducking dinámico + exclusión de escaneo
-
-FIX BUG 1: Múltiples audios de fondo en pistas separadas
-- Cada audio de fondo marcado ahora se coloca en SU PROPIA pista de audio.
-- Antes, todos los audios iban a la misma pista y se pisaban entre sí.
-- Ahora: pista video(0) + [text(1)] + audio guion(2) + BGM 1(3) + BGM 2(4) + BGM 3(5) + [sfx] + [watermark].
-
-FIX BUG 2: Volumen dinámico basado en RMS (no lee del .txt)
-- Se ignora el campo "Volumen: X dB a Y dB" del archivo de escenas.
-- Se mide el RMS real de cada audio de fondo y de la narración (vía wave module).
-- Ducking: la música baja al menos 8 dB por debajo del nivel de la voz durante los cues de narración.
-- Idle: la música sube 4 dB por debajo de la voz en los silencios.
-- Se usan keyframes KFTypeVolume dinámicos basados en los cues SRT (fade in 0.5s, fade out 0.5s, duck/idle según cues).
-- Log obligatorio: [MUSICA-FONDO-VOL] audio.mp3 | rms_bg_dBFS=X | rms_voice_dBFS=Y | vol_duck_dB=Z | vol_idle_dB=W
-
-FEATURE: Excluir archivos/carpetas del escaneo
-- Nuevo bloque UI "Excluir del escaneo" en la sección 2 (Carpeta del video).
-- Botón "Añadir exclusión... ▾" con dos opciones: archivo o carpeta.
-- Cada exclusión se puede eliminar con el botón [✕].
-- Los archivos/carpetas excluidos NO aparecen en:
-  · Dropdown "Audio guion"
-  · Lista "Otros audios detectados"
-  · Detección de escenas .txt
-  · Detección de imágenes
-   · Detección de SRT
-   · Cualquier escaneo recursivo
-- Persistencia en config_user.json como clave "excluded_paths" (lista de rutas CSV).
-- Al reabrir la app, se restauran las exclusiones.
-- Si una exclusión ya no existe en disco, se ignora silenciosamente.
-- Comparación de rutas normalizada con os.path.normcase + abspath.
-
----
-Un solo espacio ASCII entre palabras de subtítulos.
-
-content.styles[] cubre el texto INTEGRO y sin huecos.
-
-Ningún carácter invisible en el texto de subtítulos.
-
-Un único tamaño de fuente.
-
-line_spacing = 0.0 y caja automática.
-
-Posición vertical de subtítulos constante (-0.8333333).
-
-Trazo de subtítulos = 30 en la UI (0.06 en JSON).
-
-Letter spacing subtítulos = 0.
-
-Subtítulos en MAYÚSCULAS.
-
-Marca de agua propia, pista independiente.
-
-Color grading HSL por canal.
-
-Nunca tocar código no relacionado.
-
-README siempre al día.
-
-🎨 Color Grading HSL (detalle técnico)
-3 materiales HSL en materials.hsl[]: Naranja (tipo 2), Cian (tipo 5), Azul
-(tipo 6).
-
-Base: hue=0, saturation=0, lightness=0 → animación 100% por keyframes.
-
-Keyframes en segmentos: KFTypeHue, KFTypeSaturation, KFTypeLightSensatione.
-
-Referencia: extra_material_refs en segmento + enable_hsl=true.
-
-lumi_hub_path = path.
-
-📜 Historial de versiones (solo tags reales)
-Versión	Fecha	Descripción
-v1.5.1	2026-09-26	Hotfix cancelación + fix audio guion (dropdown manda).
-v1.5.0	2026-09-26	Selector de audios en UI.
-v1.6.0	2026-09-30	Tipo de edición "Datos Y Cafe" (watermark/subtítulos distintos, sin efectos avanzados, soporte videos).
-v1.7.0	2026-09-30	Exclusión de escaneo.
-v1.4.0	2026-09-26	"Imagina esto" (post-proceso).
-v1.3.0	2026-09-25	Watermark, auto-descarga, color grading, subtítulos, pop-up.
-v1.2.1	2026-09-23	Chore: limpieza de tracking.
-v1.2.0	2026-09-23	Fase 3: camera shake, HSL, paneos, SFX.
-v1.1.0	2026-09-22	Fase 2: UI 2 paneles, subtítulos, modal verde.
-v1.0.0	2026-09-22	Fase 1: alineación CrispASR + sincronización.
-🗺️ Roadmap
-Versión	Objetivo	Notas
-v1.5.0	Selector de audios en UI	✅ Taggeada
-v1.6.0	Tipo de edición "Datos Y Cafe"	✅ Taggeada
-v1.7.0	Exclusión de escaneo	✅ Taggeada
-v2.0.0	Nuevo tipo de edición (además de "Nexus Paradoja")	Última antes del .exe
-v2.1.0	Empaquetado .exe + guardar app completa en la nube	Pendiente
-v1.9.0 descartado.
-
-📦 Empaquetado (.exe)
-Se hará en v2.1.0. Planificación:
-
-powershell
-pip install pyinstaller
-pyinstaller build.spec
-Consideraciones:
-
-Incluir bin/crispasr.exe y models/*.gguf en el .exe (vía build.spec).
-
-Modificar el código para que, si se ejecuta como .exe (sys.frozen),
-lea los recursos desde sys._MEIPASS en lugar de descargarlos.
-
-Tamaño final esperado: >100 MB (por el modelo GGUF).
-
-Distribución: .exe único o carpeta onedir.
-
-Subida a la nube: decidir plataforma (pendiente).
-📦 Pendiente (fuera de alcance)
-
-Overlay de videos con chroma key en otros momentos (más allá de
-Inicio/Suscríbete/Final).
-
-Nuevos tipos de edición (v2.0.0).
+La alineación maneja tres casos de jerarquía:
+- **SRT word-level** (CrispASR): preferido, máximo detalle temporal.
+- **SRT sentence-level**: fallback si no hay word-level.
+- **Sin SRT**: el sistema estima duraciones proporcionalmente.
 
 ---
 
-## 🛠️ FIX v1.6.0 — Tipo de edición "Datos Y Cafe" (2026-09-30)
+## Instalación
 
-| Fix/Feature | Archivo(s) | Descripción |
-|---|---|---|
-| **FEATURE** Segundo tipo de edición | `src/core/edit_types.py` (nuevo), `src/ui/main_window.py`, `src/core/config.py`, `src/core/subtitles.py`, `src/core/capcut_project.py`, `src/core/auto_detect.py` | Dropdown "Tipo de edición" con 2 opciones: "Nexus Paradoja" (comportamiento actual) y "Datos Y Cafe" (nuevo). Perfiles definidos en `edit_types.py`. Nexus Paradoja conserva todas las features avanzadas (transiciones, color grading, HSL, paneos, shake, SFX, imagina). Datos Y Cafe: sin transiciones, sin color grading, sin HSL, sin paneos, sin shake, sin SFX, sin imagina. Watermark DATOS Y CAFE centrado (X=0, Y=0), opacidad 50%, tamaño 15, letter spacing 2. Subtítulos propios: fuente Anton/Bebas Neue/The Bold Font (gruesa), blanco #FFFFFF, contorno negro ~3.5px, posición Y=-775, keywords amarillas #FFD400, pop-up, MAYÚSCULAS, 2-5 palabras por fragmento. Soporte para videos mezclados con imágenes (cover scale + speed adjustment si video < frase). Medición de duración real del audio antes de construir el timeline para evitar huecos al final. Campo de nombre se actualiza en tiempo real al cambiar tipo (respeta escritura manual). Persistencia en `config_user.json` → `last_edit_type`. |
+```powershell
+# Crear entorno virtual
+python -m venv .venv314
+& .venv314\Scripts\Activate.ps1
+pip install -r requirements.txt
 
-## 🛠️ FIX v1.7.0 — exclusión de escaneo (2026-09-30)
-
-| Fix/Feature | Archivo(s) | Descripción |
-|---|---|---|
-| **FEATURE** Excluir del escaneo | `src/ui/main_window.py`, `src/core/auto_detect.py`, `src/core/config.py` | Bloque UI "Excluir del escaneo" en sección 2. Botón añadir archivo/carpeta, botón [✕] para eliminar. Persistencia en `config_user.json` → `excluded_paths`. Respetado en: `_detect_audio`, `_detect_scenes_txt`, `_detect_images`, `detect_audios`. Normalización con `os.path.normcase + abspath`. |
-
-## 🛠️ FEATURE v1.7.0 — Edición AVANZADA de "Datos Y Cafe" (2026-10-02)
-
-| Bloque | Feature | Archivo(s) | Descripción |
-|---|---|---|---|
-| **1** | Botón carpeta assets | `src/ui/main_window.py`, `src/core/config.py` | Botón "Seleccionar carpeta de assets..." visible SOLO en DYC. Persiste en `config_user.json` → `dyc_assets_dir`. Aborta si falta la carpeta. |
-| **2** | Animación inicio (1 de 3) | `src/core/capcut_project.py` | Aleatoria entre: TV retro (7575...), Rompecabezas (7372...), Celular 3D (7522...). Se aplica a la PRIMERA imagen con sticker_animation type="in". |
-| **3** | Animación final (agujero negro) | `src/core/capcut_project.py` | resource_id 7294461821170225666, type="out", duration=0.8s (800000 µs, FIX 3). Se aplica a la ÚLTIMA IMAGEN (no pantalla final) con start=dur_segmento-800000. resource_id y path sin tocar. |
-| **4** | Pantalla final | `src/core/capcut_project.py` | Video "Pantalla final.mp4" en el TRACK PRINCIPAL (bloque 6), arranca en el FIN REAL DEL AUDIO (FIX 5 bloque 5 / FIX 3 bloque 6) con transición GLITCH desde la última imagen y color grading. Sin chroma. |
-| **5** | Suscríbete corto (CTA INTERMEDIO) | `src/core/timeline_builder.py`, `src/core/capcut_project.py` | Overlay video en el TRACK CTA (flag=2, visible=true) al 37% del video, alineado a frame (33333 µs). Chroma key negro intensity=0.3. |
-| **6** | Suscríbete largo / CTA FINAL | `src/core/timeline_builder.py`, `src/core/capcut_project.py` | Detecta "suscríbete" en SRT (normalizado sin tildes). Position = start del cue. Fallback: 90%. Chroma intensity=0.3, volume=1.0. |
-| **7** | Audio inicio + final | `src/core/capcut_project.py` | Desde caché CapCut por effect_id: inicio 7200479771514374146 (2.57s), final 6974428544046729218 (1s). Si no existe en caché, log y omite. |
-| **8** | 27 transiciones con IDs | `src/core/capcut_project.py`, `src/core/timeline_builder.py` | Pool de 27 transiciones con effect_id reales ("Elige otro" EXCLUIDA siempre, FIX 1). Orden aleatorio, sin repetir consecutivas. is_overlap=true. Referencia en segmento ANTERIOR. Subconjunto GLITCH aparte para el corte final. |
-| **9** | Color grading + HSL exactos | `src/core/capcut_project.py` | 7 materiales en materials.effects (contrast/saturation/sharpen/highlight/shadow/light_sensation/vignetting). 2 materiales HSL (Rojo type=1, Amarillo type=3). Shared por segmento. enable_adjust=true, enable_hsl=true. |
-| **10** | Zoom 100→110 | `src/core/edit_types.py` | DYC: zoom_end_min=1.00, zoom_end_max=1.10. Keyframes KFTypeScaleX/Y RELATIVOS a cover_scale. |
-| — | Aislamiento | `src/core/edit_types.py` | Nexus Paradoja SIN cambios (regresión verificada). Cada tipo usa su propio perfil aislado. |
-
-**PENDIENTES (TODO):**
-- Watermark no carga en preview: bug de CapCut/caché, diagnóstico independiente.
-- Recurso de transicion no descargado en la caché local: CapCut lo baja por resource_id al abrir el proyecto (aviso en log, no rompe el JSON).
-
-Hotfix 3: duración de .mp4 medida con parser MP4 en Python puro; ffprobe pasa a ser fallback opcional.
-
-v1.7.0 Ajustes finales DYC (bloque 2):
-- CTA INTERMEDIO desplazado al 37% (punto medio 35-40%).
-- CTA FINAL: búsqueda accent-insensitive en SRT + soporte multi-CTA con delay 1 min.
-- Subtítulos DYC: fuente configurada Bungee-Rg (fallback temporal Frick0.3-Rg, ya retirado en el bloque 5).
-- Audios inicio/final: búsqueda robusta en caché de CapCut (ruta directa con/sin extensión, glob, efecto).
-
-v1.7.0 Ajustes finales DYC (bloque 3):
-- Animación de entrada aleatoria (1 de 3) desde pool DYC_INTRO_ANIMATIONS con rutas completas.
-- Sync: bloque 5 corrigió este punto: la narración NUNCA se recorta (ver bloque 5).
-- Limpieza de tracks fantasma (segmentos duplicados) + reorden garantizado: video → overlays CTA → text → watermark → audio.
-
-v1.7.0 Ajustes finales DYC (bloque 5) — 2026-10-03:
-- FIX 1: "Elige otro" eliminada del pool; el filtro y el selector comparten la misma lista (27 entradas).
-- FIX 2: corte GLITCH aleatorio (1 de 7) entre la última imagen y "Pantalla final.mp4", mismo patrón de referencia (segmento anterior + is_overlap=true).
-- FIX 3: agujero negro a 0.8s (800000 µs); termina exactamente al final de la última imagen.
-- FIX 4: audio final "Switch on / off" arranca en el agujero negro, volumen -10dB (10 ** (-10/20)); duración real de narración intacta.
-- FIX 5: la narración NUNCA se recorta por SRT. Fin real del audio = 777760000 µs; última imagen y pantalla final terminan ahí. Se eliminó la suma acumulativa de duraciones (error de 720000 µs) y se usa `last.start_us`.
-- FIX 6: patrón de transiciones verificado contra el draft de referencia (segmentos contiguos, sin overlap artificial, `resource_id == effect_id`, referencia en el segmento ANTERIOR).
-- FIX 7: CTA en un ÚNICO track `visible=true`, situado tras el video principal, con `render_index=11000` (mayor que las imágenes) y materiales de CTA registrados en `materials.videos`.
-- FIX 8: CTA intermedio + todos los CTA finales + pantalla final en el mismo track. Orden final: video → CTA → subtítulos → watermark → audio narración → audios extra. Tracks fantasma eliminados.
-- FIX 9: subtítulos DYC con Bungee-Rg real (resource_id 7533527101870214401) en `font_path`, `font_resource_id`, `materials.texts[].fonts[]` y `content.styles[].font.{id,path}`. Retirado el fallback Frick0.3-Rg.
-
-v1.7.0 Ajustes finales DYC (bloque 6) — 2026-10-03:
-- FIX 1: "Pantalla final.mp4" va en el MISMO track principal de video, justo después de la última imagen (`start = start_última_img + dur_última_img`, duración real del archivo medida con el parser MP4). Ya no existe ningún track de video exclusivo para ella.
-- FIX 2: la transición GLITCH (1 de 7, subconjunto `DYC_GLITCH_TRANSITIONS`) se aplica REALMENTE entre la última imagen y la pantalla final: ambos clips están en el mismo track, el material va en `materials.transitions[]` y se referencia en `extra_material_refs` del segmento ANTERIOR (la última imagen), con `is_overlap=true` y sin solapar `target_timerange`.
-- FIX 3: la última imagen termina EXACTAMENTE en el fin real del audio (`sync_last_item_to_audio_end` en `timeline_builder.py`); solo se ajusta esa imagen, nunca las anteriores. Pantalla final empieza en ese mismo instante. Sin hueco entre imagen y audio.
-- FIX 4: chroma key SOLO en CTA INTERMEDIO y CTA FINAL, con `intensity_value=0.25` (`DYC_CHROMA_INTENSITY`); la pantalla final va sin chroma.
-
-Verificación (solo DYC, Nexus intacto):
+# Primera ejecución: descargará automáticamente CrispASR y el modelo GGUF
+python src\main.py
+# o directamente run.bat
 ```
-python -m py_compile src/core/edit_types.py src/core/timeline_builder.py src/core/capcut_project.py src/core/subtitles.py
-python tests/edit_types_check.py
-python tests/subs_check.py
-python tests/dyc_advanced_check.py
-python tests/features_check.py
-python tests/smoke.py
-python tests/cancel_check.py
-python tests/watermark_check.py
-python tests/json_scales_check.py
-python tests/color_grading_check.py
+
+### Requisitos previos
+
+- Windows 10+ x64
+- Python 3.12 o 3.14
+- CapCut Desktop instalado (para abrir los drafts generados)
+
+### Archivos generados en la primera ejecución
+
+| Archivo | Ubicación | Contenido |
+|---|---|---|
+| `bin/crispasr.exe` | Junto al repo | Binario de alineación forzada |
+| `models/stt-es-*.gguf` | Junto al repo | Modelo acústico español (~66 MB) |
+| `config_user.json` | Junto al repo | Preferencias del usuario |
+
+---
+
+## Uso
+
+### La interfaz tiene 6 secciones + 2 botones:
+
+1. **Carpeta CapCut Drafts** — Botón seleccionar carpeta. Los drafts se generan aquí.
+2. **Carpeta del video** — Al elegirla se ejecuta el escaneo inteligente y muestra:
+   - ✓ Audio: `guion.wav`
+   - ✓ Escenas: `escenas.txt` (N escenas)
+   - ✓ Imágenes: `escenas 2/` (N archivos)
+   - Si falta algo, aparece en rojo y el botón Generar se deshabilita.
+3. **Subtítulos (.srt)** — Busca .srt en la carpeta del video y en el caché de alineación.
+4. **Tipo de edición** — Dropdown: "Nexus Paradoja" o "Datos Y Café".
+5. **Nombre del proyecto** — Campo de texto libre.
+6. **Excluir del escaneo** — Añadir archivos o carpetas que no deben escanearse.
+
+### Botones
+
+- **Generar proyecto** (verde): ejecuta el pipeline completo. Barra de progreso indeterminada + logs en tiempo real.
+- **Cancelar** (rojo): modal de confirmación → envía evento de cancelación → mata subprocess CrispASR → limpia carpeta a medias.
+
+### Dónde queda el draft
+
+En la carpeta CapCut Drafts seleccionada, dentro de una subcarpeta con el nombre del proyecto. Para abrirlo en CapCut: abrirla y dar doble clic en el draft.
+
+---
+
+## Perfiles JSON
+
+### Estructura
+
+Cada archivo en `profiles/*.json` define un canal completo: fuentes, animaciones, colores, transiciones, CTA, chroma, watermark, etc.
+
+### Perfiles existentes
+
+| Archivo | Canal | Características |
+|---|---|---|
+| `profiles/nexus.json` | Nexus Paradoja | Cinemático: transiciones, HSL, paneos, shake, SFX, imagina-esto, watermark tenue |
+| `profiles/dyc.json` | Datos Y Café | Dinámico: sin efectos avanzados, CTA chroma, fuentes gruesas, zoom, animaciones |
+
+### Cómo añadir un canal nuevo
+
+1. Copiar un perfil existente como plantilla.
+2. Modificar campos estéticos (fuentes, colores, animaciones, etc.).
+3. Colocar el archivo en `profiles/`.
+4. La app lo detectará automáticamente al arrancar.
+
+### Regla de aislamiento
+
+Los perfiles son completamente independientes. Un cambio en `dyc.json` no afecta a `nexus.json` ni viceversa. El código Python nunca contiene valores específicos de ningún canal.
+
+---
+
+## Compilación y distribución
+
+A partir de **v2.0.3**, CapCut Auto se distribuye como bundle portable generado con PyInstaller (`onedir`).
+
+### Compilar
+
+```powershell
+cd D:\capcut-auto
+.venv314\Scripts\python.exe -m PyInstaller --clean --noconfirm build.spec
 ```
-- End-to-end VIDEO 4 (192 imágenes): 75/75 checks OK, 192 transiciones, agujero negro en 776960000 µs, última imagen + audio en 777760000 µs, CTA `['CTA INTERMEDIO', 'CTA FINAL_cta1']`.
-- Aislamiento Nexus: 18/18 checks OK (ningún artefacto DYC en el proyecto Nexus, pool de 11 intacto, 1 solo track de video).
+
+Resultado: `dist\CapCutAuto\`
+
+### Distribuir
+
+```powershell
+xcopy /E /I /Y dist\CapCutAuto C:\Ruta\Destino\CapCutAuto
+```
+
+El usuario puede ejecutar `CapCutAuto.exe` desde cualquier carpeta sin instalar Python ni dependencias.
+
+### Portabilidad
+
+- `config_user.json`, `logs/`, `cache/`, `backups/` se crean junto al `.exe` (`EXE_DIR`).
+- Recursos empaquetados (`bin/`, `models/`, `profiles/`) viven en `_internal/` (`BUNDLE_DIR`).
+- Al copiar la carpeta completa, la configuración viaja con ella.
+
+### Tamaño
+
+~132 MB (Python runtime ~49 MB + Pillow ~15 MB + modelo GGUF ~66 MB + bin/crispasr ~19 MB).
+
+### Estructura del bundle
+
+```
+CapCutAuto/
+├── CapCutAuto.exe              # Ejecutable principal (~3.5 MB)
+├── _internal/                  # PyInstaller bootloader + Python + libs
+│   ├── bin/                    # crispasr.exe, openblas.dll, LICENSE
+│   ├── models/                 # stt-es-fastconformer-hybrid-ctc-large-q4_k.gguf
+│   ├── profiles/               # nexus.json, dyc.json
+│   ├── customtkinter/          # assets (fonts, themes, icons)
+│   ├── PIL/                    # Pillow
+│   ├── rapidfuzz/              # RapidFuzz
+│   └── ...                     # Python runtime
+├── config_user.json            # Se crea al primer uso
+├── logs/                       # app.log
+├── cache/                      # Alineaciones temporales
+└── backups/                    # Copias de seguridad
+```
+
+---
+
+## Historial de versiones
+
+### v1.0.0 — 2026-09-23 — Alineación CrispASR y sincronización inicial
+
+Primer release funcional. Reemplaza el montaje manual de escenas sincronizadas con voz.
+
+**Cambios:**
+- Integración de CrispASR con modelo FastConformer español para alineación forzada.
+- Construcción del primer clonador de proyectos CapCut Desktop.
+- Generación de `draft_content.json` con duraciones en microsegundos.
+
+**Aprendizaje:** CapCut usa microsegundos enteros (1s = 1,000,000 µs); la suma de duraciones debe ser exacta para evitar desfases acumulados.
+
+### v1.1.0 — 2026-09-23 — UI de dos paneles y primeros efectos
+
+Primera interfaz gráfica que permite a usuarios no técnicos usar la herramienta.
+
+**Cambios:**
+- Creación de `MainWindow` en CustomTkinter con 6 secciones.
+- Pista inicial de subtítulos automáticos.
+- Efectos de cámara: camera shake y paneos básicos.
+
+### v1.2.0 — 2026-09-23 — Watermark NEXUS PARADOJA
+
+Protección de contenido con marca de agua permanente.
+
+**Cambios:**
+- Pista dedicada para watermark que abarca todo el metraje.
+- Ajuste de contornos (stroke) en subtítulos.
+
+### v1.2.1 — 2026-09-23 — Limpieza de tracking
+
+**Cambios:**
+- Retiro de `bin/` y `config_user.json` del tracking de git.
+- `.gitignore` definitivo excluyendo cachés, logs y backups.
+
+### v1.3.0 — 2026-09-25 — Calibración de escalas empíricas
+
+Los textos aparecían desplazados y con escalas incorrectas en CapCut.
+
+**Cambios:**
+- Auditoría visual de fórmulas: posición Y = `UI_Y / 1080` (canvas completo, no mitad).
+- Grosor de trazo: `UI / 500` (UI 30 = JSON 0.06).
+- `bootstrap.py` para descarga automática de dependencias.
+- Corrección de opacidad watermark: `global_alpha = 0.15` con `fill.alpha = 1.0`.
+
+### v1.4.0 — 2026-09-26 — Motor cinemático "Imagina esto"
+
+Para guiones con frases de inmersión o giros narrativos, se buscaba un impacto dramático.
+
+**Cambios:**
+- `src/core/imagina_esto.py`: detección de keywords (ej. *"imagina esto"*, *"supón que"*).
+- En segmentos coincidentes: subtítulo centrado (X=0, Y=0) + video de fondo oculto.
+- Corte limpio sin transiciones laterales.
+
+### v1.5.0 — 2026-09-26 — Selector de audios en UI
+
+En proyectos con múltiples audios, el sistema podía confundir la narración con pistas secundarias.
+
+**Cambios:**
+- Escaneo recursivo categorizando audios en UI.
+- Dropdown para seleccionar explícitamente el audio del guion.
+- Los demás audios quedan identificados para uso como SFX.
+
+### v1.5.1 — 2026-09-26 — Hotfix: cancelación segura
+
+El usuario no podía abortar procesos sin colgar la aplicación.
+
+**Cambios:**
+- `threading.Event` (`_cancel_event`) en todas las fases críticas del pipeline.
+- Terminación forzada de `crispasr.exe` al cancelar (`proc.terminate()` / `kill()`).
+- El audio seleccionado en el dropdown manda siempre (comparación case-insensitive).
+- Limpieza de carpetas a medias tras cancelación.
+
+### v1.6.0 — 2026-10-01 — Segundo estilo: Datos Y Café
+
+Expansión para soportar un canal con identidad visual distinta: sin efectos cinematográficos agresivos, ritmo dinámico, soporte para clips de video intercalados.
+
+**Cambios:**
+- `src/core/edit_types.py`: perfiles diferenciados por código.
+- Estilo DYC: sin transiciones complejas ni HSL; watermark centrado (50% opacidad); subtítulos con fuente gruesa, contorno negro y keywords amarillas (`#FFD400`).
+- Soporte para clips de video (`.mp4`) escalados a pantalla completa.
+
+### v1.7.0 — 2026-10-03 — Edición avanzada DYC y ducking de audio
+
+Automatizaciones de producción completa para el estilo DYC.
+
+**Cambios:**
+- CTA intermedio (37% del video) y CTA final con chroma key (`intensity_value=0.25`).
+- Animación final de salida (agujero negro, 0.8s) sincronizada con el último fotograma.
+- Pantalla final en el track principal sin transiciones solapadas.
+- Ducking dinámico basado en RMS: música baja 8 dB durante voz, sube 4 dB en silencios.
+- Exclusión selectiva de archivos/carpetas del escaneo.
+- 27 transiciones con `effect_id` reales de CapCut.
+
+**Fixes posteriores (2026-10-03):**
+- FIX 5: la narración NUNCA se recorta por SRT; fin real del audio = medida exacta.
+- FIX 7: CTA en un ÚNICO track `visible=true`, `render_index=11000`.
+- FIX 9: fuente Bungee-Rg real (resource_id 7533527101870214401) para subtítulos DYC.
+
+### v2.0.0 — 2026-10-11 — Motor genérico de perfiles JSON
+
+La coexistencia de Nexus y DYC mediante condicionales `if/else` hacía el código rígido e impedía añadir nuevos canales sin refactorizar.
+
+**Decisión arquitectónica:** Extraer toda configuración a JSON declarativos en `profiles/`, validados por dataclasses en `profile_schema.py`.
+
+**Cambios:**
+- Eliminación de `edit_types.py`.
+- Creación de `profile_loader.py` y `pipeline.py`.
+- Fuentes y assets resolubles desde el JSON (ruta local o resource_id de CapCut cloud).
+- Aislamiento total: modificar un perfil no afecta a los demás.
+
+**Contexto del incidente:** Durante el desarrollo, el working tree se vio afectado por cambios no versionados. Se instauró disciplina estricta: commits atómicos, tags para cada versión, backups manuales antes de cambios grandes, y rollback con `git checkout`.
+
+### v2.0.1 — 2026-10-11 — Fix: transiciones DYC no visibles en preview
+
+**Causa raíz:** Inconsistencia en `render_index` y solapamiento de identificadores de recursos en `materials.transitions`.
+
+**Fix:** Estandarización de referencias con `is_overlap=True` y vinculación explícita de `effect_id`.
+
+### v2.0.2 — 2026-10-11 — Fix: fuentes DYC visibles en preview
+
+**Causa raíz:** La fuente Bungee-Rg requería ruta exacta o `resource_id` correcto de la nube de CapCut.
+
+**Fix:** Calibración de `font_path` en `profiles/dyc.json` + posición Y=-850, tamaño 10.
+
+### v2.0.3 — 2026-10-11 — Eliminación de doble carga del JSON en RAM
+
+**Síntoma:** Cuelgues intermitentes o congelamiento prolongado al generar proyectos largos (~300 escenas DYC) en equipos con recursos limitados (i5-6200U, 8 GB RAM, disco casi lleno).
+
+**Diagnóstico inicial erróneo:** Se sospechó de millones de `deepcopy()` en el bucle principal.
+
+**Análisis real:** El JSON del proyecto se cargaba DOS veces en RAM:
+1. Una vez al escribir `draft_content.json` en `_write_draft_content()`.
+2. Otra vez al leerlo desde disco en `imagina_esto.aplicar()` para el post-proceso.
+
+Además, `_write_draft_content()` serializaba con `indent=2`, duplicando el tamaño en ~25%.
+
+**Fix aplicado (5 cambios concretos):**
+1. `capcut_project.py:_write_draft_content()` — Cambiar `indent=2` por `separators=(",",":")` en la primera serialización (JSON comprimido).
+2. `capcut_project.py:_write_draft_content()` — Usar `shutil.copy2()` para la copia a `Timelines/<id>/` en lugar de serializar de nuevo.
+3. `capcut_project.py:generate()` — Pasar el diccionario `content` ya cargado a `aplicar()` en lugar de dejar que lo relea desde disco.
+4. `imagina_esto.py:aplicar()` — Añadir parámetro opcional `content` para recibir el dict directo.
+5. `imagina_esto.py:aplicar()` — Si `content` se pasa, usarlo directamente sin relectura desde disco.
+
+**Verificación visual:** RAM pico bajó de >95% a ~85%, disco del 100% al 89%, sin cuelgues. Proyecto de 300 escenas DYC generado exitosamente.
+
+**Nueva feature:** Compilación portable con PyInstaller (bundle de 132 MB). README maestro con documentación completa.
+
+---
+
+## Bugs conocidos y resueltos
+
+| ID | Título | Versión aparición | Versión resolución | Causa raíz | Solución |
+|---|---|---|---|---|---|
+| **BUG-A** | Desfase vertical en subtítulos | v1.2.0 | v1.3.0 | Coords Y asumidas sobre half-canvas (540 px) | `JSON_Y = UI_Y / 1080` (canvas completo) |
+| **BUG-B** | Watermark invisible en preview | v1.3.0 | v1.7.0 | Falta `global_alpha` explícito en material | Material con `global_alpha=0.15` + `fill.alpha=1.0` |
+| **BUG-C** | Transiciones no descargadas | v1.6.0 | v1.7.0 | `resource_id` ≠ `effect_id` en catálogo CapCut | Pool de 27 transiciones con IDs reales verificados |
+| **BUG-D** | CrispASR huérfano al cancelar | v1.5.0 | v1.5.1 | Cancelación no terminaba subprocess nativo C++ | `proc.terminate()` + `proc.kill()` en handler |
+| **BUG-E** | Audio guion erróneo autoseleccionado | v1.5.0 | v1.5.1 | Auto-detección sobrescribía elección del dropdown | Dropdown manda siempre, comparación case-insensitive |
+| **BUG-F** | Pistas de audio solapadas | v1.6.0 | v1.7.0 | Todos los audios en una sola pista | Pistas separadas: video(0), CTA(1), text(2), WM(3), voz(4), BGM(n) |
+| **BUG-H** | Desfase al final de la narración | v1.6.0 | v1.7.0 | Suma de duraciones estimadas vs. duración real del audio | Parser de encabezados MP4 para duración exacta |
+| **BUG-I** | Cuelgue por alto uso de RAM | v2.0.0 | v2.0.3 | Doble carga del JSON en RAM (write + re-read) | Pasar contenido directo, serializar una vez con separators |
+| **BUG-J** | Rutas rotas en ejecutable congelado | v2.0.0 | v2.0.3 | `Path(__file__)` resolvía a `_MEIPASS` (temporal) | `EXE_DIR` (persistente) vs. `BUNDLE_DIR` (lectura) |
+| **BUG-K** | Fuentes no visibles en bundle | v2.0.1 | v2.0.2 | Fallback a fuentes del sistema fallaba fuera del repo | `font_resource_id` correcto de CapCut cloud en perfil DYC |
+
+### Detalles de bugs críticos
+
+**BUG-I (RAM, v2.0.3):** El síntoma más crítico del proyecto. Con proyectos de 300+ escenas DYC, la RAM pico alcanzaba >95% y el disco se llenaba al 100%, congelando el equipo. El diagnóstico inicial apuntó a `deepcopy()` masivo, pero el análisis mostró que el problema real era la doble serialización/lectura del JSON completo (~50 MB) en la transición entre `capcut_project.generate()` e `imagina_esto.aplicar()`. La solución: evitar la relectura pasando el objeto ya construido, y usar serialización compacta (`separators=(",",":")`) que reduce el tamaño del JSON ~25%.
+
+**BUG-J (rutas, v2.0.3):** Antes del fix, `ROOT_DIR = Path(__file__).parent.parent.parent` resolvía a `_MEIPASS` cuando se ejecutaba el .exe, que es un directorio temporal eliminado al cerrar la app. Esto hacía que `config_user.json`, `logs/`, `cache/` y `backups/` se perdieran entre ejecuciones. El fix separa `EXE_DIR` (junto al .exe, persistente) de `BUNDLE_DIR` (desde `_MEIPASS`, solo lectura).
+
+---
+
+## Roadmap
+
+### Completado
+- [x] v1.0.0 → v1.7.0: pipeline completo, estilos Nexus y DYC
+- [x] v2.0.0: motor genérico de perfiles JSON
+- [x] v2.0.1 → v2.0.3: fixes de transiciones, fuentes y RAM; bundle portable
+
+### Pendientes
+- [ ] BUG I residual: modal "(No responde)" durante generación en proyectos muy largos
+- [ ] BUG B: clips perdidos (verificar en v2.0.x)
+- [ ] BUG C definitivo: nombres ASCII para cache de CrispASR
+- [ ] v2.1.0: perfil cinematográfico para formato vertical (9:16 — Shorts/Reels/TikTok)
+- [ ] v2.2.0: detección automática de fuentes ausentes desde Google Fonts / CapCut Asset Cloud
+- [ ] v2.3.0: instalador guiado Windows (Inno Setup) con actualización automática
+- [ ] Releases numeradas en GitHub (adjuntar .zip del bundle)
+
+### Descartados
+- [x] Música de fondo automática → fuera de alcance
+- [x] Detección de inglés → fuera de alcance
+- [x] faster-whisper → descartado (usa CrispASR CPU)
+- [x] ffmpeg → descartado (parser MP4 nativo es suficiente)
+- [x] Modelo "small" de CrispASR → descartado (insuficiente para español)
+- [x] v1.9.0 (tv_control + flash + reset) → descartado
+
+---
+
+## Método de trabajo
+
+### Ciclo obligatorio
+
+Toda modificación técnica sigue estas fases:
+
+1. **ANÁLISIS:** Leer el código existente, identificar archivo:línea, entender el problema.
+2. **PLAN:** Escribir `plans/reportes/YYYY-MM-DD_<slug>.md` con diffs literales, código propuesto y evaluación de riesgo.
+3. **ESPERA:** No ejecutar nada hasta recibir aprobación explícita del usuario.
+4. **EJECUCIÓN:** Aplicar cambios mínimos, `py_compile` en cada .py tocado, `git diff` para verificar.
+
+### Reglas de oro
+
+- **No tocar lo que no se pide:** transcriber, scene_parser, chunking, sync, transiciones, color grading, HSL, paneos, shake, SFX, watermark, UI, perfiles JSON.
+- **Sin rutas hardcodeadas:** todo debe funcionar desde el repo y desde el bundle portable.
+- **Portabilidad total:** el bundle debe correr desde cualquier carpeta sin depender de la ubicación original.
+- **Reportes siempre en `plans/reportes/`** con timestamp en el nombre.
+- **Nunca hacer git add/commit/push/tag** — lo lleva el usuario.
+
+### Reglas de commit
+
+- Una línea por commit, SemVer en tags.
+- Tipos: `feat:`, `fix:`, `perf:`, `chore:`, `docs:`, `refactor:`.
+- Backups manuales antes de cambios grandes (`cp archivo.py archivo.py.bak`).
+- Rollback: `git checkout vX.Y.Z -- archivo.py`.
+
+---
+
+## Glosario
+
+| Término | Definición |
+|---|---|
+| **DYC** | "Datos Y Café", segundo canal/estilo editorial del proyecto |
+| **SRT word-level** | Formato de subtítulos con marcas de tiempo por palabra (producto de CrispASR) |
+| **SRT sentence-level** | Formato de subtítulos con marcas por frase (fallback) |
+| **draft_content.json** | Estructura canónica que CapCut lee para construir el proyecto |
+| **draft_meta_info.json** | Metadatos del draft (nombre, fecha, ruta) |
+| **extra_material_refs** | Referencias cruzadas entre segmentos y materiales en el JSON de CapCut |
+| **hash_dir** | Subcarpeta en la caché de CapCut que identifica un recurso por su contenido |
+| **resource_id** | Identificador único de un recurso en la nube de CapCut (fuentes, transiciones, efectos) |
+| **effect_id** | ID del efecto; en transiciones debe coincidir con resource_id |
+| **_MEIPASS** | Directorio temporal creado por PyInstaller al ejecutar un bundle onedir |
+| **onedir** | Modo PyInstaller que genera una carpeta con estructura limpia (no un solo archivo) |
+| **onefile** | Modo PyInstaller que empaqueta TODO en un solo .exe (lento al arrancar con modelos grandes) |
+| **chunking** | División del audio/texto en segmentos para procesamiento incremental |
+| **cue** | Marcador temporal en el SRT que indica cuándo empezar/dejar de mostrar algo |
+| **ducking** | Atenuación dinámica del volumen de la música de fondo durante la voz |
+| **chroma key** | Remoción de un color de fondo (negro) para superponer un overlay (CTA) |
+
+---
+
+## Preguntas abiertas
+
+Los siguientes datos no tienen registro verificable en el repo y requieren confirmación del usuario:
+
+| Ítem | Estado |
+|---|---|
+| Fechas exactas de v1.0.0 a v1.6.0 | Solo se conocen por el log de commits; los tags no incluyen descripciones detalladas |
+| Detalles de versiones pre-v1.7.0 | Parcial — desde v1.3.0 hay suficiente info en el README anterior y mensajes de commit; antes de eso se requiere investigación manual |
+| Nombre del primer commit del proyecto | `d0c349e` (2026-09-23): "Implementación de la versión base de CapCut Auto" |
+| Fecha exacta de creación del repo | No registrada; primer commit: 2026-09-23 |
+
+---
+
+*Documento actualizado: 2026-10-12 | Versión: v2.0.3*
