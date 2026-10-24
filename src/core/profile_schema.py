@@ -11,7 +11,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-SCHEMA_VERSION = "2.0.0"
+SCHEMA_VERSION = "3.0.0"
 
 
 @dataclass
@@ -70,7 +70,22 @@ class EditProfile:
     shake_amplitude: tuple = (0.010, 0.020)
     shake_zoom_boost: float = 1.06
 
-    # Fade y transiciones
+    # CTA (ronda 8 fix)
+    cta_enabled: bool = False
+    cta_patterns: tuple = ()
+    cta_avoid_overlap: bool = False
+
+    # Match threshold del matcher
+    match_threshold: float = 75.0
+
+    # Sync audio a duración real
+    sync_audio_to_real_end: bool = False
+
+    # Transiciones
+    transition_rules: dict = field(default_factory=lambda: {"type": "random", "ratio": 0.98})
+    extra_assets: list = field(default_factory=list)
+    layout_rules: dict = field(default_factory=dict)
+    min_duration_us: int = 1500000
     fade_in_duration_us: int = 0
     transition_names: tuple = ()
     transition_ratio: float = 0.98
@@ -79,6 +94,7 @@ class EditProfile:
     grading_contrast: float | None = None
     grading_shadows: float | None = None
     grading_brightness: float | None = None
+    grading_random: bool = False
     hsl_channels: list = field(default_factory=list)
     vignette_intensity: float = 0.0
 
@@ -87,6 +103,9 @@ class EditProfile:
     grid_overlay_enabled: bool = False
     grid_overlay_keywords: tuple = ()
     neon_text_enabled: bool = False
+
+    # Color grading mode
+    grading_random: bool = False
 
     # Audio
     sfx_dir: Any = None
@@ -112,15 +131,6 @@ class EditProfile:
     chroma_shadow: float = 0.0
     chroma_edge_smooth: float = 0.0
     chroma_spill: float = 0.0
-
-    # CTA (ronda 8 fix)
-    cta_enabled: bool = False
-
-    # Match threshold del matcher
-    match_threshold: float = 75.0
-
-    # Sync audio a duración real
-    sync_audio_to_real_end: bool = False
 
 
 def resolve_placeholders(
@@ -195,3 +205,55 @@ def validate_profile(profile_data: dict[str, Any], profile_name: str) -> None:
     ):
         if block in profile_data and not isinstance(profile_data[block], dict):
             raise ValueError(f"[{profile_name}] El bloque '{block}' debe ser un dict.")
+
+
+def parse_transition_rules(rules_data: dict | None) -> dict:
+    """Devuelve las reglas de transición normalizadas."""
+    if not rules_data or not isinstance(rules_data, dict):
+        return {"type": "random", "ratio": 0.98}
+    rule_type = str(rules_data.get("type", "random"))
+    result = {"type": rule_type}
+    if rule_type == "every_n":
+        result["n"] = int(rules_data.get("n", 3))
+    elif rule_type == "specific_cuts":
+        result["indices"] = [int(i) for i in rules_data.get("indices", [])]
+    elif rule_type == "keyword":
+        result["keywords"] = list(rules_data.get("keywords", []))
+    elif rule_type == "random":
+        result["ratio"] = float(rules_data.get("ratio", 0.98))
+    return result
+
+
+def parse_extra_assets(assets_data: list | None) -> list:
+    """Devuelve la lista de assets extra normalizada."""
+    if not assets_data or not isinstance(assets_data, list):
+        return []
+    parsed = []
+    for item in assets_data:
+        if not isinstance(item, dict):
+            continue
+        parsed.append({
+            "file": str(item.get("file", "")),
+            "type": str(item.get("type", "audio")),
+            "trigger": str(item.get("trigger", "start")),
+            "time_us": int(item.get("time_us", 0)),
+            "duration_us": int(item.get("duration_us", 0)),
+            "volume_db": float(item.get("volume_db", 0.0)),
+            "chroma_enabled": bool(item.get("chroma_enabled", False)),
+            "chroma_color": str(item.get("chroma_color", "#000000")),
+        })
+    return parsed
+
+
+def parse_layout_rules(layout_data: dict | None) -> dict:
+    """Devuelve las reglas de layout normalizadas."""
+    if not layout_data or not isinstance(layout_data, dict):
+        return {}
+    mode = str(layout_data.get("mode", "audio_sync"))
+    result = {"mode": mode}
+    if mode == "fixed_gap":
+        result["gap_seconds"] = float(layout_data.get("gap_seconds", 2.0))
+    elif mode == "fixed_duration":
+        result["duration_seconds"] = float(layout_data.get("duration_seconds", 3.0))
+    result["min_duration_us"] = int(layout_data.get("min_duration_us", 33333))
+    return result

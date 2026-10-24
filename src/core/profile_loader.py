@@ -104,7 +104,7 @@ def get_profile_by_display_name(
 
 def build_edit_profile(profile_data: dict[str, Any]):
     """Convierte un perfil JSON a un objeto EditProfile."""
-    from src.core.profile_schema import EditProfile
+    from src.core.profile_schema import EditProfile, parse_transition_rules, parse_extra_assets, parse_layout_rules
 
     meta_id = profile_data.get("meta", {}).get("id", "")
     defaults = {
@@ -155,6 +155,7 @@ def build_edit_profile(profile_data: dict[str, Any]):
         "grading_contrast": profile_data.get("color_grading", {}).get("contrast"),
         "grading_shadows": profile_data.get("color_grading", {}).get("shadow"),
         "grading_brightness": profile_data.get("color_grading", {}).get("brightness"),
+        "grading_random": profile_data.get("color_grading", {}).get("random", False),
         "hsl_channels": profile_data.get("hsl", {}).get("entries", []),
         "vignette_intensity": profile_data.get("color_grading", {}).get("vignetting", 0.0),
         "glow_keywords": profile_data.get("glow", {}).get("enabled", False),
@@ -174,6 +175,17 @@ def build_edit_profile(profile_data: dict[str, Any]):
         "dyc_subtitle_font": "",
         "dyc_subtitle_font_resource_id": None,
         "sync_audio_to_real_end": False,
+        "cta_enabled": profile_data.get("cta", {}).get("enabled", False),
+        "cta_patterns": tuple(profile_data.get("cta", {}).get("final", {}).get("patterns", [])),
+        "cta_avoid_overlap": bool(profile_data.get("cta", {}).get("avoid_overlap_with_end", False)),
+        "match_threshold": profile_data.get("pipeline", {}).get("matching", {}).get("match_threshold", 75.0),
+        "default_project_name": profile_data.get("meta", {}).get("default_project_name", ""),
+        "chroma_enabled": profile_data.get("chroma", {}).get("enabled", False),
+        "chroma_color": profile_data.get("chroma", {}).get("color", "#00FF00"),
+        "chroma_intensity": profile_data.get("chroma", {}).get("intensity", 0.25),
+        "chroma_shadow": profile_data.get("chroma", {}).get("shadow", 0.0),
+        "chroma_edge_smooth": profile_data.get("chroma", {}).get("edge_smooth", 0.0),
+        "chroma_spill": profile_data.get("chroma", {}).get("spill", 0.0),
     }
 
     dyc = profile_data.get("dyc", {})
@@ -186,18 +198,11 @@ def build_edit_profile(profile_data: dict[str, Any]):
         defaults["dyc_hsl_channels"] = tuple(dyc.get("hsl_channels", []))
         defaults["dyc_glitch_transitions"] = tuple(dyc.get("glitch_transitions", []))
 
-    defaults["match_threshold"] = profile_data.get("pipeline", {}).get("matching", {}).get("match_threshold", 75.0)
-    defaults["default_project_name"] = profile_data.get("meta", {}).get("default_project_name", "")
-
-    chroma = profile_data.get("chroma", {})
-    defaults["chroma_enabled"] = chroma.get("enabled", False)
-    defaults["chroma_color"] = chroma.get("color", "#00FF00")
-    defaults["chroma_intensity"] = chroma.get("intensity", 0.25)
-    defaults["chroma_shadow"] = chroma.get("shadow", 0.0)
-    defaults["chroma_edge_smooth"] = chroma.get("edge_smooth", 0.0)
-    defaults["chroma_spill"] = chroma.get("spill", 0.0)
-
-    # CTA (fix ronda 8 — leerlo del JSON)
-    defaults["cta_enabled"] = profile_data.get("cta", {}).get("enabled", False)
+    # v3.0.0 — Motor de reglas desde JSON
+    transition_rules_raw = profile_data.get("transition_rules")
+    defaults["transition_rules"] = parse_transition_rules(transition_rules_raw)
+    defaults["extra_assets"] = parse_extra_assets(profile_data.get("extra_assets"))
+    defaults["layout_rules"] = parse_layout_rules(profile_data.get("layout_rules"))
+    defaults["min_duration_us"] = defaults["layout_rules"].get("min_duration_us", 1500000)
 
     return EditProfile(**defaults)

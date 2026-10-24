@@ -2,8 +2,8 @@
 
 Motor genérico de perfiles JSON para generar drafts de CapCut Desktop automáticamente.
 
-**Versión actual:** v2.0.3  
-**Última actualización:** 2026-10-12  
+**Versión actual:** v3.0.0  
+**Última actualización:** 2026-10-22  
 **Tag GitHub:** [v2.0.3](https://github.com/diago30lopez-sudo/capcut-auto/releases/tag/v2.0.3)
 
 > ⚠️ **IMPORTANTE:** CapCut debe estar **CERRADO** durante la generación.
@@ -18,6 +18,7 @@ Motor genérico de perfiles JSON para generar drafts de CapCut Desktop automáti
 - [Instalación](#instalación)
 - [Uso](#uso)
 - [Perfiles JSON](#perfiles-json)
+- [Guía de perfiles para IA](#guía-de-perfiles-para-ia)
 - [Compilación y distribución](#compilación-y-distribución)
 - [Historial de versiones](#historial-de-versiones)
 - [Bugs conocidos y resueltos](#bugs-conocidos-y-resueltos)
@@ -47,9 +48,11 @@ El proyecto soporta dos canales con identidades visuales completamente aisladas:
 - **Nexus Paradoja**: edición cinematográfica con transiciones, color grading HSL, paneos, camera shake, SFX, imagina-esto y watermark tenue.
 - **Datos Y Café (DYC)**: edición de ritmo dinámico sin efectos cinematográficos, con fuentes gruesas, CTA con chroma, animaciones de entrada/salida y zoom automático.
 
-### Filosofía v2.0.x
+### Filosofía v3.0.x
 
-Desde v2.0.0, nada está hardcodeado en el código Python. Cada aspecto visual y funcional se define en archivos JSON bajo `profiles/`. Para añadir un tercer canal basta crear un nuevo perfil JSON sin tocar una sola línea de código.
+Desde v3.0.0, la app es un motor 100% ciego. **Ninguna decisión de edición vive en el código Python.** Transiciones (cada N cortes, índices exactos, keywords), assets extra con triggers y chroma, duración de imágenes, volumen de audios — todo viene dictado por el archivo de perfil JSON. Para cambiar el comportamiento visual, modifica el JSON; nunca el código Python.
+
+Para crear perfiles desde cero, consulta [`GUIA_PERFILES.md`](./GUIA_PERFILES.md).
 
 ---
 
@@ -212,12 +215,9 @@ Cada archivo en `profiles/*.json` define un canal completo: fuentes, animaciones
 | `profiles/nexus.json` | Nexus Paradoja | Cinemático: transiciones, HSL, paneos, shake, SFX, imagina-esto, watermark tenue |
 | `profiles/dyc.json` | Datos Y Café | Dinámico: sin efectos avanzados, CTA chroma, fuentes gruesas, zoom, animaciones |
 
-### Cómo añadir un canal nuevo
+### Guía para IAs
 
-1. Copiar un perfil existente como plantilla.
-2. Modificar campos estéticos (fuentes, colores, animaciones, etc.).
-3. Colocar el archivo en `profiles/`.
-4. La app lo detectará automáticamente al arrancar.
+Para que cualquier modelo de IA pueda crear o modificar perfiles JSON de CapCut Auto de forma autónoma, consulta la [**GUIA_PERFILES.md**](./GUIA_PERFILES.md), que documenta exhaustivamente todos los campos del schema v3.0.0 con ejemplos JSON reales.
 
 ### Regla de aislamiento
 
@@ -426,6 +426,22 @@ Además, `_write_draft_content()` serializaba con `indent=2`, duplicando el tama
 
 **Nueva feature:** Compilación portable con PyInstaller (bundle de 132 MB). README maestro con documentación completa.
 
+### v3.0.0 — 2026-10-22 — Motor de Reglas (Rule Engine) y Autonomía Total
+
+**Decisión arquitectónica:** La app pasa a ser un motor 100% ciego. NINGUNA decisión de edición debe estar en el código Python. TODO (transiciones, assets, layout, chroma, animaciones, audios) debe venir dictado por el archivo de perfil JSON.
+
+**Cambios:**
+- Eliminación total de condicionales `if is_nexus()/is_dyc()` y hardcodeos en el código.
+- Nuevo sistema `transition_rules` (every_n, specific_cuts, keyword, random).
+- Nuevo sistema `layout_rules` (audio_sync, fixed_gap, fixed_duration).
+- Inyección universal de `extra_assets` (audios, videos, chroma key) con triggers (`start`, `end`, `black_hole_start`, `time_us`).
+- Duración de animaciones leída directamente del JSON (`dyc.end_animation.duration_us`), con clamp automático al segmento.
+- Creación de `GUIA_PERFILES.md` para generación de perfiles por IA.
+- Lógica de CTA 100% JSON: patrones desde `cta.patterns`, solapamiento controlado por `avoid_overlap_with_end`.
+- Eliminación de funciones `_is_nexus()`, `_is_dyc()`, `_is_dyc_profile()`, `_profile_id()` del ensamblado.
+
+**Bug fix crítico:** Se eliminó la transición de glitch entre la última imagen y la pantalla final cuando ya existe una animación de salida (agujero negro), pues ambas competían por el mismo segmento y CapCut las rechazaba.
+
 ---
 
 ## Bugs conocidos y resueltos
@@ -457,6 +473,7 @@ Además, `_write_draft_content()` serializaba con `indent=2`, duplicando el tama
 - [x] v1.0.0 → v1.7.0: pipeline completo, estilos Nexus y DYC
 - [x] v2.0.0: motor genérico de perfiles JSON
 - [x] v2.0.1 → v2.0.3: fixes de transiciones, fuentes y RAM; bundle portable
+- [x] v3.0.0: motor de reglas (transition_rules, extra_assets, layout_rules); aislamiento total; GUIA_PERFILES.md
 
 ### Pendientes
 - [ ] BUG I residual: modal "(No responde)" durante generación en proyectos muy largos
@@ -541,4 +558,4 @@ Los siguientes datos no tienen registro verificable en el repo y requieren confi
 
 ---
 
-*Documento actualizado: 2026-10-12 | Versión: v2.0.3*
+*Documento actualizado: 2026-10-22 | Versión: v3.0.0*

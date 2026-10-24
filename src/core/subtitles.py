@@ -183,17 +183,6 @@ _DYC_SUBTITLE_FONT_CATEGORY_NAME = "Favoritos"
 _dyc_font_warned: bool = False
 
 
-def _is_dyc_profile(profile: EditProfile | None) -> bool:
-    """Devuelve True si el perfil es Datos Y Cafe (o equivale DYC)."""
-    if profile is None:
-        return False
-    # v2.0.0: priorizar profile_id, con fallback al nombre
-    pid = getattr(profile, 'profile_id', None)
-    if pid is not None:
-        return str(pid).lower() == 'datos_y_cafe'
-    return getattr(profile, 'name', '') == 'Datos Y Cafe'
-
-
 def _dyc_subtitle_font_info(profile: EditProfile) -> tuple[str, str, str]:
     """Devuelve (name, resource_id, path) para los subtítulos DYC.
 
@@ -256,7 +245,8 @@ def resolve_subtitle_font(profile: EditProfile | None = None) -> dict:
         rid = p.subtitle_font_resource_id
         return {"path": _resolve_cloud_font_path(rid), "name": p.subtitle_font_name or "", "title": p.subtitle_font_name or "", "resource_id": rid}
     # v2.0.0 — DYC: usar la fuente configurada en el perfil (Bungee-Rg con resource_id real)
-    if _is_dyc_profile(p) and getattr(p, 'dyc_start_animations', None):
+    # Se detecta por la presencia de dyc_start_animations (solo DYC las tiene)
+    if getattr(p, 'dyc_start_animations', None):
         font_name, font_rid, font_path = _dyc_subtitle_font_info(p)
         return {
             "path": font_path,
@@ -432,44 +422,32 @@ def _get_profile(profile: EditProfile | None) -> EditProfile:
 
 def _profile_subtitle_y(profile: EditProfile | None) -> float:
     p = _get_profile(profile)
-    if not _is_dyc_profile(p):
-        return float(config.SUBTITLE_POS_Y_JSON)
     return p.subtitle_pos_y_json
 
 
 def _profile_font_size(profile: EditProfile | None) -> float:
     p = _get_profile(profile)
-    if not _is_dyc_profile(p):
-        return float(FONT_SIZE)
     return p.subtitle_font_size
 
 
 def _profile_keyword_color(profile: EditProfile | None) -> list[float]:
     p = _get_profile(profile)
-    if not _is_dyc_profile(p):
-        return list(KEYWORD_COLOR)
     return list(p.subtitle_keyword_color)
 
 
 def _profile_keywords(profile: EditProfile | None) -> frozenset[str]:
     p = _get_profile(profile)
-    if not _is_dyc_profile(p):
-        return SUBTITLE_KEYWORDS
     return p.subtitle_keywords
 
 
 def _profile_stroke_width(profile: EditProfile | None) -> float:
     p = _get_profile(profile)
-    if not _is_dyc_profile(p):
-        return float(config.SUBTITLE_STROKE_WIDTH_JSON)
     return p.subtitle_stroke_width_json
 
 
 def _profile_italic(profile: EditProfile | None) -> bool:
     p = _get_profile(profile)
-    if not _is_dyc_profile(p):
-        return STYLE_ITALIC
-    return p.watermark_italic  # DYC usa watermark_italic=False por defecto
+    return p.watermark_italic
 
 
 def build_text_content(
@@ -553,8 +531,9 @@ def build_text_material(text: str, profile: EditProfile | None = None) -> dict:
     font_size = _profile_font_size(profile)
     # v1.7.0 FIX 9 — DYC: se resuelve la fuente ANTES de construir el content
     # para que `content.styles[].font` lleve el mismo id/path que el material.
+    # Se detecta por la presencia de dyc_start_animations (solo DYC las tiene)
     dyc_font: tuple[str, str, str] | None = None
-    if _is_dyc_profile(p) and getattr(p, 'dyc_start_animations', None):
+    if getattr(p, 'dyc_start_animations', None):
         dyc_font = _dyc_subtitle_font_info(p)
         font = {
             "path": dyc_font[2],
@@ -682,31 +661,47 @@ def build_subtitle_track(
     Cada cue se divide en fragmentos de 2-5 palabras; el tiempo del cue se
     reparte PROPORCIONALMENTE al numero de palabras de cada fragmento (el
     ultimo ocupa siempre el resto del cue). Devuelve la estructura completa
-    lista para insertar en `content["tracks"]` y materials["texts"]."""
+    lista para insertar en `content["tracks"]` y materials["texts"].
+
+    FIX v3.0.0: si dos cues tienen exactamente el mismo start_us y end_us,
+    se fusionan en un solo segmento (el texto se concatena) para evitar
+    superposicion en CapCut.
+    """
     cues = parse_srt(Path(srt_path))
     if not cues:
         return None, [], []
 
-    materials: list[dict] = []
-    segments: list[dict] = []
+    # Agrupar cues que comparten exactamente el mismo intervalo [start_us, end_us].
+    grouped: dict[tuple[int, int], list[str]] = {}
+    order: list[tuple[int, int]] = []
     for start_s, end_s, text_raw in cues:
         text = clean_srt_text(text_raw)
         if not text:
             continue
-        fragments = split_into_fragments(text)
+        start_us = int(round(start_s * 1_000_000))
+        end_us = int(round(end_s * 1_000_000))
+        key = (start_us, end_us)
+        if key not in grouped:
+            grouped[key] = []
+            order.append(key)
+        grouped[key].append(text)
+
+    materials: list[dict] = []
+    segments: list[dict] = []
+    for (start_us, end_us), texts in zip(order, [grouped[k] for k in order]):
+        cue_dur_us = max(end_us - start_us, 1)
+        # Fusionar textos con el mismo intervalo en uno solo.
+        merged_text = " ".join(texts)
+        fragments = split_into_fragments(merged_text)
         if not fragments:
             continue
-        cue_start_us = int(round(start_s * 1_000_000))
-        cue_end_us = int(round(end_s * 1_000_000))
-        cue_dur_us = max(cue_end_us - cue_start_us, 1)
         total_words = sum(len(f) for f in fragments)
-        cursor_us = cue_start_us
+        cursor_us = start_us
         for i, fragment in enumerate(fragments):
             mat = build_text_material(" ".join(fragment), profile)
             materials.append(mat)
             if i == len(fragments) - 1:
-                # Ultimo fragmento: ocupa exactamente el resto del cue.
-                frag_dur_us = max(cue_end_us - cursor_us, 1)
+                frag_dur_us = max(end_us - cursor_us, 1)
             else:
                 frag_dur_us = max(
                     int(round(cue_dur_us * len(fragment) / total_words)), 1)
@@ -773,7 +768,8 @@ def build_watermark_material_and_track(
         font_name = p.watermark_font_name or ""
         font_title = p.watermark_font_name or ""
     # v1.7.0: DYC usa Staatliches-Rg de la caché de CapCut
-    elif _is_dyc_profile(p) and getattr(p, 'dyc_start_animations', None):
+    # Se detecta por la presencia de dyc_start_animations (solo DYC las tiene)
+    elif getattr(p, 'dyc_start_animations', None):
         font_path = _dyc_watermark_font_path()
         font_id = _DYC_WATERMARK_FONT_RESOURCE_ID
         font_name = _DYC_WATERMARK_FONT_NAME

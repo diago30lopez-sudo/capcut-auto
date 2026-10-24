@@ -1132,9 +1132,10 @@ class MainWindow(ctk.CTk):
                 import dataclasses
                 edit_profile = dataclasses.replace(edit_profile, dyc_assets_dir=str(self._dyc_assets_dir))
             match_threshold = getattr(edit_profile, 'match_threshold', 75.0)
+            min_duration_us = getattr(edit_profile, 'min_duration_us', 33333)
             items, _seg_total_us = build_timeline(
                 scenes, aligned, data["images"], cancel_event=self.cancel_event,
-                match_threshold=match_threshold,
+                match_threshold=match_threshold, min_duration_us=min_duration_us,
             )
             ok_items = sum(1 for it in items if it.is_synced)
             log.info("Escenas sincronizadas: %d/%d.", ok_items, len(items))

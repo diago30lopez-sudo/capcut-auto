@@ -15,21 +15,14 @@ from src.core.scene_parser import Scene
 log = logging.getLogger("capcutauto")
 
 US_PER_S = 1_000_000
-MIN_SCENE_DURATION_US = int(1.5 * US_PER_S)
 _FRAME_US = 33333
+# Default minimum scene duration: 1.5 seconds (prevents images from flashing).
+DEFAULT_MIN_SCENE_DURATION_US = 1_500_000
+MIN_SCENE_DURATION_US = DEFAULT_MIN_SCENE_DURATION_US
 DYC_CTA_INTERMEDIO_PCT = 0.37
 CTA_FINAL_FALLBACK_RATIO = 0.90
 DYC_CHROMA_INTENSITY = 0.25
 
-_CTA_PATTERNS = (
-    r"suscribete",
-    r"suscribirse",
-    r"suscribete al canal",
-    r"subscribete",
-    r"subscribirse",
-    r"suscribete si quieres",
-)
-_CTA_RE = re.compile("|".join(f"(?:{p})" for p in _CTA_PATTERNS), re.IGNORECASE)
 _CTA_MIN_WINDOW_US = 60_000_000
 _TIME_RE = re.compile(
     r"(\d+):(\d+):(\d+)[,.](\d+)\s*-->\s*(\d+):(\d+):(\d+)[,.](\d+)"
@@ -87,6 +80,57 @@ def parse_srt(srt_path: Path):
     if start is not None and text:
         entries.append((start, end, " ".join(text).strip()))
     return entries
+
+
+def group_srt_into_sentences(entries):
+    """Agrupa cues word-level del SRT en frases (sentence-level).
+
+    Regla de agrupacion: un nuevo grupo se inicia cuando:
+    - El cue actual termina con puntuacion de final de oracion (. ! ?).
+    - Hay un gap de silencio mayor a SENTENCE_GAP_S segundos respecto al
+      cue anterior.
+
+    Devuelve una lista de (start_s, end_s, full_text) donde full_text es la
+    concatenacion de todos los cues del grupo.
+    """
+    if not entries:
+        return []
+    SENTENCE_GAP_S = 1.5
+    PUNCT_END = re.compile(r"[.!?]$")
+
+    grouped: list[tuple[float, float, str]] = []
+    group_start = entries[0][0]
+    group_end = entries[0][1]
+    group_text = [entries[0][2]]
+
+    for k in range(1, len(entries)):
+        prev_end = entries[k - 1][1]
+        cur_start, cur_end, cur_text = entries[k]
+        gap = cur_start - prev_end
+
+        # Iniciar nuevo grupo si hay gap grande o el anterior termino en punto.
+        new_group = False
+        if gap > SENTENCE_GAP_S:
+            new_group = True
+        elif PUNCT_END.search(group_text[-1]):
+            new_group = True
+
+        if new_group:
+            grouped.append((group_start, group_end, " ".join(group_text)))
+            group_start = cur_start
+            group_end = cur_end
+            group_text = [cur_text]
+        else:
+            group_end = cur_end
+            group_text.append(cur_text)
+
+    # Ultimo grupo.
+    grouped.append((group_start, group_end, " ".join(group_text)))
+    log.info(
+        "Agrupacion SRT: %d cues word-level -> %d frases sentence-level.",
+        len(entries), len(grouped),
+    )
+    return grouped
 def measure_audio_duration_us(path):
     try:
         with wave.open(str(path), "rb") as w:
@@ -130,7 +174,15 @@ def redistribute_gap(items, target_us):
     sum_synced = sum(it.duration_us for it in synced)
     if target_us <= sum_synced:
         return items
-    if target_us > 0 and abs(sum_synced - target_us) / target_us < 0.05:
+    if target_us > 0 and abs(sum_synced - target_us) < _FRAME_US:
+        log.info(
+            "Redistribucion omitida: delta %.0f us < 1 frame (%d us)",
+            abs(sum_synced - target_us), _FRAME_US,
+        )
+        return items
+    # When target > sum, ALWAYS scale up to fill the audio.
+    # The 5% skip below only applies when target <= sum (overshoot).
+    if target_us > 0 and sum_synced > target_us and abs(sum_synced - target_us) / target_us < 0.05:
         log.info(
             "Redistribucion omitida: suma %.0f us vs target %.0f us (delta %.1f%% < 5%%)",
             sum_synced, target_us, abs(sum_synced - target_us) / target_us * 100,
@@ -210,7 +262,17 @@ def find_cta_intermedio_start(total_duration_us):
     return (raw // _FRAME_US) * _FRAME_US
 
 
-def find_cta_final_starts(srt_path, total_duration_us):
+def find_cta_final_starts(srt_path, total_duration_us, patterns=()):
+    _FALLBACK_PATTERNS = (
+        r"suscribete",
+        r"suscribirse",
+        r"suscribete al canal",
+        r"subscribete",
+        r"subscribirse",
+        r"suscribete si quieres",
+    )
+    _patterns = tuple(patterns) if patterns else _FALLBACK_PATTERNS
+    _cta_re = re.compile("|".join(f"(?:{p})" for p in _patterns), re.IGNORECASE)
     def _norm(text):
         return unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode("ascii").lower()
     if srt_path is None or not Path(srt_path).is_file():
@@ -224,14 +286,28 @@ def find_cta_final_starts(srt_path, total_duration_us):
     entries = parse_srt(Path(srt_path))
     starts = []
     search_from_s = 0.0
+    # Keep track of the last matched minute to avoid duplicates within 60s.
+    last_matched_minute = -1.0
     for start_s, end_s, cue_text in entries:
         if start_s < search_from_s:
             continue
         normed = _norm(cue_text)
-        if _CTA_RE.search(normed):
+        if _cta_re.search(normed):
             start_us = int(round(start_s * US_PER_S))
             aligned = (start_us // _FRAME_US) * _FRAME_US
+            # Dedup: skip if another CTA was already matched within the
+            # same minute window (prevents double CTA when the same word
+            # appears in consecutive cues).
+            minute = int(start_s // 60.0)
+            if minute == last_matched_minute:
+                log.info(
+                    "CTA FINAL omitido (duplicado en mismo minuto): t=%.2f s",
+                    start_s,
+                )
+                search_from_s = end_s + 60.0
+                continue
             starts.append(aligned)
+            last_matched_minute = minute
             log.info("CTA FINAL #%d en t=%.2f s (match: '%s')", len(starts), start_s,
                      cue_text.strip()[:40])
             search_from_s = end_s + 60.0
@@ -401,7 +477,7 @@ def reorder_transition_refs(video_segments, transitions):
     return n_with, n_without
 
 
-def sync_last_item_to_audio_end(items, fin_audio_us, min_duration_us=1_000_000):
+def sync_last_item_to_audio_end(items, fin_audio_us, min_duration_us=_FRAME_US):
     if not items:
         return items
     last = items[-1]
@@ -415,7 +491,10 @@ def match_scenes_to_srt(
     scenes, srt_path, match_threshold=75.0,
 ):
     from rapidfuzz import fuzz
-    entries = parse_srt(Path(srt_path))
+    raw_entries = parse_srt(Path(srt_path))
+    # Group word-level cues into sentence-level phrases so each scene matches
+    # a full sentence, not an individual word (which would be too short).
+    entries = group_srt_into_sentences(raw_entries)
     entries = [e for e in entries if e[1] > e[0]]
 
     def _norm(text):
@@ -432,13 +511,14 @@ def match_scenes_to_srt(
         if entries[k][0] - entries[k - 1][1] > gap_threshold:
             gap_indices.add(k)
 
-    results = []
-    no_match = 0
+    # First pass: find matches WITHOUT any fallback. Track global max_end
+    # so every scene searches strictly forward.
+    raw_results: list[tuple[int, float | None, float | None, bool]] = []
+    global_max_end = 0.0  # ensures monotonic forward search
     for i, scene in enumerate(scenes):
         key = scene.key_text
         if not key:
-            results.append((i, 0.0, 0.0, False))
-            no_match += 1
+            raw_results.append((i, None, None, False))
             continue
         norm_key = _norm(key)
         words = norm_key.split()
@@ -448,11 +528,11 @@ def match_scenes_to_srt(
         prefix = " ".join(words[:n_start])
         suffix = " ".join(words[-n_end:]) if n_end < n_words else prefix
 
-        prev_end = results[i - 1][2] if i > 0 and results[i - 1][3] else 0.0
+        search_from = global_max_end
         start_idx = None
         start_score = 0.0
         for k, (s, e, txt) in enumerate(entries):
-            if s < prev_end - 0.05:
+            if s < search_from - 0.05:
                 continue
             norm_cue = _norm(txt)
             score = fuzz.partial_ratio(prefix, norm_cue)
@@ -463,9 +543,9 @@ def match_scenes_to_srt(
 
         end_idx = None
         end_score = 0.0
-        search_from = start_idx if start_idx is not None else 0
-        for k in range(search_from, len(entries)):
-            if k in gap_indices and k > search_from:
+        search_end_from = start_idx if start_idx is not None else 0
+        for k in range(search_end_from, len(entries)):
+            if k in gap_indices and k > search_end_from:
                 break
             norm_cue = _norm(entries[k][2])
             score = fuzz.partial_ratio(suffix, norm_cue)
@@ -476,18 +556,107 @@ def match_scenes_to_srt(
         if start_idx is not None:
             start_s = entries[start_idx][0]
             end_s = entries[end_idx][1] if end_idx is not None else entries[start_idx][1]
-            results.append((i, start_s, end_s, True))
-        else:
-            fallback_idx = None
-            for k in range(len(entries) - 1, -1, -1):
-                if entries[k][1] <= prev_end:
-                    fallback_idx = k
-                    break
-            if fallback_idx is not None:
-                results.append((i, entries[fallback_idx][0], entries[fallback_idx][1], True))
+            # Guard: ensure start < end; otherwise treat as no-match.
+            if end_s <= start_s:
+                raw_results.append((i, None, None, False))
             else:
-                results.append((i, 0.0, 0.0, False))
-                no_match += 1
+                raw_results.append((i, start_s, end_s, True))
+                if end_s > global_max_end:
+                    global_max_end = end_s
+        else:
+            raw_results.append((i, None, None, False))
+
+    # Second pass: interpolate unmatched scenes between previous and next match.
+    results = []
+    no_match = 0
+    n = len(raw_results)
+    # Post-processing: detect "giant cue" situations.
+    # If a single matched cue spans >30s AND there are significantly more
+    # unmatched scenes than cues, cap each matched cue to MAX_CUE_DURATION_S
+    # so that later scenes still get a chance to be placed.
+    MAX_CUE_DURATION_S = 30.0
+    n_matched = sum(1 for r in raw_results if r[3])
+    n_unmatched = n - n_matched
+    if n_matched > 0 and n_unmatched > n_matched:
+        for idx, (si, start_s, end_s, matched) in enumerate(raw_results):
+            if not matched:
+                continue
+            cue_dur = end_s - start_s
+            if cue_dur > MAX_CUE_DURATION_S:
+                capped_end = start_s + MAX_CUE_DURATION_S
+                raw_results[idx] = (si, start_s, capped_end, True)
+                log.warning(
+                    "Match escalonado: cue #%d de %.1fs recortado a %.1fs "
+                    "(%d sin match vs %d con match)",
+                    si, cue_dur, MAX_CUE_DURATION_S, n_unmatched, n_matched,
+                )
+        # Recompute global_max_end from ALL (possibly capped) matches.
+        global_max_end = max((r[2] for r in raw_results if r[3]), default=0.0)
+    matched_indices = [i for i, (_, s, e, m) in enumerate(raw_results) if m]
+
+    if not matched_indices:
+        for i in range(n):
+            results.append((i, 0.0, 0.0, False))
+            no_match += 1
+        log.info(
+            "Match escenas<->SRT: %d/%d escenas emparejadas (umbral=%.0f).",
+            len(scenes) - no_match, len(scenes), match_threshold,
+        )
+        return results, no_match
+
+    for i, (_, start_s, end_s, matched) in enumerate(raw_results):
+        if matched:
+            results.append((i, start_s, end_s, True))
+            continue
+        # Find previous and next matched scene indices.
+        prev_m = None
+        next_m = None
+        for mi in matched_indices:
+            if mi < i:
+                prev_m = mi
+            elif mi > i and next_m is None:
+                next_m = mi
+                break
+        if prev_m is not None and next_m is not None:
+            _, _, prev_end_s, _ = raw_results[prev_m]
+            next_start_s, _, _, _ = raw_results[next_m]
+            gap_count = next_m - prev_m - 1
+            if gap_count <= 0:
+                gap_count = 1
+            step_s = (next_start_s - prev_end_s) / (gap_count + 1)
+            offset = i - prev_m
+            est_start = prev_end_s + offset * step_s
+            est_end = prev_end_s + (offset + 1) * step_s
+            results.append((i, est_start, est_end, True))
+            log.info(
+                "Escena #%d interpolada (sin match SRT) - [%s .. %s] s",
+                scenes[i].number, f"{est_start:.2f}", f"{est_end:.2f}",
+            )
+        elif prev_m is not None:
+            # Consecutive unmatched scenes at the end — spread them across the
+            # remaining SRT window (from prev_end_s to last SRT entry end).
+            _, _, prev_end_s, _ = raw_results[prev_m]
+            # Count how many unmatched scenes follow prev_m consecutively.
+            n_after = 0
+            for j in range(prev_m + 1, n):
+                if raw_results[j][3]:
+                    break
+                n_after += 1
+            # Use the last SRT entry end as the deadline, or a generous fallback.
+            last_srt_end = entries[-1][1] if entries else prev_end_s + 10.0
+            span = max(last_srt_end - prev_end_s, 1.0)
+            step_s = span / max(n_after, 1)
+            offset = i - prev_m
+            est_start = prev_end_s + offset * step_s
+            est_end = est_start + step_s
+            results.append((i, est_start, est_end, True))
+            log.info(
+                "Escena #%d extendida despues del ultimo match - [%s .. %s] s",
+                scenes[i].number, f"{est_start:.2f}", f"{est_end:.2f}",
+            )
+        else:
+            results.append((i, 0.0, 0.0, False))
+            no_match += 1
 
     log.info(
         "Match escenas<->SRT: %d/%d escenas emparejadas (umbral=%.0f).",
@@ -499,6 +668,7 @@ def match_scenes_to_srt(
 def build_timeline(
     scenes, srt_path, image_paths,
     cancel_event=None, match_threshold=75.0,
+    min_duration_us=DEFAULT_MIN_SCENE_DURATION_US,
 ):
     matches, no_match = match_scenes_to_srt(scenes, srt_path, match_threshold)
     items = []
@@ -513,7 +683,7 @@ def build_timeline(
             continue
         start_us = int(round(start_s * US_PER_S))
         end_us = int(round(end_s * US_PER_S))
-        duration_us = max(end_us - start_us, MIN_SCENE_DURATION_US)
+        duration_us = max(end_us - start_us, min_duration_us)
         log.info(
             "Escena #%d OK - [%s .. %s] (%d us) - score=%d",
             scene.number, f"{start_s:.2f}s", f"{end_s:.2f}s", duration_us,
@@ -539,18 +709,18 @@ def build_timeline(
                     est_end = t_start + (step_idx + 1) * dur_step
                 else:
                     est_start = t_start
-                    est_end = t_start + MIN_SCENE_DURATION_US
+                    est_end = t_start + min_duration_us
             elif prev_idx is not None:
                 est_start = items[prev_idx].end_us
-                est_end = est_start + MIN_SCENE_DURATION_US
+                est_end = est_start + min_duration_us
             elif next_idx is not None:
                 est_end = items[next_idx].start_us
-                est_start = max(0, est_end - MIN_SCENE_DURATION_US)
+                est_start = max(0, est_end - min_duration_us)
             else:
                 est_start = 0
-                est_end = MIN_SCENE_DURATION_US
+                est_end = min_duration_us
             est_start_us = int(round(est_start))
-            est_end_us = int(round(max(est_end, est_start_us + MIN_SCENE_DURATION_US)))
+            est_end_us = int(round(max(est_end, est_start_us + min_duration_us)))
             items[i] = replace(items[i],
                 start_us=est_start_us, end_us=est_end_us,
                 duration_us=est_end_us - est_start_us,
@@ -560,11 +730,11 @@ def build_timeline(
 
     for i in range(n):
         it = items[i]
-        if it.duration_us < MIN_SCENE_DURATION_US:
+        if it.duration_us < min_duration_us:
             old_end = it.end_us
-            new_end = it.start_us + MIN_SCENE_DURATION_US
-            items[i] = replace(it, end_us=new_end, duration_us=MIN_SCENE_DURATION_US)
-            log.info("Escena #%d extendida a minimo 1.5s (%d -> %d us)",
+            new_end = it.start_us + min_duration_us
+            items[i] = replace(it, end_us=new_end, duration_us=min_duration_us)
+            log.info("Escena #%d extendida a minimo (%d -> %d us)",
                      scenes[i].number, old_end, new_end)
 
     if items:
@@ -578,10 +748,10 @@ def build_timeline(
             old_start = items[i].start_us
             items[i] = replace(items[i], start_us=items[i - 1].end_us)
             items[i] = replace(items[i], duration_us=items[i].end_us - items[i].start_us)
-            if items[i].duration_us < MIN_SCENE_DURATION_US:
+            if items[i].duration_us < min_duration_us:
                 items[i] = replace(items[i],
-                    end_us=items[i].start_us + MIN_SCENE_DURATION_US,
-                    duration_us=MIN_SCENE_DURATION_US,
+                    end_us=items[i].start_us + min_duration_us,
+                    duration_us=min_duration_us,
                 )
             log.info("Escena #%d monotonia corregida: %d -> %d us",
                      scenes[i].number, old_start, items[i].start_us)

@@ -60,7 +60,8 @@
     "highlight": null,
     "shadow": null,
     "light_sensation": null,
-    "vignetting": 0.215
+    "vignetting": 0.215,
+    "random": true
   },
   "hsl": {
     "entries": [
@@ -116,6 +117,10 @@
       "fallback_ratio": 0.9,
       "patterns": ["suscribete","suscribirse","suscribete al canal","subscribete","subscribirse","suscribete si quieres"]
     }
+  },
+  "layout_rules": {
+    "mode": "audio_sync",
+    "min_duration_us": 1500000
   },
   "assets": {
     "folder": "D:/YOUTUBE AUTOMATIZADO/1.historias hipoteticas/recursos_edicion Nexus Paradoja/",

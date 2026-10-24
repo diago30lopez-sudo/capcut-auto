@@ -20,7 +20,7 @@ from pathlib import Path
 
 from src.core import config
 from src.core.bootstrap import ensure_dependencies
-from src.core.timeline_builder import GenerationCancelled
+from src.core.timeline_builder import GenerationCancelled, parse_srt
 
 log = logging.getLogger("capcutauto")
 
@@ -168,9 +168,15 @@ def transcribe_audio_free(
     audio_path: str | Path,
     output_srt_path: str | Path,
     cancel_event=None,
+    mode: str = "sentence",
 ) -> Path:
     """Transcribe el audio sin texto de referencia (transcripcion libre).
-    Usa CrispASR en modo transcripcion libre con salida SRT."""
+    Usa CrispASR en modo transcripcion libre con salida SRT.
+
+    mode: 'sentence' = una cue por frase (por defecto);
+          'word'     = una cue por palabra (el tiempo se reparte
+                       proporcionalmente dentro de cada frase).
+    """
     audio_path = Path(audio_path)
     output_srt_path = Path(output_srt_path)
     if not audio_path.is_file():
@@ -179,24 +185,106 @@ def transcribe_audio_free(
     ensure_dependencies(cancel_event)
     if cancel_event is not None and cancel_event.is_set():
         raise GenerationCancelled("Generacion cancelada por el usuario.")
+    # CrispASR's -of expects a path WITHOUT extension; it appends the
+    # format-specific suffix (.srt when -osrt is set). Passing a path
+    # that already ends in .srt produces <path>.srt.srt and the subsequent
+    # file-existence check fails with "CrispASR termino pero no genero el SRT".
+    _crisp_of = str(output_srt_path.with_suffix(""))
     cmd = [
         str(config.CRISPASR_EXE),
         "-f", str(audio_path),
         "-osrt",
-        "-of", str(output_srt_path),
+        "-of", _crisp_of,
         "-l", "es",
+        "-m", str(config.ALIGN_MODEL_PATH),
+        # Force segmentation even when the punctuation model is unavailable.
+        # --max-len 50 → hard cap per segment; --split-on-punct → sentence break;
+        # --chunk-seconds 30 → VAD-fallback chunk size.
+        "--max-len", "50",
+        "--split-on-punct",
+        "--chunk-seconds", "30",
     ]
-    log.info("Transcribiendo audio libre (%s)...", audio_path.name)
+    log.info("Ejecutando CrispASR transcribe_audio_free: %s", cmd)
     proc = subprocess.run(
         cmd, capture_output=True, text=True,
         encoding="utf-8", errors="replace",
     )
+    log.info("CrispASR stdout: %s", (proc.stdout or "").strip()[:500])
+    log.info("CrispASR stderr: %s", (proc.stderr or "").strip()[:1000])
     if cancel_event is not None and cancel_event.is_set():
         raise GenerationCancelled("Generacion cancelada por el usuario.")
     if proc.returncode != 0:
         err = (proc.stderr or proc.stdout or "").strip()
+        log.error("CrispASR fallo (rc=%d): %s", proc.returncode, err[-1500:])
         raise RuntimeError(f"CrispASR fallo (rc={proc.returncode}): {err[-1500:]}")
+    # CrispASR appends the format suffix itself; verify the expected file exists.
     if not output_srt_path.is_file():
-        raise RuntimeError("CrispASR termino pero no genero el SRT.")
+        # Fallback: search for a file with the same stem in the same directory.
+        candidates = list(output_srt_path.parent.glob(output_srt_path.stem + "*"))
+        log.warning(
+            "SRT esperado %s no encontrado; candidatos: %s",
+            output_srt_path,
+            [str(c) for c in candidates],
+        )
+        if candidates:
+            output_srt_path = candidates[0]
+        else:
+            raise RuntimeError(
+                f"CrispASR termino pero no genero el SRT: {output_srt_path}.\n"
+                f"stderr: {(proc.stderr or '').strip()}"
+            )
     log.info("Transcripcion libre completada -> %s", output_srt_path)
+    if mode == "word":
+        return _format_srt_word_level(output_srt_path)
     return output_srt_path
+
+
+def _srt_time(ms: int) -> str:
+    """Convierte milisegundos a formato SRT HH:MM:SS,mmm."""
+    hh = ms // 3600000
+    mm = (ms % 3600000) // 60000
+    ss = (ms % 60000) // 1000
+    mmm = ms % 1000
+    return f"{hh:02d}:{mm:02d}:{ss:02d},{mmm:03d}"
+
+
+def _format_srt_word_level(srt_path: Path) -> Path:
+    """Reescribe el SRT para que tenga una cue por palabra en lugar de por frase.
+
+    Cada cue original se parte en palabras; el tiempo total del cue se reparte
+    proporcionalmente entre ellas. Se sobrescribe el archivo original.
+    """
+    entries = parse_srt(srt_path)
+    if not entries:
+        return srt_path
+
+    new_entries: list[tuple[float, float, str]] = []
+    for start_s, end_s, text in entries:
+        words = text.split()
+        if not words:
+            continue
+        total_dur = end_s - start_s
+        if total_dur <= 0:
+            new_entries.append((start_s, end_s, words[0]))
+            continue
+        if len(words) == 1:
+            new_entries.append((start_s, end_s, words[0]))
+            continue
+        word_dur = total_dur / len(words)
+        for i, word in enumerate(words):
+            w_start = start_s + i * word_dur
+            w_end = start_s + (i + 1) * word_dur if i < len(words) - 1 else end_s
+            new_entries.append((w_start, w_end, word))
+
+    new_entries.sort(key=lambda e: e[0])
+
+    lines: list[str] = []
+    for idx, (start_s, end_s, word) in enumerate(new_entries, 1):
+        start_ms = int(round(start_s * 1000))
+        end_ms = int(round(end_s * 1000))
+        lines.append(f"{idx}\n{_srt_time(start_ms)} --> {_srt_time(end_ms)}\n{word}")
+
+    srt_path.write_text("\n\n".join(lines) + "\n", encoding="utf-8")
+    log.info("SRT reformatado a nivel de palabra: %d cues originales -> %d cues.",
+             len(entries), len(new_entries))
+    return srt_path

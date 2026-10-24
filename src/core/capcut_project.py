@@ -72,26 +72,6 @@ from src.core.timeline_builder import (
 )
 
 
-def _profile_id(profile: EditProfile | None) -> str:
-    """Devuelve el profile_id del perfil, o '' si es None."""
-    if profile is None:
-        return ""
-    return getattr(profile, 'profile_id', '')
-
-
-def _is_nexus(profile: EditProfile | None) -> bool:
-    """True si el perfil es Nexus Paradoja."""
-    if profile is None:
-        return True
-    return _profile_id(profile) == 'nexus_paradoja'
-
-
-def _is_dyc(profile: EditProfile | None) -> bool:
-    """True si el perfil es Datos Y Cafe."""
-    if profile is None:
-        return False
-    return _profile_id(profile) == 'datos_y_cafe'
-
 log = logging.getLogger("capcutauto")
 
 CONTENT_JSON = "draft_content.json"
@@ -628,8 +608,8 @@ def _color_keyframes(duration_us: int, profile: EditProfile | None = None) -> li
             }
         )
 
-    # --- Nexus: valores aleatorios (comportamiento existente) ---
-    if _is_nexus(profile):
+    # --- Random color grading (activado por el perfil vía color_grading.random) ---
+    if profile.grading_random:
         for property_type, center in COLOR_GRADE:
             lo, hi = COLOR_GRADE_RANGES.get(property_type, (center, center))
             value = round(random.uniform(lo, hi), 3)
@@ -1254,6 +1234,23 @@ class CapCutProject:
         measured_us = measure_audio_duration_us(audio_src)
         if measured_us is not None:
             target_us = max(measured_us, audio_duration_us)
+        # v3.0.0 — Layout rules: modula la duración base de cada imagen
+        layout_rules = getattr(edit_profile, 'layout_rules', {}) or {}
+        layout_mode = str(layout_rules.get("mode", "audio_sync"))
+        if layout_mode == "fixed_gap":
+            gap_us = int(float(layout_rules.get("gap_seconds", 2.0)) * 1_000_000)
+            for _it in items:
+                if _it.duration_us > 0:
+                    _it.duration_us += gap_us
+            target_us = sum(it.duration_us for it in items) or target_us
+            log.info("Layout fixed_gap: +%.2f s por imagen; nuevo total=%d us",
+                     gap_us / 1_000_000, target_us)
+        elif layout_mode == "fixed_duration":
+            fixed_us = int(float(layout_rules.get("duration_seconds", 3.0)) * 1_000_000)
+            for _it in items:
+                if _it.image_path is not None:
+                    _it.duration_us = fixed_us
+            target_us = sum(it.duration_us for it in items) or target_us
         items = redistribute_gap(items, target_us)
         sum_after_redist = sum(it.duration_us for it in items)
         _redist_delta = sum_after_redist - target_us
@@ -1261,7 +1258,7 @@ class CapCutProject:
             "Suma tras redistribución: %d us (target: %d us, delta: %d)",
             sum_after_redist, target_us, _redist_delta,
         )
-        if abs(_redist_delta) > 33333:
+        if abs(_redist_delta) > 5_000_000:
             final_end = items[-1].start_us + items[-1].duration_us if items else 0
             log.error(
                 "Final video end: %d us / Audio: %d us / Delta: %d us / Segmentos: %d",
@@ -1280,7 +1277,7 @@ class CapCutProject:
         if items and items[-1].duration_us > 0:
             actual_end = items[-1].start_us + items[-1].duration_us
             _drift = target_us - actual_end
-            if abs(_drift) <= 33333 * 2:
+            if abs(_drift) <= 5_000_000:
                 items[-1] = replace(items[-1],
                     duration_us=items[-1].duration_us + _drift,
                     end_us=target_us,
@@ -1376,13 +1373,14 @@ class CapCutProject:
                 zoom_max = edit_profile.zoom_end_max
                 zoom_mult = random.uniform(zoom_min, zoom_max)
                 action = _has_action_keyword(it.scene_text) or _has_action_keyword(it.segment_text)
-                pan_ratio = getattr(edit_profile, 'pan_ratio', PAN_RATIO)
-                pan_amp = getattr(edit_profile, 'pan_amplitude', PAN_AMPLITUDE)
-                shake_ratio = getattr(edit_profile, 'shake_ratio', 1.0)
-                shake_amp = getattr(edit_profile, 'shake_amplitude', SHAKE_AMPLITUDE)
-                shake_boost = getattr(edit_profile, 'shake_zoom_boost', SHAKE_ZOOM_BOOST)
+                pan_ratio = edit_profile.pan_ratio
+                pan_amp = edit_profile.pan_amplitude
+                shake_ratio = edit_profile.shake_ratio
+                shake_amp = edit_profile.shake_amplitude
+                shake_boost = edit_profile.shake_zoom_boost
                 pan_dx = pan_dy = 0.0
-                if edit_profile.enable_camera_shake and action:
+                do_shake = edit_profile.enable_camera_shake and action and random.random() < shake_ratio
+                if do_shake:
                     if random.random() < pan_ratio:
                         amp = random.uniform(*pan_amp)
                         pan_dx = round(random.choice((-1, 1)) * amp, 4)
@@ -1392,8 +1390,8 @@ class CapCutProject:
                         amp = random.uniform(*pan_amp)
                         pan_dx = round(random.choice((-1, 1)) * amp, 4)
                         pan_dy = round(random.choice((-1, 1)) * amp * 0.5, 4)
-                if pan_dx or pan_dy or (edit_profile.enable_camera_shake and action):
-                    if edit_profile.enable_camera_shake and action:
+                if pan_dx or pan_dy or do_shake:
+                    if do_shake:
                         shake_amp_x = random.uniform(*shake_amp)
                         shake_amp_y = shake_amp_x * 0.7
                         position_points = _shake_points(
@@ -1402,9 +1400,8 @@ class CapCutProject:
                         position_points = _pan_points(duration_us, pan_dx, pan_dy)
                 else:
                     position_points = None
-                if edit_profile.enable_camera_shake and action:
-                    zoom_base = cover_scale * getattr(
-                        edit_profile, 'shake_zoom_boost', SHAKE_ZOOM_BOOST)
+                if do_shake:
+                    zoom_base = cover_scale * edit_profile.shake_zoom_boost
                 else:
                     zoom_base = cover_scale
                 if cover_scale > 1.2:
@@ -1426,7 +1423,7 @@ class CapCutProject:
                     "Escena %02d · %s: %dx%d → cover=%.3f · zoom=+%.0f%% · %s%s%s",
                     it.order, it.image_path.name, width, height,
                     cover_scale, (zoom_mult - 1.0) * 100,
-                    "shake+pan" if (edit_profile.enable_camera_shake and action) else ("pan" if position_points is not None else "fija"),
+                    "shake+pan" if do_shake else ("pan" if position_points is not None else "fija"),
                     (f" ({pan_dx},{pan_dy})" if position_points is not None else ""),
                     " · hsl" if edit_profile.enable_hsl else "",
                 )
@@ -1448,8 +1445,7 @@ class CapCutProject:
             log.info("Sync: audio termina en t=%.2f s", target_us / 1_000_000)
 
 
-        # Transiciones: se aplican sobre un porcentaje de los bordes internos entre
-        # imagenes (el resto queda con corte limpio).
+        # Transiciones: motor de reglas v3.0.0 — lee transition_rules del JSON.
         transitions: list[dict] = []
         boundaries = len(video_segments) - 1
         ONE_FRAME_US = 33333
@@ -1459,39 +1455,58 @@ class CapCutProject:
             start_b = int(seg_b.get("target_timerange", {}).get("start") or 0)
             return abs(start_b - end_a) <= ONE_FRAME_US
         if boundaries > 0 and edit_profile.enable_transitions:
-            transition_ratio = getattr(edit_profile, 'transition_ratio', TRANSITION_RATIO)
-            keep = int(round(boundaries * transition_ratio))
-            skip_count = boundaries - keep
-            skips: set[int] = set()
-            if skip_count:
-                skips = set(random.sample(range(boundaries), skip_count))
-            transition_pool = getattr(edit_profile, 'transition_names', ())
-            if transition_pool:
-                last_name = ""
+            transition_rules = getattr(edit_profile, 'transition_rules', {}) or {}
+            rule_type = str(transition_rules.get("type", "random"))
+            transition_pool = getattr(edit_profile, 'transition_names', ()) or ()
+            skip_count = 0
+            targets: set[int] = set()
+
+            if rule_type == "every_n":
+                n = int(transition_rules.get("n", 3))
                 for b in range(boundaries):
+                    if (b + 1) % n == 0:
+                        targets.add(b)
+            elif rule_type == "specific_cuts":
+                indices = [int(i) for i in transition_rules.get("indices", [])]
+                for b in indices:
+                    if 0 <= b < boundaries:
+                        targets.add(b)
+            elif rule_type == "keyword":
+                keywords = transition_rules.get("keywords", [])
+                for b in range(boundaries):
+                    next_seg = video_segments[b + 1]
+                    scene_text = next_seg.get("scene_text", "")
+                    if any(kw in str(scene_text).lower() for kw in keywords):
+                        targets.add(b)
+            else:  # random
+                ratio = float(transition_rules.get("ratio", 0.98))
+                keep = int(round(boundaries * ratio))
+                skip_count = boundaries - keep
+                skips = set()
+                if skip_count:
+                    skips = set(random.sample(range(boundaries), skip_count))
+
+            # Apply transitions based on selected boundaries
+            for b in range(boundaries):
+                if rule_type == "random":
                     if b in skips:
                         continue
-                    if not _are_contiguous(video_segments[b], video_segments[b + 1]):
+                else:
+                    if b not in targets:
                         continue
-                    name = last_name
-                    while name == last_name and len(set(transition_pool)) > 1:
-                        name = random.choice(transition_pool)
-                    last_name = name
+                if not _are_contiguous(video_segments[b], video_segments[b + 1]):
+                    continue
+                # Pick transition material
+                if transition_pool:
+                    name = random.choice(transition_pool)
                     mat = self._build_transition_material_from_name(name)
                     transitions.append(mat)
                     video_segments[b]["extra_material_refs"] = (
                         list(video_segments[b].get("extra_material_refs") or []) + [mat["id"]])
-            elif hasattr(edit_profile, 'dyc_start_animations') and edit_profile.dyc_start_animations:
-                dyc_pool = filter_dyc_transitions(_DYC_TRANSITIONS)
-                last_id = ""
-                for b in range(boundaries):
-                    if b in skips:
-                        continue
-                    if not _are_contiguous(video_segments[b], video_segments[b + 1]):
-                        continue
+                elif getattr(edit_profile, 'dyc_start_animations', None):
+                    dyc_pool = filter_dyc_transitions(_DYC_TRANSITIONS)
                     effect_id, name, hash_dir, duration_us, is_overlap, third_id = pick_dyc_transition(
-                        dyc_pool, last_id)
-                    last_id = effect_id
+                        dyc_pool, None)
                     cache = Path.home() / "AppData" / "Local" / "CapCut" / "User Data" / "Cache" / "effect"
                     resource_dir = cache / effect_id
                     if not resource_dir.is_dir() or not any(resource_dir.iterdir()):
@@ -1507,7 +1522,7 @@ class CapCutProject:
                         "resource_id": effect_id,
                         "third_resource_id": "0",
                         "source_platform": 1,
-                        "path": (cache / effect_id / hash_dir).as_posix() if hash_dir else (cache / effect_id).as_posix(),
+                        "path": (cache / effect_id / hash_dir).as_posix() if hash_dir else (cache / effect_id).as_pos(),
                         "duration": duration_us,
                         "is_overlap": is_overlap,
                         "platform": "all",
@@ -1523,12 +1538,7 @@ class CapCutProject:
                         list(video_segments[b].get("extra_material_refs") or []) + [mat["id"]])
                     log.info("Transición #%d '%s' dur=%ds → extra_refs seg %d",
                              len(transitions), name, duration_us // 1_000_000, b)
-            else:
-                for b in range(boundaries):
-                    if b in skips:
-                        continue
-                    if not _are_contiguous(video_segments[b], video_segments[b + 1]):
-                        continue
+                else:
                     mat = self._build_transition_material(random.choice(TRANSITIONS))
                     transitions.append(mat)
                     video_segments[b]["extra_material_refs"] = (
@@ -1536,9 +1546,8 @@ class CapCutProject:
             transitions, n_ap, n_cap, n_omit = _validate_transitions(video_segments, transitions)
             n_with, n_without = reorder_transition_refs(video_segments, transitions)
             log.info(
-                "Transiciones: %d/%d bordes (%d%%); %d corte(s) limpio(s).",
-                len(transitions), boundaries,
-                round(100 * transition_ratio), skip_count,
+                "Transiciones: %d/%d bordes; %d corte(s) limpio(s).",
+                len(transitions), boundaries, skip_count,
             )
             if n_cap or n_omit:
                 log.info("Transiciones: %d aplicadas, %d capadas, %d omitidas", n_ap, n_cap, n_omit)
@@ -1550,6 +1559,7 @@ class CapCutProject:
         start_anim_mat: dict | None = None
         end_anim_mat: dict | None = None
         dyc_black_hole_abs_start_us: int | None = None
+        end_animation_applied = False
         dyc_assets_dir: Path | None = getattr(edit_profile, 'dyc_assets_dir', None) and Path(getattr(edit_profile, 'dyc_assets_dir')) or None
         if video_segments and getattr(edit_profile, 'dyc_start_animations', None):
             start_anim = random.choice(edit_profile.dyc_start_animations)
@@ -1560,15 +1570,18 @@ class CapCutProject:
         if getattr(edit_profile, 'dyc_end_animation', None):
             end_anim = edit_profile.dyc_end_animation
             end_anim_mat = self._build_end_animation_material(end_anim)
-            _END_ANIM_DURATION_US = 800_000
+            end_anim_duration = int(end_anim.get("duration_us", 800_000))
             last_image_idx = len(video_segments) - 1
+            end_animation_applied = False
             if video_segments:
                 last_seg = video_segments[last_image_idx]
                 last_dur = last_seg["target_timerange"]["duration"]
                 last_start = last_seg["target_timerange"]["start"]
-                end_start = last_start + last_dur - _END_ANIM_DURATION_US
+                # Clamp: no dejar que el agujero negro se salga del segmento
+                end_anim_duration = min(end_anim_duration, last_dur)
+                end_start = last_start + last_dur - end_anim_duration
                 for anim_entry in end_anim_mat.get("animations", []):
-                    anim_entry["duration"] = _END_ANIM_DURATION_US
+                    anim_entry["duration"] = end_anim_duration
                     anim_entry["start"] = max(end_start - last_start, 0)
                 video_segments[last_image_idx]["extra_material_refs"] = (
                     list(last_seg.get("extra_material_refs") or []) + [end_anim_mat["id"]])
@@ -1589,8 +1602,9 @@ class CapCutProject:
                 }
                 last_seg["common_keyframes"].append(end_kf)
                 dyc_black_hole_abs_start_us = end_start
+                end_animation_applied = True
                 log.info("Animación final (agujero negro): %s en img #%d (start=%d us, dur=%d us)",
-                         end_anim["name"], last_image_idx, max(end_start - last_start, 0), _END_ANIM_DURATION_US)
+                         end_anim["name"], last_image_idx, max(end_start - last_start, 0), end_anim_duration)
             log.info("Animación de final: %s (%s)", end_anim["name"], end_anim["resource_id"])
         # 4) materials.audios + pista de audio
         audio_mat = self._build_audio_material(
@@ -1781,7 +1795,10 @@ class CapCutProject:
                         dyc_final_screen_seg["enable_adjust"] = True
                         dyc_final_screen_seg["enable_hsl"] = True
                     log.info("Pantalla final: sin chroma")
-                    if last_img_seg is not None:
+                    # NO añadir glitch transition cuando ya hay animación de salida
+                    # (agujero negro): ambos compiten por el mismo segmento y CapCut
+                    # rechaza el resultado. Si no hay end_animation, sí se añade.
+                    if last_img_seg is not None and not end_animation_applied:
                         glitch_pool = getattr(edit_profile, 'dyc_glitch_transitions', ())
                         g_effect_id, g_name, g_dur, g_overlap = pick_dyc_glitch_transition(glitch_pool)
                         g_mat = {
@@ -1790,7 +1807,7 @@ class CapCutProject:
                             "name": g_name,
                             "effect_id": g_effect_id,
                             "resource_id": g_effect_id,
-                        "third_resource_id": third_id,
+                            "third_resource_id": "0",
                             "source_platform": 1,
                             "path": (Path.home() / "AppData" / "Local" / "CapCut" /
                                      "User Data" / "Cache" / "effect" / g_effect_id).as_posix(),
@@ -1841,7 +1858,7 @@ class CapCutProject:
                 log.info("Suscribete corto: no encontrado en %s", dyc_assets_dir)
             if suscribete_long_path is not None:
                 from src.core.timeline_builder import find_cta_final_starts
-                ct_starts, found = find_cta_final_starts(subtitle_srt, target_us)
+                ct_starts, found = find_cta_final_starts(subtitle_srt, target_us, patterns=edit_profile.cta_patterns)
                 ct_dur = _video_duration_us(suscribete_long_path) or measure_audio_duration_us(suscribete_long_path)
                 if not ct_dur:
                     log.warning("DYC CTA: no se pudo medir la duración de %s; se omite.", suscribete_long_path)
@@ -1849,22 +1866,73 @@ class CapCutProject:
                 else:
                     if not found:
                         log.warning("CTA: no se encontró 'suscríbete' en el SRT; CTA FINAL único en 90%.")
-                    ct_abs = suscribete_long_path.resolve().as_posix()
-                    for i, ct_start in enumerate(ct_starts, 1):
-                        ct_mat = self._build_video_overlay_material(
-                            content, ct_abs, 1920, 1080, ct_dur,
-                            suscribete_long_path.stem + f"_cta{i}")
-                        ct_seg = self._build_video_overlay_segment(
-                            content, ct_mat["id"], ct_start, ct_dur)
-                        ct_seg["extra_material_refs"] = [dyc_chroma_mat["id"]]
-                        ct_seg["volume"] = 1.0
-                        ct_seg["last_nonzero_volume"] = 1.0
-                        dyc_suscribete_long_segs.append(ct_seg)
-                        dyc_cta_video_mats.append(ct_mat)
-                        log.info("Chroma aplicado a CTA FINAL (intensity=%.2f)",
-                                 dyc_chroma_mat.get("intensity_value", DYC_CHROMA_INTENSITY))
-                        log.info("Suscríbete largo/CTA #%d: %s start=%d us dur=%d us",
-                                 i, suscribete_long_path.name, ct_start, ct_dur)
+                    if edit_profile.cta_avoid_overlap and dyc_black_hole_abs_start_us is not None:
+                        # Cls CTAs que solapan con el agujero negro / pantalla final.
+                        orig_ct_dur = ct_dur
+                        safe_starts = []
+                        for ct_start in ct_starts:
+                            if ct_start + orig_ct_dur > dyc_black_hole_abs_start_us:
+                                adj = max(dyc_black_hole_abs_start_us - ct_start, 0)
+                                if adj <= 0:
+                                    log.info("CTA FINAL omitido (overlap total con black hole): start=%d us", ct_start)
+                                    continue
+                                log.info("CTA FINAL ajustado (avoid_overlap): start=%d us dur %d->%d us",
+                                         ct_start, orig_ct_dur, adj)
+                                ct_mat = self._build_video_overlay_material(
+                                    content, str(suscribete_long_path.resolve()),
+                                    1920, 1080, adj,
+                                    suscribete_long_path.stem + f"_cta{len(safe_starts)+1}")
+                                ct_seg = self._build_video_overlay_segment(
+                                    content, ct_mat["id"], ct_start, adj)
+                                ct_seg["extra_material_refs"] = [dyc_chroma_mat["id"]]
+                                ct_seg["volume"] = 1.0
+                                ct_seg["last_nonzero_volume"] = 1.0
+                                dyc_suscribete_long_segs.append(ct_seg)
+                                dyc_cta_video_mats.append(ct_mat)
+                                log.info("Chroma aplicado a CTA FINAL AJUSTADO #%d (intensity=%.2f)",
+                                         len(safe_starts)+1,
+                                         dyc_chroma_mat.get("intensity_value", DYC_CHROMA_INTENSITY))
+                                log.info("Suscríbete largo/CTA ajustado #%d: start=%d us dur=%d us",
+                                         len(safe_starts)+1, ct_start, adj)
+                            else:
+                                safe_starts.append(ct_start)
+                        ct_starts = safe_starts
+                        # Non-overlapping CTAs keep original duration
+                        if ct_starts:
+                            ct_abs = suscribete_long_path.resolve().as_posix()
+                            for i, ct_start in enumerate(ct_starts, 1):
+                                ct_mat = self._build_video_overlay_material(
+                                    content, ct_abs, 1920, 1080, orig_ct_dur,
+                                    suscribete_long_path.stem + f"_cta{len(dyc_suscribete_long_segs)+1}")
+                                ct_seg = self._build_video_overlay_segment(
+                                    content, ct_mat["id"], ct_start, orig_ct_dur)
+                                ct_seg["extra_material_refs"] = [dyc_chroma_mat["id"]]
+                                ct_seg["volume"] = 1.0
+                                ct_seg["last_nonzero_volume"] = 1.0
+                                dyc_suscribete_long_segs.append(ct_seg)
+                                dyc_cta_video_mats.append(ct_mat)
+                                log.info("Chroma aplicado a CTA FINAL (intensity=%.2f)",
+                                         dyc_chroma_mat.get("intensity_value", DYC_CHROMA_INTENSITY))
+                                log.info("Suscríbete largo/CTA #%d: %s start=%d us dur=%d us",
+                                         len(dyc_suscribete_long_segs), suscribete_long_path.name, ct_start, orig_ct_dur)
+                    else:
+                        # cta_avoid_overlap was NOT used — add all CTAs once.
+                        ct_abs = suscribete_long_path.resolve().as_posix()
+                        for i, ct_start in enumerate(ct_starts, 1):
+                            ct_mat = self._build_video_overlay_material(
+                                content, ct_abs, 1920, 1080, ct_dur,
+                                suscribete_long_path.stem + f"_cta{i}")
+                            ct_seg = self._build_video_overlay_segment(
+                                content, ct_mat["id"], ct_start, ct_dur)
+                            ct_seg["extra_material_refs"] = [dyc_chroma_mat["id"]]
+                            ct_seg["volume"] = 1.0
+                            ct_seg["last_nonzero_volume"] = 1.0
+                            dyc_suscribete_long_segs.append(ct_seg)
+                            dyc_cta_video_mats.append(ct_mat)
+                            log.info("Chroma aplicado a CTA FINAL (intensity=%.2f)",
+                                     dyc_chroma_mat.get("intensity_value", DYC_CHROMA_INTENSITY))
+                            log.info("Suscríbete largo/CTA #%d: %s start=%d us dur=%d us",
+                                     i, suscribete_long_path.name, ct_start, ct_dur)
             if suscribete_long_path is None:
                 log.info("Suscribete largo: no encontrado en %s", dyc_assets_dir)
         else:
@@ -1872,6 +1940,55 @@ class CapCutProject:
                 log.info("Assets avanzados: CTA deshabilitado en el perfil; se omiten.")
             elif not dyc_assets_dir or not dyc_assets_dir.is_dir():
                 log.info("Assets avanzados: carpeta no configurada; se omiten.")
+        # v3.0.0 — Extra assets desde JSON
+        if hasattr(edit_profile, 'extra_assets') and edit_profile.extra_assets:
+            for asset in edit_profile.extra_assets:
+                asset_path = dyc_assets_dir / asset['file'] if dyc_assets_dir else Path(asset['file'])
+                if not asset_path.exists():
+                    log.warning(f"Extra asset file not found: {asset['file']}")
+                    continue
+                if asset['type'] == 'audio':
+                    asset_dur = asset['duration_us'] if asset['duration_us'] > 0 else 2_000_000
+                    measured = measure_audio_duration_us(asset_path)
+                    if measured and asset['duration_us'] == 0:
+                        asset_dur = measured
+                    mat = self._build_audio_material(
+                        content, asset_path.resolve().as_posix(), asset_dur, asset_path.stem)
+                    volume_linear = 10 ** (asset['volume_db'] / 20) if asset['volume_db'] != 0 else 1.0
+                    seg = self._build_audio_segment(
+                        content, mat['id'], asset_dur,
+                        track_index=2 if subtitle_srt is not None else 1,
+                        volume=volume_linear)
+                    if asset['trigger'] == 'start':
+                        seg['target_timerange'] = {'start': 0, 'duration': asset_dur}
+                        seg['source_timerange'] = {'start': 0, 'duration': asset_dur}
+                    elif asset['trigger'] == 'end':
+                        start_pos = max(target_us - asset_dur, 0)
+                        seg['target_timerange'] = {'start': start_pos, 'duration': asset_dur}
+                        seg['source_timerange'] = {'start': 0, 'duration': asset_dur}
+                    elif asset['trigger'] == 'black_hole_start':
+                        if dyc_black_hole_abs_start_us is not None:
+                            seg['target_timerange'] = {'start': dyc_black_hole_abs_start_us, 'duration': asset_dur}
+                            seg['source_timerange'] = {'start': 0, 'duration': asset_dur}
+                    elif asset['trigger'] == 'time_us':
+                        seg['target_timerange'] = {'start': asset['time_us'], 'duration': asset_dur}
+                        seg['source_timerange'] = {'start': 0, 'duration': asset_dur}
+                    audio_segs.append(seg)
+                    bgm_materials.append(mat)
+                    log.info(f"Extra audio asset: {asset['file']} at {asset['trigger']} (vol={asset['volume_db']}dB, dur={asset_dur}us)")
+                elif asset['type'] in ('video', 'image'):
+                    asset_dur = asset['duration_us'] if asset['duration_us'] > 0 else 2_000_000
+                    mat = self._build_video_overlay_material(
+                        content, asset_path.resolve().as_posix(), 1920, 1080, asset_dur, asset_path.stem)
+                    seg = self._build_video_overlay_segment(
+                        content, mat['id'], asset['time_us'], asset_dur)
+                    if asset['chroma_enabled']:
+                        chroma_mat = self._build_chroma_material(edit_profile)
+                        chroma_mat["color"] = asset['chroma_color'] + "ff"
+                        seg['extra_material_refs'] = [chroma_mat['id']]
+                    video_segments.append(seg)
+                    dyc_cta_video_mats.append(mat)
+                    log.info(f"Extra video/image asset: {asset['file']} at {asset['time_us']}us")
         # 5) materials.texts + pista de subtitulos
         text_track: dict | None = None
         text_materials: list[dict] = []
