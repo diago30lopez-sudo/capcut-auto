@@ -89,13 +89,18 @@ def group_srt_into_sentences(entries):
     - El cue actual termina con puntuacion de final de oracion (. ! ?).
     - Hay un gap de silencio mayor a SENTENCE_GAP_S segundos respecto al
       cue anterior.
+    - El grupo actual ya supero MAX_PHRASE_DURATION_S (evita frases
+      infinitamente largas que devorarian todas las escenas).
 
     Devuelve una lista de (start_s, end_s, full_text) donde full_text es la
     concatenacion de todos los cues del grupo.
     """
     if not entries:
         return []
-    SENTENCE_GAP_S = 1.5
+    # Gap pequeno: crear mas frases para mejor alineacion escena-cue.
+    SENTENCE_GAP_S = 0.3
+    # Maximo 3s por frase para evitar que una frase larga se coma varias escenas.
+    MAX_PHRASE_DURATION_S = 3.0
     PUNCT_END = re.compile(r"[.!?]$")
 
     grouped: list[tuple[float, float, str]] = []
@@ -107,13 +112,14 @@ def group_srt_into_sentences(entries):
         prev_end = entries[k - 1][1]
         cur_start, cur_end, cur_text = entries[k]
         gap = cur_start - prev_end
+        phrase_dur = group_end - group_start
 
-        # Iniciar nuevo grupo si hay gap grande o el anterior termino en punto.
-        new_group = False
-        if gap > SENTENCE_GAP_S:
-            new_group = True
-        elif PUNCT_END.search(group_text[-1]):
-            new_group = True
+        # Iniciar nuevo grupo si hay condicion de corte.
+        new_group = (
+            gap > SENTENCE_GAP_S
+            or PUNCT_END.search(group_text[-1])
+            or phrase_dur >= MAX_PHRASE_DURATION_S
+        )
 
         if new_group:
             grouped.append((group_start, group_end, " ".join(group_text)))
@@ -255,6 +261,36 @@ def redistribute_gap(items, target_us):
 
 def _normalize_spanish(text):
     return unicodedata.normalize("NFD", text).encode("ascii", "ignore").decode("ascii").lower()
+
+
+def snap_to_frame(us: int, frame_us: int = _FRAME_US) -> int:
+    """Redondea microsegundos al multiplo mas cercano de frame_us.
+
+    Ejemplo: snap_to_frame(1_500_000, 33_333) -> 1_500_000 (exacto)
+             snap_to_frame(1_500_001, 33_333) -> 1_500_000 (redondea abajo)
+             snap_to_frame(1_516_666, 33_333) -> 1_516_659 (mas cercano)
+    """
+    if frame_us <= 0:
+        return us
+    return round(us / frame_us) * frame_us
+
+
+def clean_text(text: str) -> str:
+    """Limpieza profunda para comparar texto de escenas con el SRT.
+
+    1. Minúsculas.
+    2. Quitar acentos y tildes (NFD decomposition + latin strip).
+    3. Quitar TODOS los signos de puntuacion, comillas y simbolos raros.
+    4. Solo letras y numeros, separados por un solo espacio.
+    """
+    if not text:
+        return ""
+    t = text.lower()
+    t = unicodedata.normalize("NFD", t)
+    t = "".join(c for c in t if not unicodedata.combining(c))
+    t = re.sub(r"[^\w\s-]", " ", t)          # solo [a-z0-9_ -]
+    t = re.sub(r"\s+", " ", t).strip()
+    return t
 
 
 def find_cta_intermedio_start(total_duration_us):
@@ -477,295 +513,292 @@ def reorder_transition_refs(video_segments, transitions):
     return n_with, n_without
 
 
-def sync_last_item_to_audio_end(items, fin_audio_us, min_duration_us=_FRAME_US):
+def sync_last_item_to_audio_end(items, fin_audio_us, min_duration_us=_FRAME_US, frame_us=_FRAME_US):
     if not items:
         return items
     last = items[-1]
     if last.image_path is None or last.duration_us <= 0:
         return items
     new_dur = max(fin_audio_us - last.start_us, min_duration_us)
+    new_dur = snap_to_frame(new_dur, frame_us)
     return list(items[:-1]) + [
         replace(last, duration_us=new_dur, end_us=fin_audio_us)
     ]
 def match_scenes_to_srt(
-    scenes, srt_path, match_threshold=75.0,
+    scenes, srt_path, match_threshold=75.0, audio_dur_s=None,
 ):
+    """Empareja escenas con frases del SRT usando fuzzy matching robusto.
+
+    Algoritmo proporcional (anti-desfase):
+      1. Limpieza profunda de texto con clean_text().
+      2. El SRT se agrupa en frases (group_srt_into_sentences).
+      3. Se calcula un paso uniforme: dist_span / n_escenas.
+         - Si se provee audio_dur_s, se distribuye sobre la duracion del audio.
+         - Si no, se usa la duracion del SRT.
+      4. Cada escena se asigna a su posicion proporcional en el rango elegido.
+      5. Si una escena tiene un match fuerte en la zona que le corresponde,
+         se ajusta a ese match (pero nunca excede su rango proporcional).
+      6. Criterio critico: start_us(N+1) == end_us(N). Sin huecos ni solapamientos.
+
+    Devuelve:
+      results: list[(scene_idx, start_s, end_s, matched)]
+      no_match: int
+      srt_end_s: float (ultima fecha del SRT)
+    """
     from rapidfuzz import fuzz
+
     raw_entries = parse_srt(Path(srt_path))
-    # Group word-level cues into sentence-level phrases so each scene matches
-    # a full sentence, not an individual word (which would be too short).
     entries = group_srt_into_sentences(raw_entries)
-    entries = [e for e in entries if e[1] > e[0]]
+    entries = [(s, e, t) for s, e, t in entries if e > s]
 
-    def _norm(text):
-        text = text.lower()
-        text = re.sub(r"[^\w\s-]", " ", text)
-        text = unicodedata.normalize("NFKD", text)
-        text = "".join(c for c in text if not unicodedata.combining(c))
-        text = re.sub(r"[^\w\s-]", " ", text)
-        return re.sub(r"\s+", " ", text).strip()
+    n = len(scenes)
+    srt_end_s = entries[-1][1] if entries else 0.0
+    # Distribuir sobre audio_dur_s si se provee, sino sobre el SRT.
+    dist_end_s = audio_dur_s if audio_dur_s is not None and audio_dur_s > 0 else srt_end_s
+    if dist_end_s <= 0:
+        dist_end_s = srt_end_s
 
-    gap_threshold = 0.3
-    gap_indices = set()
-    for k in range(1, len(entries)):
-        if entries[k][0] - entries[k - 1][1] > gap_threshold:
-            gap_indices.add(k)
+    if n == 0:
+        return [], 0, srt_end_s
+    if not entries:
+        # Sin SRT: distribuir sobre audio_dur_s si se conoce.
+        if audio_dur_s and audio_dur_s > 0:
+            step_s = audio_dur_s / n
+            return [(i, i * step_s, (i + 1) * step_s, False) for i in range(n)], n, 0.0
+        return [], n, 0.0
 
-    # First pass: find matches WITHOUT any fallback. Track global max_end
-    # so every scene searches strictly forward.
-    raw_results: list[tuple[int, float | None, float | None, bool]] = []
-    global_max_end = 0.0  # ensures monotonic forward search
-    for i, scene in enumerate(scenes):
+    step_s = dist_end_s / n
+
+    # Pre-calcular las mejores coincidencias para cada escena.
+    scene_best: list[tuple[int, float]] = []
+    for scene in scenes:
         key = scene.key_text
         if not key:
-            raw_results.append((i, None, None, False))
+            scene_best.append((-1, 0.0))
             continue
-        norm_key = _norm(key)
-        words = norm_key.split()
-        n_words = len(words)
-        n_start = min(4, max(1, n_words // 2))
-        n_end = min(4, max(1, n_words // 2))
-        prefix = " ".join(words[:n_start])
-        suffix = " ".join(words[-n_end:]) if n_end < n_words else prefix
+        norm_key = clean_text(key)
+        best_k, best_score = -1, 0.0
+        for k, (_, _, txt) in enumerate(entries):
+            score = fuzz.token_set_ratio(norm_key, clean_text(txt))
+            if score > best_score:
+                best_score = score
+                best_k = k
+        scene_best.append((best_k, best_score))
 
-        search_from = global_max_end
-        start_idx = None
-        start_score = 0.0
-        for k, (s, e, txt) in enumerate(entries):
-            if s < search_from - 0.05:
-                continue
-            norm_cue = _norm(txt)
-            score = fuzz.partial_ratio(prefix, norm_cue)
-            if score >= match_threshold and score > start_score:
-                start_score = score
-                start_idx = k
-                break
+    # Asignar posiciones proporcionales, ajustando cuando hay match fuerte.
+    results: list[tuple[int, float, float, bool]] = []
+    matched_count = 0
 
-        end_idx = None
-        end_score = 0.0
-        search_end_from = start_idx if start_idx is not None else 0
-        for k in range(search_end_from, len(entries)):
-            if k in gap_indices and k > search_end_from:
-                break
-            norm_cue = _norm(entries[k][2])
-            score = fuzz.partial_ratio(suffix, norm_cue)
-            if score >= match_threshold and score > end_score:
-                end_score = score
-                end_idx = k
+    for i, scene in enumerate(scenes):
+        phk, score = scene_best[i]
+        target_start = i * step_s
+        target_end = (i + 1) * step_s
 
-        if start_idx is not None:
-            start_s = entries[start_idx][0]
-            end_s = entries[end_idx][1] if end_idx is not None else entries[start_idx][1]
-            # Guard: ensure start < end; otherwise treat as no-match.
-            if end_s <= start_s:
-                raw_results.append((i, None, None, False))
-            else:
-                raw_results.append((i, start_s, end_s, True))
-                if end_s > global_max_end:
-                    global_max_end = end_s
-        else:
-            raw_results.append((i, None, None, False))
-
-    # Second pass: interpolate unmatched scenes between previous and next match.
-    results = []
-    no_match = 0
-    n = len(raw_results)
-    # Post-processing: detect "giant cue" situations.
-    # If a single matched cue spans >30s AND there are significantly more
-    # unmatched scenes than cues, cap each matched cue to MAX_CUE_DURATION_S
-    # so that later scenes still get a chance to be placed.
-    MAX_CUE_DURATION_S = 30.0
-    n_matched = sum(1 for r in raw_results if r[3])
-    n_unmatched = n - n_matched
-    if n_matched > 0 and n_unmatched > n_matched:
-        for idx, (si, start_s, end_s, matched) in enumerate(raw_results):
-            if not matched:
-                continue
-            cue_dur = end_s - start_s
-            if cue_dur > MAX_CUE_DURATION_S:
-                capped_end = start_s + MAX_CUE_DURATION_S
-                raw_results[idx] = (si, start_s, capped_end, True)
-                log.warning(
-                    "Match escalonado: cue #%d de %.1fs recortado a %.1fs "
-                    "(%d sin match vs %d con match)",
-                    si, cue_dur, MAX_CUE_DURATION_S, n_unmatched, n_matched,
-                )
-        # Recompute global_max_end from ALL (possibly capped) matches.
-        global_max_end = max((r[2] for r in raw_results if r[3]), default=0.0)
-    matched_indices = [i for i, (_, s, e, m) in enumerate(raw_results) if m]
-
-    if not matched_indices:
-        for i in range(n):
-            results.append((i, 0.0, 0.0, False))
-            no_match += 1
-        log.info(
-            "Match escenas<->SRT: %d/%d escenas emparejadas (umbral=%.0f).",
-            len(scenes) - no_match, len(scenes), match_threshold,
-        )
-        return results, no_match
-
-    for i, (_, start_s, end_s, matched) in enumerate(raw_results):
-        if matched:
-            results.append((i, start_s, end_s, True))
-            continue
-        # Find previous and next matched scene indices.
-        prev_m = None
-        next_m = None
-        for mi in matched_indices:
-            if mi < i:
-                prev_m = mi
-            elif mi > i and next_m is None:
-                next_m = mi
-                break
-        if prev_m is not None and next_m is not None:
-            _, _, prev_end_s, _ = raw_results[prev_m]
-            next_start_s, _, _, _ = raw_results[next_m]
-            gap_count = next_m - prev_m - 1
-            if gap_count <= 0:
-                gap_count = 1
-            step_s = (next_start_s - prev_end_s) / (gap_count + 1)
-            offset = i - prev_m
-            est_start = prev_end_s + offset * step_s
-            est_end = prev_end_s + (offset + 1) * step_s
+        if phk >= 0 and score >= match_threshold:
+            # Ajustar al match dentro del rango asignado.
+            phrase_start = entries[phk][0]
+            phrase_end = entries[phk][1]
+            est_start = max(target_start, phrase_start)
+            est_end = min(target_end, phrase_end)
+            if est_start >= est_end:
+                est_start, est_end = target_start, target_end
             results.append((i, est_start, est_end, True))
-            log.info(
-                "Escena #%d interpolada (sin match SRT) - [%s .. %s] s",
-                scenes[i].number, f"{est_start:.2f}", f"{est_end:.2f}",
-            )
-        elif prev_m is not None:
-            # Consecutive unmatched scenes at the end — spread them across the
-            # remaining SRT window (from prev_end_s to last SRT entry end).
-            _, _, prev_end_s, _ = raw_results[prev_m]
-            # Count how many unmatched scenes follow prev_m consecutively.
-            n_after = 0
-            for j in range(prev_m + 1, n):
-                if raw_results[j][3]:
-                    break
-                n_after += 1
-            # Use the last SRT entry end as the deadline, or a generous fallback.
-            last_srt_end = entries[-1][1] if entries else prev_end_s + 10.0
-            span = max(last_srt_end - prev_end_s, 1.0)
-            step_s = span / max(n_after, 1)
-            offset = i - prev_m
-            est_start = prev_end_s + offset * step_s
-            est_end = est_start + step_s
-            results.append((i, est_start, est_end, True))
-            log.info(
-                "Escena #%d extendida despues del ultimo match - [%s .. %s] s",
-                scenes[i].number, f"{est_start:.2f}", f"{est_end:.2f}",
-            )
+            matched_count += 1
         else:
-            results.append((i, 0.0, 0.0, False))
-            no_match += 1
+            results.append((i, target_start, target_end, False))
 
+    # Rellenar huecos de duracion minima (< 0.5s).
+    fixed = []
+    for si, start_s, end_s, matched in results:
+        if end_s - start_s < 0.5:
+            prev_end = fixed[-1][2] if fixed else 0.0
+            new_start = max(start_s, prev_end)
+            new_end = new_start + max(0.5, step_s)
+            fixed.append((si, new_start, new_end, matched))
+        else:
+            fixed.append((si, start_s, end_s, matched))
+
+    # Eliminar huecos residuales entre items consecutivos.
+    for k in range(1, len(fixed)):
+        prev_end = fixed[k - 1][2]
+        if fixed[k][1] < prev_end:
+            fixed[k] = (fixed[k][0], prev_end, fixed[k][2], fixed[k][3])
+
+    # Forward pass: eliminar solapamientos (start < prev_end).
+    for k in range(1, len(fixed)):
+        prev_end = fixed[k - 1][2]
+        if fixed[k][1] < prev_end:
+            fixed[k] = (fixed[k][0], prev_end, fixed[k][2], fixed[k][3])
+
+    # Backward pass: eliminar huecos (gap > 1ms) y ajustar al SRT.
+    for k in range(len(fixed) - 2, -1, -1):
+        next_start = fixed[k + 1][1]
+        if fixed[k][2] > next_start:
+            # Solapamiento: recortar end al start del siguiente.
+            fixed[k] = (fixed[k][0], fixed[k][1], next_start, fixed[k][3])
+        elif fixed[k][2] < next_start - 0.001:
+            # Hueco: extender end hasta el start del siguiente.
+            fixed[k] = (fixed[k][0], fixed[k][1], next_start, fixed[k][3])
+
+    no_match = sum(1 for r in fixed if not r[3])
     log.info(
-        "Match escenas<->SRT: %d/%d escenas emparejadas (umbral=%.0f).",
-        len(scenes) - no_match, len(scenes), match_threshold,
+        "Match escenas<->SRT: %d/%d emparejadas (umbral=%.0f), paso=%.3f s/escena.",
+        matched_count, n, match_threshold, step_s,
     )
-    return results, no_match
+    return fixed, no_match, srt_end_s
+
 
 
 def build_timeline(
     scenes, srt_path, image_paths,
     cancel_event=None, match_threshold=75.0,
     min_duration_us=DEFAULT_MIN_SCENE_DURATION_US,
+    frame_us=_FRAME_US,
 ):
-    matches, no_match = match_scenes_to_srt(scenes, srt_path, match_threshold)
-    items = []
+    matches, no_match, srt_end_s = match_scenes_to_srt(scenes, srt_path, match_threshold)
+    items: list[TimelineItem] = []
+    n = len(scenes)
     for i, start_s, end_s, matched in matches:
         if cancel_event is not None and cancel_event.is_set():
             raise GenerationCancelled("Generacion cancelada por el usuario.")
         scene = scenes[i]
         image_path = image_paths[i] if i < len(image_paths) else None
         key = scene.key_text
-        if not key or not matched:
-            items.append(TimelineItem(i, image_path, "", "", 0.0, 0, 0))
-            continue
-        start_us = int(round(start_s * US_PER_S))
-        end_us = int(round(end_s * US_PER_S))
+        # Forzar duración mínima en TODOS los items (incluidos interpolados).
+        start_us = int(round(max(start_s, 0.0) * US_PER_S))
+        end_us   = int(round(max(end_s,   start_s + 0.5) * US_PER_S))
         duration_us = max(end_us - start_us, min_duration_us)
-        log.info(
-            "Escena #%d OK - [%s .. %s] (%d us) - score=%d",
-            scene.number, f"{start_s:.2f}s", f"{end_s:.2f}s", duration_us,
-            int(matches[i][3] * 100) if matches[i][3] else 0,
-        )
         items.append(
             TimelineItem(i, image_path, key, key, 1.0, start_us, end_us, duration_us)
         )
+        log.info(
+            "Escena #%d [%s..%s] (%d us)",
+            scene.number, f"{start_s:.2f}s", f"{end_s:.2f}s", duration_us,
+        )
 
-    n = len(items)
-    for i in range(n):
-        if items[i].duration_us == 0 and items[i].scene_text:
-            prev_idx = next((p for p in range(i - 1, -1, -1) if items[p].duration_us > 0), None)
-            next_idx = next((p for p in range(i + 1, n) if items[p].duration_us > 0), None)
-            if prev_idx is not None and next_idx is not None:
-                t_start = items[prev_idx].end_us
-                t_end = items[next_idx].start_us
-                steps = next_idx - prev_idx
-                step_idx = i - prev_idx
-                if t_end > t_start and steps > 0:
-                    dur_step = (t_end - t_start) / steps
-                    est_start = t_start + step_idx * dur_step
-                    est_end = t_start + (step_idx + 1) * dur_step
-                else:
-                    est_start = t_start
-                    est_end = t_start + min_duration_us
-            elif prev_idx is not None:
-                est_start = items[prev_idx].end_us
-                est_end = est_start + min_duration_us
-            elif next_idx is not None:
-                est_end = items[next_idx].start_us
-                est_start = max(0, est_end - min_duration_us)
-            else:
-                est_start = 0
-                est_end = min_duration_us
-            est_start_us = int(round(est_start))
-            est_end_us = int(round(max(est_end, est_start_us + min_duration_us)))
-            items[i] = replace(items[i],
-                start_us=est_start_us, end_us=est_end_us,
-                duration_us=est_end_us - est_start_us,
-            )
-            log.info("Escena #%d interpolada - [%d .. %d] us", scenes[i].number,
-                     est_start_us, est_end_us)
-
-    for i in range(n):
-        it = items[i]
-        if it.duration_us < min_duration_us:
-            old_end = it.end_us
-            new_end = it.start_us + min_duration_us
-            items[i] = replace(it, end_us=new_end, duration_us=min_duration_us)
-            log.info("Escena #%d extendida a minimo (%d -> %d us)",
-                     scenes[i].number, old_end, new_end)
-
-    if items:
-        max_end = max(it.end_us for it in items)
-        last = items[-1]
-        if last.end_us < max_end:
-            items[-1] = replace(last, end_us=max_end)
-
-    for i in range(1, len(items)):
+    # ------------------------------------------------------------------
+    # Segundo pase: eliminar huecos y solapamientos.
+    # start_us[N+1] == end_us[N] EXACTAMENTE.
+    # ------------------------------------------------------------------
+    for i in range(1, n):
         if items[i].start_us < items[i - 1].end_us:
             old_start = items[i].start_us
             items[i] = replace(items[i], start_us=items[i - 1].end_us)
             items[i] = replace(items[i], duration_us=items[i].end_us - items[i].start_us)
             if items[i].duration_us < min_duration_us:
-                items[i] = replace(items[i],
-                    end_us=items[i].start_us + min_duration_us,
-                    duration_us=min_duration_us,
-                )
-            log.info("Escena #%d monotonia corregida: %d -> %d us",
+                new_end = items[i].start_us + min_duration_us
+                items[i] = replace(items[i], end_us=new_end, duration_us=min_duration_us)
+            log.info("Escena #%d correccion monotonia: %d -> %d us",
                      scenes[i].number, old_start, items[i].start_us)
 
-    total_us = max((it.end_us for it in items), default=0)
-    suma = sum(it.duration_us for it in items)
-    if suma > total_us and total_us > 0:
-        factor = total_us / suma
+    # ------------------------------------------------------------------
+    # Tercer pase: validar duracion minima despues de correcciones.
+    # ------------------------------------------------------------------
+    for i in range(n):
+        it = items[i]
+        if it.duration_us < min_duration_us:
+            new_end = it.start_us + min_duration_us
+            items[i] = replace(it, end_us=new_end, duration_us=min_duration_us)
+            log.info("Escena #%d extendido a minimo (%d -> %d us)",
+                     scenes[i].number, it.duration_us, min_duration_us)
+
+    # ------------------------------------------------------------------
+    # Cuarto pase: garantizar suma exacta = srt_end_us mediante
+    # redistribución proporcional del delta.
+    # ------------------------------------------------------------------
+    srt_end_us = int(round(srt_end_s * US_PER_S)) if srt_end_s > 0 else 0
+    if srt_end_us > 0 and items:
+        last = items[-1]
+        # El último item no debe exceder el final del SRT.
+        if last.end_us > srt_end_us and last.start_us < srt_end_us:
+            items[-1] = replace(last, end_us=srt_end_us)
+            items[-1] = replace(items[-1],
+                duration_us=items[-1].end_us - items[-1].start_us)
+        # Redistribuir cualquier delta acumulado por redondeos o
+        # correcciones de monotonia para que la suma sea EXACTA.
+        sum_dur = sum(it.duration_us for it in items)
+        delta = srt_end_us - sum_dur
+        if delta != 0:
+            n_items = len(items)
+            per_item = delta // n_items
+            remainder = delta % n_items
+            if abs(per_item) >= 1:
+                for i in range(n_items):
+                    adj = per_item + (1 if i < abs(remainder) else 0)
+                    if per_item < 0 and remainder > 0:
+                        adj = per_item - (1 if i < (-remainder) else 0)
+                    items[i] = replace(items[i],
+                        duration_us=max(items[i].duration_us + adj, 1),
+                        end_us=items[i].start_us + items[i].duration_us,
+                    )
+                log.info(
+                    "Redistribución proporcional: delta=%d us, "
+                    "%d items, ajuste_por_item=%d us",
+                    delta, n_items, per_item,
+                )
+            else:
+                # Delta menor a 1us por item: aplicar a la última imagen.
+                items[-1] = replace(items[-1],
+                    duration_us=items[-1].duration_us + delta,
+                    end_us=srt_end_us,
+                )
+                log.info(
+                    "Delta residual %d us aplicado a la última imagen.", delta,
+                )
+
+    # ------------------------------------------------------------------
+    # Quinto pase: FRAME SNAP ABSOLUTO — forzar start_us y duration_us a la
+    # rejilla exacta de frame_us, construyendo desde cursor=0 hacia adelante.
+    # Esto elimina cualquier desfase acumulativo que CapCut pueda reconstruir
+    # al leer la rejilla del draft.
+    # ------------------------------------------------------------------
+    if items:
         cursor = 0
-        nuevos = []
         for it in items:
-            dur = max(round(it.duration_us * factor), 1)
-            nuevos.append(replace(it, start_us=cursor, end_us=cursor + dur, duration_us=dur))
-            cursor += dur
-        items = nuevos
-        total_us = cursor
+            start_snapped = round(cursor / frame_us) * frame_us
+            dur_snapped = round(it.duration_us / frame_us) * frame_us
+            if dur_snapped < 1:
+                dur_snapped = frame_us
+            items[it.order] = replace(it,
+                start_us=start_snapped,
+                duration_us=dur_snapped,
+                end_us=start_snapped + dur_snapped,
+            )
+            cursor = start_snapped + dur_snapped
+
+        # Ajuste final: forzar que el ultimo item termine EXACTAMENTE en el
+        # total_snapped (multiplo de frame_us mas cercano al original).
+        total_raw = items[-1].end_us
+        total_snapped = snap_to_frame(total_raw, frame_us)
+        if total_snapped != total_raw:
+            diff = total_snapped - total_raw
+            last = items[-1]
+            items[-1] = replace(last,
+                duration_us=last.duration_us + diff,
+                end_us=total_snapped,
+            )
+            cursor = total_snapped
+
+        # Log diagnostico de precision de rejilla.
+        total_us = items[-1].end_us
+        log.info(
+            "=== DIAGNOSTICO REJILLA FPS === "
+            "frame_us=%d us (%.2f fps nominal), "
+            "total_video=%d us (%.3f s, %d frames exactos), "
+            "items=%d",
+            frame_us, US_PER_S / frame_us,
+            total_us, total_us / 1e6, total_us // frame_us, len(items),
+        )
+        unaligned = [it for it in items
+                     if it.duration_us % frame_us != 0
+                     or it.start_us % frame_us != 0]
+        if unaligned:
+            log.warning(
+                "AUDITORIA FRAME SNAPPING: %d de %d items con duracion o start_no alineados a %d us",
+                len(unaligned), len(items), frame_us,
+            )
+        else:
+            log.info("AUDITORIA FRAME SNAPPING: todos los %d items alineados a %d us.", len(items), frame_us)
+    else:
+        total_us = 0
     return items, total_us

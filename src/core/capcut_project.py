@@ -744,7 +744,43 @@ class CapCutProject:
             )
         self.content = json.loads(self.content_path.read_text(encoding="utf-8"))
         self.meta = json.loads(self.meta_path.read_text(encoding="utf-8"))
+        self.frame_us = self._detect_frame_us()
     # -- backup + esquema ----------------------------------------------------
+    def _detect_frame_us(self) -> int:
+        """Detecta el frame_us real de la plantilla leyendo fps del draft.
+
+        Prioridad de busqueda:
+          1. content['fps']                        (campo explicito)
+          2. content['canvas_config']['fps']       (configuracion de canvas)
+          3. content['canvas_config']['frame_rate'] (variantes alternativas)
+          4. fallback a 30 fps → 33333 us
+        """
+        fps: float | None = None
+        # Campo directo en la raiz del draft.
+        raw_fps = self.content.get("fps")
+        if raw_fps is not None:
+            try:
+                fps = float(raw_fps)
+            except (TypeError, ValueError):
+                pass
+        # canvas_config es la via mas comun en drafts reales de CapCut.
+        cc = self.content.get("canvas_config") or {}
+        if fps is None:
+            for key in ("fps", "frame_rate", "frameRate"):
+                val = cc.get(key)
+                if val is not None:
+                    try:
+                        fps = float(val)
+                        break
+                    except (TypeError, ValueError):
+                        pass
+        # Fallback: 30 fps es el valor mas habitual en plantillas 1080p.
+        if fps is None or fps <= 0:
+            fps = 30.0
+            log.info("FPS no detectado en la plantilla; usando fallback 30 fps (frame_us=33333).")
+        else:
+            log.info("FPS detectado en plantilla: %.4f fps → frame_us=%d", fps, int(round(1_000_000 / fps)))
+        return int(round(1_000_000 / fps))
     def backup_originals(self) -> Path:
         """Copia los JSON originales de la plantilla a backups/<timestamp>/."""
         stamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
@@ -1234,6 +1270,18 @@ class CapCutProject:
         measured_us = measure_audio_duration_us(audio_src)
         if measured_us is not None:
             target_us = max(measured_us, audio_duration_us)
+        # TAREA 3: Forzar audio a la rejilla de frames.
+        # Si target_us no es multiplo de frame_us, extender al siguiente frame
+        # exacto para que video y audio terminen en el mismo frame.
+        target_snapped = round(target_us / self.frame_us) * self.frame_us
+        if target_snapped != target_us:
+            log.info(
+                "Audio snap a rejilla: target_us=%d us → target_snapped=%d us "
+                "(+%d us, %.1f frames)",
+                target_us, target_snapped, target_snapped - target_us,
+                (target_snapped - target_us) / self.frame_us,
+            )
+            target_us = target_snapped
         # v3.0.0 — Layout rules: modula la duración base de cada imagen
         layout_rules = getattr(edit_profile, 'layout_rules', {}) or {}
         layout_mode = str(layout_rules.get("mode", "audio_sync"))
@@ -1277,14 +1325,55 @@ class CapCutProject:
         if items and items[-1].duration_us > 0:
             actual_end = items[-1].start_us + items[-1].duration_us
             _drift = target_us - actual_end
-            if abs(_drift) <= 5_000_000:
-                items[-1] = replace(items[-1],
-                    duration_us=items[-1].duration_us + _drift,
-                    end_us=target_us,
+            sum_dur = sum(it.duration_us for it in items)
+            # Frame snapping audit: verificar que todos los tiempos son
+            # multiplos exactos del frame grid de CapCut.
+            _FRAME_US = self.frame_us
+            unaligned = [it for it in items
+                         if it.duration_us % _FRAME_US != 0
+                         or it.start_us % _FRAME_US != 0]
+            if unaligned:
+                log.warning(
+                    "AUDITORIA FRAME SNAPPING: %d de %d items con duracion o start_no alineados",
+                    len(unaligned), len(items),
                 )
+                for it in unaligned[:5]:
+                    log.warning(
+                        "  escena #%d: start=%d (mod %d=%d), dur=%d (mod %d=%d)",
+                        it.order + 1,
+                        it.start_us, _FRAME_US, it.start_us % _FRAME_US,
+                        it.duration_us, _FRAME_US, it.duration_us % _FRAME_US,
+                    )
+            log.info(
+                "=== DIAGNOSTICO DESFASE === "
+                "suma_duraciones=%d us (%.3f s), "
+                "target_audio=%d us (%.3f s), "
+                "delta=%d us (%.3f s), "
+                "items=%d, frame_us=%d, last_item=%s:%d->%d",
+                sum_dur, sum_dur / 1e6,
+                target_us, target_us / 1e6,
+                _drift, _drift / 1e6,
+                len(items), _FRAME_US,
+                items[-1].start_us, items[-1].end_us,
+            )
+            # Si hay delta, ajustar el ultimo item y snapping a frame grid.
+            if _drift != 0:
+                new_dur = items[-1].duration_us + _drift
+                new_dur = round(new_dur / _FRAME_US) * _FRAME_US
+                items[-1] = replace(items[-1],
+                    duration_us=new_dur,
+                    end_us=items[-1].start_us + new_dur,
+                )
+                log.info(
+                    "Desfase corregido: ultima imagen ajustada de %d a %d us "
+                    "(snapped a frame grid %d us)",
+                    actual_end, items[-1].end_us, _FRAME_US,
+                )
+            else:
+                log.info("Sin desfase detectado: suma == target.")
         if getattr(edit_profile, 'sync_audio_to_real_end', False) and items:
             log.info("Sync: audio mantiene duración real %.2f s", target_us / 1_000_000)
-            items = sync_last_item_to_audio_end(items, target_us)
+            items = sync_last_item_to_audio_end(items, target_us, frame_us=self.frame_us)
         canvas_w, canvas_h = _canvas_size(content)
         if edit_profile is None:
             raise RuntimeError("No hay perfil cargado. Carga un perfil antes de generar el proyecto.")
@@ -1448,7 +1537,7 @@ class CapCutProject:
         # Transiciones: motor de reglas v3.0.0 — lee transition_rules del JSON.
         transitions: list[dict] = []
         boundaries = len(video_segments) - 1
-        ONE_FRAME_US = 33333
+        ONE_FRAME_US = self.frame_us
         def _are_contiguous(seg_a: dict, seg_b: dict) -> bool:
             end_a = int(seg_a.get("target_timerange", {}).get("duration") or 0) + \
                     int(seg_a.get("target_timerange", {}).get("start") or 0)
@@ -2257,7 +2346,7 @@ class CapCutProject:
         content["update_time"] = _now_ms()
         # 7) Validación obligatoria
         self._check_cancelled()
-        _ONE_FRAME_US = 33333
+        _ONE_FRAME_US = self.frame_us
         _gaps_count = 0
         _overlaps_count = 0
         _ok_edges = 0
@@ -2308,6 +2397,23 @@ class CapCutProject:
             + int(video_segments[-1].get("target_timerange", {}).get("start") or 0)
         )
         log.info("Final video end: %d us / Audio: %d us", _final_video_end, target_us)
+        # TAREA 4 — Diagnostico de precision: compara rejilla CapCut vs nuestra.
+        log.info(
+            "=== DIAGNOSTICO PRECISION REJILLA === "
+            "frame_us=%d us (%.4f fps), "
+            "video_end=%d us (%d frames), "
+            "audio_target=%d us (%d frames), "
+            "delta=%d us, "
+            "video_frames=%d, audio_frames=%d, "
+            "delta_frames=%d",
+            self.frame_us, 1_000_000 / self.frame_us,
+            _final_video_end, _final_video_end // self.frame_us,
+            target_us, target_us // self.frame_us,
+            _final_video_end - target_us,
+            _final_video_end // self.frame_us,
+            target_us // self.frame_us,
+            (_final_video_end - target_us) // self.frame_us,
+        )
         if abs(_final_video_end - target_us) > _ONE_FRAME_US * 2:
             raise RuntimeError(
                 f"El vídeo no termina alineado con el audio: video={_final_video_end} us, "

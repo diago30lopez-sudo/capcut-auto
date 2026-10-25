@@ -1133,14 +1133,17 @@ class MainWindow(ctk.CTk):
                 edit_profile = dataclasses.replace(edit_profile, dyc_assets_dir=str(self._dyc_assets_dir))
             match_threshold = getattr(edit_profile, 'match_threshold', 75.0)
             min_duration_us = getattr(edit_profile, 'min_duration_us', 33333)
+            project = CapCutProject(data["template"])
+            frame_us = project.frame_us
+            log.info("FPS detectado: %.4f → frame_us=%d", 1_000_000 / frame_us, frame_us)
             items, _seg_total_us = build_timeline(
                 scenes, aligned, data["images"], cancel_event=self.cancel_event,
                 match_threshold=match_threshold, min_duration_us=min_duration_us,
+                frame_us=frame_us,
             )
             ok_items = sum(1 for it in items if it.is_synced)
             log.info("Escenas sincronizadas: %d/%d.", ok_items, len(items))
             log.info("Paso 3/5 — Preparando proyecto CapCut (clone + edit)...")
-            project = CapCutProject(data["template"])
             project.backup_originals()
             project.dump_schema()
             log.info("Paso 4/5 — Generando proyecto...")

@@ -3,7 +3,9 @@
 Escanee una carpeta raiz y devuelve un :class:`DetectionResult` con:
 
 - El audio mas probable (nombre + tamano).
-- El .txt de escenas valido (patron ``ESCENA #`` + ``VOZ EN OFF:``).
+- El .txt de escenas valido (validado por el parser flexible de
+  :mod:`src.core.scene_parser`; se acepta si extrae >= 1 escena, o
+  directamente si se llama ``escenas.txt``).
 - La carpeta de imagenes correcta (raiz o primera subcarpeta con >= 2 imagenes).
 
 Toda decision tomada se registra en ``warnings`` para que la UI pueda
@@ -21,6 +23,7 @@ from typing import Callable
 
 from src.core import config
 from src.core.config import load_user_config
+from src.core.scene_parser import parse_scenes
 
 log = logging.getLogger("capcutauto")
 
@@ -53,13 +56,10 @@ def _is_excluded(path: Path, excluded: list[Path]) -> bool:
             return True
     return False
 
-_SCENE_RE = re.compile(r"ESCENA\s*#", re.IGNORECASE)
-_VOICE_RE = re.compile(r"VOZ\s+EN\s+OFF\s*:", re.IGNORECASE)
 _AUDIO_HINT_RE = re.compile(r"(guion|voz|voice|narration|locucion|narra)", re.IGNORECASE)
 _AUDIO_EXCLUDE_RE = re.compile(r"(musica|music|bgm|background)", re.IGNORECASE)
 _SCENE_NAME_RE = re.compile(r"(escena|scene|guion|script)", re.IGNORECASE)
 
-_HEAD_LINES = 200
 _MIN_IMAGES = 2
 _SCORE_TIE_RANGE = 2
 
@@ -104,32 +104,31 @@ def natural_sort_key(path: Path) -> list:
 # ---------------------------------------------------------------------------
 # Auxiliares internos
 # ---------------------------------------------------------------------------
-def _scan_txt_head(path: Path) -> tuple[bool, int]:
-    """Valida las primeras lineas: >= 2 'ESCENA #' y al menos 1 'VOZ EN OFF:'."""
-    scene_hits = 0
-    has_voice = False
+def _is_valid_scenes_txt(path: Path) -> int | None:
+    """Devuelve el conteo de escenas si el .txt es valido; None si no.
+
+    Un .txt es valido cuando:
+    - Se llama exactamente ``escenas.txt`` (se acepta directamente; el
+      parser lanzara el error despues si esta vacio).
+    - El parser flexible extrae >= 1 escena.
+    """
+    if path.name.lower() == "escenas.txt":
+        try:
+            count = len(parse_scenes(path))
+        except Exception:  # noqa: BLE001
+            count = 0
+        return count
     try:
-        with open(path, "r", encoding="utf-8", errors="replace") as fh:
-            for _ in range(_HEAD_LINES):
-                line = fh.readline()
-                if not line:
-                    break
-                if _SCENE_RE.search(line):
-                    scene_hits += 1
-                elif _VOICE_RE.search(line):
-                    has_voice = True
-    except OSError as exc:
-        log.warning("No se pudo leer %s para validar escenas (%s)", path, exc)
-        return False, 0
-    return scene_hits >= 2 and has_voice, scene_hits
+        count = len(parse_scenes(path))
+        return count if count > 0 else None
+    except Exception:  # noqa: BLE001
+        return None
 
 
 def _count_scenes(path: Path) -> int:
-    try:
-        text = path.read_text(encoding="utf-8", errors="replace")
-    except OSError:
-        return 0
-    return len(_SCENE_RE.findall(text))
+    """Devuelve el numero de escenas usando el parser flexible (0 si falla)."""
+    result = _is_valid_scenes_txt(path)
+    return result if result is not None else 0
 
 
 def _collect_images(folder: Path) -> list[Path]:
@@ -217,24 +216,15 @@ def _detect_scenes_txt(
     ask_scene: Callable[[list[Path]], Path | None] | None,
 ) -> tuple[Path | None, int]:
     excluded = _load_excluded_paths()
-    valid: list[Path] = []
+    scored: list[tuple[int, float, Path, int]] = []
     for p in root.rglob("*.txt"):
         if not p.is_file():
             continue
         if _is_excluded(p, excluded):
             continue
-        ok, _ = _scan_txt_head(p)
-        if ok:
-            valid.append(p)
-
-    if not valid:
-        warnings.append("No se encontró ningún .txt de escenas válido "
-                        "(debe contener 'ESCENA #' y 'VOZ EN OFF:').")
-        return None, 0
-
-    scored: list[tuple[int, float, Path, int]] = []
-    for p in valid:
-        count = _count_scenes(p)
+        count = _is_valid_scenes_txt(p)
+        if count is None:
+            continue
         score = 5 if _SCENE_NAME_RE.search(p.stem) else 0
         score += count // 10
         try:
@@ -242,6 +232,10 @@ def _detect_scenes_txt(
         except OSError:
             mtime = 0.0
         scored.append((score, mtime, p, count))
+
+    if not scored:
+        warnings.append("No se encontró ningún archivo de escenas válido (.txt).")
+        return None, 0
 
     scored.sort(key=lambda entry: (entry[0], entry[1]), reverse=True)
     top_score, _mtime, best, best_count = scored[0]
